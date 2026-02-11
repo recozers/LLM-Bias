@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+country_bias_pilot/results/raw/
+country_bias_pilot/results/asymmetry/
+country_bias_pilot/results/summary/
+country_bias_pilot/results/plots/
+*.pt
+*.bin
+*.safetensors
+.DS_Store
