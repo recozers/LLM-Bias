@@ -154,6 +154,7 @@ def main():
         pc = report["phonetic_comparison"]
         if pc["within_phonetic_mean_abs"] is not None:
             print(f"  Within-phonetic |asym|: {pc['within_phonetic_mean_abs']:.4f}")
+        if pc["cross_phonetic_mean_abs"] is not None:
             print(f"  Cross-phonetic  |asym|: {pc['cross_phonetic_mean_abs']:.4f}")
 
         print(f"  Low-compliance prompts: {report['low_compliance_count']}")
