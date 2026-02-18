@@ -136,7 +136,7 @@ def validate_results(asym_df: pd.DataFrame) -> dict:
     flagged_controls = fict_agg[fict_agg.abs() > CONTROL_ASYMMETRY_FLAG]
     report["fictional_controls"] = {
         "mean_abs_asymmetry": fict["asymmetry"].abs().mean() if not fict.empty else None,
-        "flagged_pairs": flagged_controls.to_dict() if not flagged_controls.empty else {},
+        "flagged_pairs": {f"{k[0]} vs {k[1]}": v for k, v in flagged_controls.to_dict().items()} if not flagged_controls.empty else {},
     }
 
     # 2. Within-phonetic vs cross-phonetic fictional pairs
