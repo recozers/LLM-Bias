@@ -111,25 +111,34 @@ def main():
 
     # --- Inference ---
     all_warnings = []
+    failed_models = []
     if not args.analysis_only:
         for mk in model_keys:
             logger.info(f"\n{'='*60}\n  Running inference: {mk}  ({MODELS[mk]})\n{'='*60}")
-            results = run_inference(mk, MODELS[mk], prompts)
-            for r in results:
-                all_warnings.extend(r.get("warnings", []))
+            try:
+                results = run_inference(mk, MODELS[mk], prompts)
+                for r in results:
+                    all_warnings.extend(r.get("warnings", []))
+            except Exception:
+                logger.exception(f"Inference FAILED for {mk} — skipping")
+                failed_models.append(mk)
 
-    # --- Analysis ---
+    # --- Analysis (only for models with raw results) ---
+    completed_models = [mk for mk in model_keys if mk not in failed_models]
     asym_dfs = {}
     reports = {}
-    for mk in model_keys:
+    for mk in completed_models:
         logger.info(f"\n{'='*60}\n  Analyzing: {mk}\n{'='*60}")
-        result = run_analysis(mk)
-        asym_dfs[mk] = result["asymmetry"]
-        reports[mk] = result["report"]
+        try:
+            result = run_analysis(mk)
+            asym_dfs[mk] = result["asymmetry"]
+            reports[mk] = result["report"]
+        except Exception:
+            logger.exception(f"Analysis FAILED for {mk} — skipping")
 
     # --- Cross-model summary ---
-    if len(model_keys) > 1:
-        build_cross_model_summary(model_keys)
+    if len(asym_dfs) > 1:
+        build_cross_model_summary(list(asym_dfs.keys()))
 
     # --- Visualizations ---
     logger.info(f"\n{'='*60}\n  Generating plots\n{'='*60}")
@@ -139,7 +148,10 @@ def main():
     print("\n" + "=" * 60)
     print("  PILOT RESULTS SUMMARY")
     print("=" * 60)
-    for mk in model_keys:
+    if failed_models:
+        print(f"\n  FAILED models: {', '.join(failed_models)}")
+
+    for mk in asym_dfs:
         print(f"\n--- {mk} ---")
         report = reports[mk]
 
