@@ -2,6 +2,9 @@
 
 import logging
 
+import matplotlib
+matplotlib.use("Agg")  # headless-safe backend — must precede pyplot import
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

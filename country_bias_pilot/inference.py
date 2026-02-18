@@ -1,5 +1,7 @@
 """Model loading and logit extraction."""
 
+from __future__ import annotations
+
 import logging
 import json
 from pathlib import Path
@@ -18,16 +20,21 @@ def _resolve_dtype(name: str) -> torch.dtype:
     return {"bfloat16": torch.bfloat16, "float16": torch.float16, "float32": torch.float32}[name]
 
 
-def load_model(model_id: str, device: str = "cuda"):
-    """Load model and tokenizer. Returns (model, tokenizer)."""
+def _get_device(model) -> torch.device:
+    """Infer the device the model's first parameter lives on."""
+    return next(model.parameters()).device
+
+
+def load_model(model_id: str):
+    """Load model and tokenizer with accelerate auto device mapping."""
     dtype = _resolve_dtype(DTYPE)
-    logger.info(f"Loading {model_id} in {DTYPE} on {device}")
+    logger.info(f"Loading {model_id} in {DTYPE} with device_map='auto'")
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         torch_dtype=dtype,
-        device_map=device,
+        device_map="auto",
         trust_remote_code=True,
     )
     model.eval()
@@ -35,6 +42,7 @@ def load_model(model_id: str, device: str = "cuda"):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    logger.info(f"Model loaded — device: {_get_device(model)}")
     return model, tokenizer
 
 
@@ -75,20 +83,20 @@ def extract_logits_single(
     tokenizer,
     prompt_text: str,
     token_info: dict,
-    device: str = "cuda",
 ) -> dict:
     """Run one forward pass and extract logits for A/B tokens.
 
     Returns dict with logit_a, logit_b, prob_a, prob_b, prob_a_normalized,
     compliance, top_k_tokens, and warning flags.
     """
+    device = _get_device(model)
     inputs = tokenizer(prompt_text, return_tensors="pt").to(device)
 
     with torch.no_grad():
         outputs = model(**inputs)
 
     # Logits at the last token position (next-token prediction)
-    last_logits = outputs.logits[0, -1, :]  # (vocab_size,)
+    last_logits = outputs.logits[0, -1, :].float()  # cast to float32 for stable softmax
 
     # --- pick the best A and B token ids based on which has highest logit ---
     a_ids = token_info["A_ids"] or [token_info["primary_A"]]
@@ -151,10 +159,9 @@ def run_inference(
     model_name: str,
     model_id: str,
     prompts: list[dict],
-    device: str = "cuda",
 ) -> list[dict]:
     """Load model, run all prompts, save raw results, return records."""
-    model, tokenizer = load_model(model_id, device=device)
+    model, tokenizer = load_model(model_id)
     token_info = _find_ab_token_ids(tokenizer)
 
     outpath = RAW_DIR / f"{model_name}_logits.jsonl"
@@ -163,7 +170,7 @@ def run_inference(
     with open(outpath, "w") as f:
         for prompt in tqdm(prompts, desc=f"Inference [{model_name}]"):
             logit_data = extract_logits_single(
-                model, tokenizer, prompt["text"], token_info, device=device,
+                model, tokenizer, prompt["text"], token_info,
             )
             record = {
                 "prompt_id": prompt["prompt_id"],
@@ -182,6 +189,7 @@ def run_inference(
 
     # Free memory
     del model
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
     return results

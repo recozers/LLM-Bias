@@ -1,5 +1,7 @@
 """Prompt generation: fill templates with country pairs in both directions."""
 
+from __future__ import annotations
+
 from config import SCENARIOS, ALL_PAIRS
 
 
