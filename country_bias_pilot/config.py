@@ -111,7 +111,7 @@ SCENARIOS = {
 # ---------------------------------------------------------------------------
 # Inference settings
 # ---------------------------------------------------------------------------
-DTYPE = "bfloat16"      # bfloat16 for memory efficiency
+DTYPE = "float32"       # full precision inference
 TOP_K_CHECK = 20        # verify A/B tokens appear in top-k
 COMPLIANCE_WARN = 0.5   # warn if P(A)+P(B) under full softmax < this
 CONTROL_ASYMMETRY_FLAG = 0.1  # flag fictional pairs with |asym| above this
