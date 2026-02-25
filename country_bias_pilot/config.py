@@ -19,7 +19,7 @@ for d in [RAW_DIR, ASYMMETRY_DIR, SUMMARY_DIR, PLOTS_DIR]:
 # Models  (small variants for development; swap IDs to scale up)
 # ---------------------------------------------------------------------------
 MODELS = {
-    "llama3-8b": "meta-llama/Meta-Llama-3-8B",
+    "llama3-8b": "meta-llama/Llama-3.1-8B",
     "qwen2.5-7b": "Qwen/Qwen2.5-7B",
     "mistral-7b": "mistralai/Mistral-7B-v0.3",
     "deepseek-v2-lite": "deepseek-ai/DeepSeek-V2-Lite",

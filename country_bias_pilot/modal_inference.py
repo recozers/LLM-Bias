@@ -54,7 +54,7 @@ TOP_K_CHECK = 20
 COMPLIANCE_WARN = 0.5
 
 MODELS = {
-    "llama3-8b": "meta-llama/Meta-Llama-3-8B",
+    "llama3-8b": "meta-llama/Llama-3.1-8B",
     "qwen2.5-7b": "Qwen/Qwen2.5-7B",
     "mistral-7b": "mistralai/Mistral-7B-v0.3",
     "deepseek-v2-lite": "deepseek-ai/DeepSeek-V2-Lite",
@@ -185,6 +185,11 @@ def run_model_inference(model_name: str, model_id: str, prompts: list[dict]) -> 
     os.environ["HF_HOME"] = "/cache/huggingface"
     os.environ["TRANSFORMERS_CACHE"] = "/cache/huggingface"
 
+    # Ensure HF token is available (Modal injects it as env var)
+    hf_token = os.environ.get("HF_TOKEN")
+    if hf_token:
+        os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
+
     # --- Load model ---
     dtype_map = {
         "bfloat16": torch.bfloat16,
@@ -194,12 +199,13 @@ def run_model_inference(model_name: str, model_id: str, prompts: list[dict]) -> 
     dtype = dtype_map[DTYPE]
 
     print(f"Loading {model_id} in {DTYPE} with device_map='auto'")
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True, token=hf_token)
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         torch_dtype=dtype,
         device_map="auto",
         trust_remote_code=True,
+        token=hf_token,
     )
     model.eval()
 
