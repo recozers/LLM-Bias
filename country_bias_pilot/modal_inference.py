@@ -60,7 +60,7 @@ MODELS = {
     "deepseek-v2-lite": "deepseek-ai/DeepSeek-V2-Lite",
     "falcon-7b": "tiiuae/falcon-7b",
     "gemma2-9b": "google/gemma-2-9b",
-    "gpt-oss-20b": "openai-community/gpt-oss-20b",
+    "gpt-oss-20b": "openai/gpt-oss-20b",
 }
 
 FICTIONAL_PAIRS = [
