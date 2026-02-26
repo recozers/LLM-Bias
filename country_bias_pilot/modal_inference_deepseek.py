@@ -1,17 +1,15 @@
-"""Modal-based remote GPU inference for country bias experiments.
+"""Modal-based inference for DeepSeek models (pinned transformers<5).
+
+DeepSeek's custom modeling code uses `is_torch_fx_available` which was
+removed in transformers v5.0.0. This script pins transformers<5 so
+DeepSeek models load correctly, without affecting other models.
 
 Usage:
-    # Run all models
-    modal run modal_inference.py
+    # Smoke test
+    modal run modal_inference_deepseek.py --test
 
-    # Run specific models
-    modal run modal_inference.py --models llama3-8b mistral-7b
-
-    # Smoke test (1 model, 2 pairs, 1 scenario)
-    modal run modal_inference.py --test
-
-    # List available models
-    modal run modal_inference.py --list-models
+    # Full run
+    modal run modal_inference_deepseek.py
 """
 
 from __future__ import annotations
@@ -23,30 +21,34 @@ from pathlib import Path
 import modal
 
 # ---------------------------------------------------------------------------
-# Modal setup
+# Modal setup — pinned transformers<5 for DeepSeek compatibility
 # ---------------------------------------------------------------------------
 
-app = modal.App("llm-country-bias")
+app = modal.App("llm-country-bias-deepseek")
 
-# Volume to cache HuggingFace model weights across runs
 model_cache = modal.Volume.from_name("hf-model-cache", create_if_missing=True)
 
-# Container image with all dependencies
+_STUB_DIR = Path(__file__).resolve().parent / "flash_attn_stub"
+
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
         "torch",
-        "transformers",
+        "transformers==4.40.0",
         "accelerate",
         "huggingface_hub",
         "tqdm",
         "pandas",
         "numpy",
     )
+    .add_local_dir(
+        _STUB_DIR,
+        "/usr/local/lib/python3.11/site-packages/flash_attn",
+    )
 )
 
 # ---------------------------------------------------------------------------
-# Config (duplicated from config.py to avoid import issues in Modal)
+# Config
 # ---------------------------------------------------------------------------
 
 DTYPE = "float32"
@@ -54,12 +56,8 @@ TOP_K_CHECK = 20
 COMPLIANCE_WARN = 0.5
 
 MODELS = {
-    "llama3-8b": "meta-llama/Llama-3.1-8B",
-    "qwen2.5-7b": "Qwen/Qwen2.5-7B",
-    "mistral-7b": "mistralai/Mistral-7B-v0.3",
-    "falcon3-7b": "tiiuae/Falcon3-7B-Base",
-    "gemma2-9b": "google/gemma-2-9b",
-    "gpt-oss-20b": "openai/gpt-oss-20b",
+    "deepseek-v2-lite": "deepseek-ai/DeepSeek-V2-Lite",
+    "deepseek-moe-16b": "deepseek-ai/deepseek-moe-16b-base",
 }
 
 FICTIONAL_PAIRS = [
@@ -132,7 +130,7 @@ SCENARIOS = {
 
 
 # ---------------------------------------------------------------------------
-# Prompt generation (inlined from prompts.py)
+# Prompt generation
 # ---------------------------------------------------------------------------
 
 def generate_all_prompts(pairs=None, scenarios=None):
@@ -165,7 +163,7 @@ def generate_all_prompts(pairs=None, scenarios=None):
 
 
 # ---------------------------------------------------------------------------
-# Remote inference function — one call per model
+# Remote inference function
 # ---------------------------------------------------------------------------
 
 @app.function(
@@ -184,12 +182,10 @@ def run_model_inference(model_name: str, model_id: str, prompts: list[dict]) -> 
     os.environ["HF_HOME"] = "/cache/huggingface"
     os.environ["TRANSFORMERS_CACHE"] = "/cache/huggingface"
 
-    # Ensure HF token is available (Modal injects it as env var)
     hf_token = os.environ.get("HF_TOKEN")
     if hf_token:
         os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
 
-    # --- Load model ---
     dtype_map = {
         "bfloat16": torch.bfloat16,
         "float16": torch.float16,
@@ -205,6 +201,7 @@ def run_model_inference(model_name: str, model_id: str, prompts: list[dict]) -> 
         device_map="auto",
         trust_remote_code=True,
         token=hf_token,
+        attn_implementation="eager",
     )
     model.eval()
 
@@ -299,7 +296,6 @@ def run_model_inference(model_name: str, model_id: str, prompts: list[dict]) -> 
 
     print(f"  [{model_name}] Completed all {len(prompts)} prompts")
 
-    # Commit cached weights to volume
     model_cache.commit()
 
     return results
@@ -315,27 +311,26 @@ def main(
     test: bool = False,
     list_models: bool = False,
 ):
-    """Run inference on Modal GPUs, save results locally.
+    """Run DeepSeek inference on Modal GPUs with pinned transformers<5.
 
     Args:
-        models: Comma-separated model keys (e.g. "llama3-8b,mistral-7b"). Default: all.
+        models: Comma-separated model keys. Default: all DeepSeek models.
         test: Smoke test mode (1 model, 2 pairs, 1 scenario).
         list_models: Print available models and exit.
     """
     if list_models:
-        print("Available models:")
+        print("Available DeepSeek models:")
         for k, v in MODELS.items():
             print(f"  {k:20s} -> {v}")
         return
 
-    # Resolve models and prompts
     model_keys = [m.strip() for m in models.split(",") if m.strip()] if models else None
     if test:
         if not model_keys:
             model_keys = [list(MODELS.keys())[0]]
         pairs = [FICTIONAL_PAIRS[0], REAL_PAIRS[0]]
         scenarios = {k: v for k, v in list(SCENARIOS.items())[:1]}
-        print("=== SMOKE TEST MODE ===")
+        print("=== SMOKE TEST MODE (DeepSeek, transformers<5) ===")
     else:
         model_keys = model_keys or list(MODELS.keys())
         pairs = None
@@ -349,12 +344,10 @@ def main(
     prompts = generate_all_prompts(pairs=pairs, scenarios=scenarios)
     print(f"Generated {len(prompts)} prompts")
 
-    # Set up local results directory
     results_dir = Path(__file__).resolve().parent / "results"
     raw_dir = results_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    # Run each model on Modal (each gets its own GPU container)
     failed_models = []
     for mk in model_keys:
         model_id = MODELS[mk]
@@ -362,20 +355,17 @@ def main(
         print(f"  Launching on Modal: {mk}  ({model_id})")
         print(f"{'='*60}")
 
-        # Serialize prompts (tuples -> lists for JSON)
         serializable_prompts = [{**p, "pair": list(p["pair"])} for p in prompts]
 
         try:
             results = run_model_inference.remote(mk, model_id, serializable_prompts)
 
-            # Save results locally
             outpath = raw_dir / f"{mk}_logits.jsonl"
             with open(outpath, "w") as f:
                 for record in results:
                     f.write(json.dumps(record) + "\n")
             print(f"  Saved {len(results)} records to {outpath}")
 
-            # Print warnings summary
             all_warnings = [w for r in results for w in r.get("warnings", [])]
             if all_warnings:
                 print(f"  Warnings: {len(all_warnings)} total")
@@ -386,13 +376,11 @@ def main(
             print(f"  FAILED: {e}")
             failed_models.append(mk)
 
-    # Summary
     print(f"\n{'='*60}")
-    print(f"  INFERENCE COMPLETE")
+    print(f"  DEEPSEEK INFERENCE COMPLETE")
     print(f"{'='*60}")
     completed = [mk for mk in model_keys if mk not in failed_models]
     print(f"  Completed: {', '.join(completed) or 'none'}")
     if failed_models:
         print(f"  Failed: {', '.join(failed_models)}")
     print(f"\n  Raw results saved to: {raw_dir}")
-    print(f"  Run 'python run_pilot.py --analysis-only' to generate analysis & plots")

@@ -22,8 +22,9 @@ MODELS = {
     "llama3-8b": "meta-llama/Llama-3.1-8B",
     "qwen2.5-7b": "Qwen/Qwen2.5-7B",
     "mistral-7b": "mistralai/Mistral-7B-v0.3",
-    "deepseek-v2-lite": "deepseek-ai/DeepSeek-V2-Lite",
-    "falcon-7b": "tiiuae/falcon-7b",
+    "deepseek-v2-lite": "deepseek-ai/DeepSeek-V2-Lite",   # run via modal_inference_deepseek.py
+    "deepseek-moe-16b": "deepseek-ai/deepseek-moe-16b-base",  # run via modal_inference_deepseek.py
+    "falcon3-7b": "tiiuae/Falcon3-7B-Base",
     "gemma2-9b": "google/gemma-2-9b",
     "gpt-oss-20b": "openai/gpt-oss-20b",
 }
