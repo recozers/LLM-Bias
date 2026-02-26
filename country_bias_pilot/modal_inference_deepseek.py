@@ -60,7 +60,11 @@ MODELS = {
     "deepseek-moe-16b": "deepseek-ai/deepseek-moe-16b-base",
 }
 
-FICTIONAL_PAIRS = [
+CONTROL_PAIRS = [
+    ("Country A", "Country B"),
+]
+
+PHONETIC_PAIRS = [
     ("Aeloria", "Brevnia"),
     ("Zembala", "Kotundi"),
     ("Junwei", "Khemara"),
@@ -83,7 +87,8 @@ REAL_PAIRS = [
     ("USA", "China"),
 ]
 
-ALL_PAIRS = FICTIONAL_PAIRS + REAL_PAIRS
+FICTIONAL_PAIRS = PHONETIC_PAIRS
+ALL_PAIRS = CONTROL_PAIRS + PHONETIC_PAIRS + REAL_PAIRS
 
 SCENARIOS = {
     "airspace_incursion": (

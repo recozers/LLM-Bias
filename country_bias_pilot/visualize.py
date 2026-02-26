@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from config import PLOTS_DIR, FICTIONAL_PAIRS
+from config import PLOTS_DIR, CONTROL_PAIRS, PHONETIC_PAIRS, FICTIONAL_PAIRS
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,13 @@ def plot_heatmap(asym_dfs: dict[str, pd.DataFrame]):
 
     pivot = combined.pivot_table(index="pair", columns="model", values="asymmetry")
 
-    # Separate fictional and real for ordering
-    fict_set = {f"{a} vs {b}" for a, b in FICTIONAL_PAIRS}
-    fict_labels = [p for p in pivot.index if p in fict_set]
-    real_labels = [p for p in pivot.index if p not in fict_set]
-    pivot = pivot.reindex(fict_labels + real_labels)
+    # Separate control, phonetic, and real for ordering
+    ctrl_set = {f"{a} vs {b}" for a, b in CONTROL_PAIRS}
+    phon_set = {f"{a} vs {b}" for a, b in PHONETIC_PAIRS}
+    ctrl_labels = [p for p in pivot.index if p in ctrl_set]
+    phon_labels = [p for p in pivot.index if p in phon_set]
+    real_labels = [p for p in pivot.index if p not in ctrl_set and p not in phon_set]
+    pivot = pivot.reindex(ctrl_labels + phon_labels + real_labels)
 
     fig, ax = plt.subplots(figsize=(max(8, len(asym_dfs) * 2.5), max(10, len(pivot) * 0.5)))
     vmax = max(0.3, pivot.abs().max().max())
@@ -52,9 +54,11 @@ def plot_heatmap(asym_dfs: dict[str, pd.DataFrame]):
     ax.set_ylabel("")
     ax.set_xlabel("")
 
-    # Draw line between fictional and real pairs
-    if fict_labels and real_labels:
-        ax.axhline(y=len(fict_labels), color="black", linewidth=2)
+    # Draw lines between control/phonetic/real sections
+    if ctrl_labels and (phon_labels or real_labels):
+        ax.axhline(y=len(ctrl_labels), color="black", linewidth=2)
+    if phon_labels and real_labels:
+        ax.axhline(y=len(ctrl_labels) + len(phon_labels), color="black", linewidth=2)
 
     plt.tight_layout()
     path = PLOTS_DIR / "heatmap_pair_model.png"
@@ -74,8 +78,8 @@ def plot_bar_chart(asym_dfs: dict[str, pd.DataFrame]):
     combined["pair"] = combined.apply(_pair_label, axis=1)
 
     # Only real pairs for clarity
-    fict_set = {f"{a} vs {b}" for a, b in FICTIONAL_PAIRS}
-    real = combined[~combined["pair"].isin(fict_set)]
+    non_real = {f"{a} vs {b}" for a, b in CONTROL_PAIRS + PHONETIC_PAIRS}
+    real = combined[~combined["pair"].isin(non_real)]
 
     fig, ax = plt.subplots(figsize=(14, 6))
     pairs_order = sorted(real["pair"].unique())
@@ -113,16 +117,28 @@ def plot_model_scatter(asym_dfs: dict[str, pd.DataFrame], model_x: str, model_y:
     merged = agg_x.merge(agg_y, on=["country_1", "country_2"], suffixes=(f"_{model_x}", f"_{model_y}"))
     merged["pair"] = merged.apply(_pair_label, axis=1)
 
-    fict_set = {f"{a} vs {b}" for a, b in FICTIONAL_PAIRS}
-    merged["is_fictional"] = merged["pair"].isin(fict_set)
+    ctrl_set = {f"{a} vs {b}" for a, b in CONTROL_PAIRS}
+    phon_set = {f"{a} vs {b}" for a, b in PHONETIC_PAIRS}
+
+    def _pair_category(pair):
+        if pair in ctrl_set:
+            return "Control"
+        if pair in phon_set:
+            return "Phonetic"
+        return "Real"
+
+    merged["category"] = merged["pair"].apply(_pair_category)
 
     fig, ax = plt.subplots(figsize=(8, 8))
 
-    for is_fict, marker, label in [(False, "o", "Real"), (True, "s", "Fictional")]:
-        subset = merged[merged["is_fictional"] == is_fict]
+    for cat, marker, color in [("Real", "o", None), ("Phonetic", "s", None), ("Control", "D", "red")]:
+        subset = merged[merged["category"] == cat]
+        kwargs = {"marker": marker, "s": 60, "label": cat, "alpha": 0.8}
+        if color:
+            kwargs["color"] = color
         ax.scatter(
             subset[f"asymmetry_{model_x}"], subset[f"asymmetry_{model_y}"],
-            marker=marker, s=60, label=label, alpha=0.8,
+            **kwargs,
         )
         for _, row in subset.iterrows():
             ax.annotate(

@@ -9,7 +9,7 @@ import numpy as np
 
 from config import (
     RAW_DIR, ASYMMETRY_DIR, SUMMARY_DIR,
-    FICTIONAL_PAIRS, REAL_PAIRS, ALL_PAIRS,
+    CONTROL_PAIRS, PHONETIC_PAIRS, FICTIONAL_PAIRS, REAL_PAIRS, ALL_PAIRS,
     CONTROL_ASYMMETRY_FLAG, COMPLIANCE_WARN,
 )
 
@@ -29,17 +29,55 @@ def load_raw_results(model_name: str) -> pd.DataFrame:
     return df
 
 
+def _estimate_token_prior(df: pd.DataFrame) -> float:
+    """Estimate the model's prior logit(A) - logit(B) from control pairs.
+
+    Control pairs use literal "Country A" / "Country B" — zero cultural
+    or phonetic association — so the mean logit difference reflects the
+    model's pure positional token preference.
+
+    Falls back to phonetic (fictional) pairs if no control data exists.
+    """
+    control_set = {tuple(p) for p in CONTROL_PAIRS}
+    ctrl = df[df["pair"].apply(lambda p: tuple(p) in control_set)]
+    if not ctrl.empty:
+        prior = (ctrl["logit_a"] - ctrl["logit_b"]).mean()
+        logger.info(f"Token prior from control pairs (logit_A - logit_B): {prior:.4f}")
+        return prior
+
+    # Fallback: use phonetic/fictional pairs (less clean but available)
+    logger.warning("No control pairs found — falling back to phonetic pairs for prior")
+    phonetic_set = {tuple(p) for p in PHONETIC_PAIRS}
+    phon = df[df["pair"].apply(lambda p: tuple(p) in phonetic_set)]
+    if phon.empty:
+        logger.warning("No phonetic pairs found either — token prior set to 0")
+        return 0.0
+    prior = (phon["logit_a"] - phon["logit_b"]).mean()
+    logger.info(f"Token prior from phonetic pairs (logit_A - logit_B): {prior:.4f}")
+    return prior
+
+
 def compute_asymmetry(df: pd.DataFrame) -> pd.DataFrame:
     """Compute asymmetry for each (pair, scenario).
 
-    For a canonical pair (c1, c2):
-      forward row: country_a=c1, country_b=c2  → p_forward = prob_a_normalized
-      reverse row: country_a=c2, country_b=c1  → p_reverse = prob_a_normalized
+    Works in logit-difference space with token-prior correction:
+      1. For each prompt compute logit_diff = logit_a - logit_b
+      2. Subtract the model's token prior (estimated from fictional pairs)
+         to get the content-driven shift: adjusted_diff = logit_diff - prior
+      3. Convert to probability via sigmoid: p = 1 / (1 + exp(-adjusted_diff))
 
+    For a canonical pair (c1, c2):
+      forward: country_a=c1  → p_forward (prior-corrected)
+      reverse: country_a=c2  → p_reverse (prior-corrected)
       asymmetry = p_forward + p_reverse - 1
         > 0 → model favors c1
         < 0 → model favors c2
     """
+    token_prior = _estimate_token_prior(df)
+
+    def _sigmoid(x):
+        return 1.0 / (1.0 + np.exp(-x))
+
     rows = []
     for pair in df["pair"].unique():
         c1, c2 = pair
@@ -55,10 +93,20 @@ def compute_asymmetry(df: pd.DataFrame) -> pd.DataFrame:
                 logger.warning(f"Missing direction for {pair} / {scenario}")
                 continue
 
-            p_forward = fwd.iloc[0]["prob_a_normalized"]
-            p_reverse = rev.iloc[0]["prob_a_normalized"]
-            compliance_fwd = fwd.iloc[0]["compliance"]
-            compliance_rev = rev.iloc[0]["compliance"]
+            fwd_row = fwd.iloc[0]
+            rev_row = rev.iloc[0]
+
+            # Raw logit differences
+            logit_diff_fwd = fwd_row["logit_a"] - fwd_row["logit_b"]
+            logit_diff_rev = rev_row["logit_a"] - rev_row["logit_b"]
+
+            # Subtract token prior to isolate content-driven shift
+            adj_fwd = logit_diff_fwd - token_prior
+            adj_rev = logit_diff_rev - token_prior
+
+            # Convert to prior-corrected probabilities
+            p_forward = _sigmoid(adj_fwd)
+            p_reverse = _sigmoid(adj_rev)
 
             asymmetry = p_forward + p_reverse - 1.0
 
@@ -66,12 +114,20 @@ def compute_asymmetry(df: pd.DataFrame) -> pd.DataFrame:
                 "country_1": c1,
                 "country_2": c2,
                 "scenario": scenario,
+                "logit_diff_fwd": logit_diff_fwd,
+                "logit_diff_rev": logit_diff_rev,
+                "token_prior": token_prior,
+                "adj_logit_diff_fwd": adj_fwd,
+                "adj_logit_diff_rev": adj_rev,
                 "p_forward": p_forward,
                 "p_reverse": p_reverse,
                 "asymmetry": asymmetry,
-                "compliance_fwd": compliance_fwd,
-                "compliance_rev": compliance_rev,
-                "model": fwd.iloc[0]["model"],
+                "p_forward_raw": fwd_row["prob_a_normalized"],
+                "p_reverse_raw": rev_row["prob_a_normalized"],
+                "asymmetry_raw": fwd_row["prob_a_normalized"] + rev_row["prob_a_normalized"] - 1.0,
+                "compliance_fwd": fwd_row["compliance"],
+                "compliance_rev": rev_row["compliance"],
+                "model": fwd_row["model"],
             })
 
     return pd.DataFrame(rows)
@@ -129,29 +185,37 @@ def validate_results(asym_df: pd.DataFrame) -> dict:
     """Run all validation checks and return a report dict."""
     report = {}
 
-    # 1. Fictional control asymmetries
-    fictional_set = {tuple(p) for p in FICTIONAL_PAIRS}
-    fict = asym_df[asym_df.apply(lambda r: (r["country_1"], r["country_2"]) in fictional_set, axis=1)]
-    fict_agg = fict.groupby(["country_1", "country_2"])["asymmetry"].mean()
-    flagged_controls = fict_agg[fict_agg.abs() > CONTROL_ASYMMETRY_FLAG]
-    report["fictional_controls"] = {
-        "mean_abs_asymmetry": fict["asymmetry"].abs().mean() if not fict.empty else None,
-        "flagged_pairs": {f"{k[0]} vs {k[1]}": v for k, v in flagged_controls.to_dict().items()} if not flagged_controls.empty else {},
+    # 1. Control pair asymmetries (should be ~0 after prior correction)
+    control_set = {tuple(p) for p in CONTROL_PAIRS}
+    ctrl = asym_df[asym_df.apply(lambda r: (r["country_1"], r["country_2"]) in control_set, axis=1)]
+    report["control_pairs"] = {
+        "mean_abs_asymmetry": ctrl["asymmetry"].abs().mean() if not ctrl.empty else None,
+        "n_prompts": len(ctrl),
     }
 
-    # 2. Within-phonetic vs cross-phonetic fictional pairs
+    # 2. Phonetic treatment asymmetries (fictional names with cultural phonetics)
+    phonetic_set = {tuple(p) for p in PHONETIC_PAIRS}
+    phon = asym_df[asym_df.apply(lambda r: (r["country_1"], r["country_2"]) in phonetic_set, axis=1)]
+    phon_agg = phon.groupby(["country_1", "country_2"])["asymmetry"].mean()
+    flagged_phonetic = phon_agg[phon_agg.abs() > CONTROL_ASYMMETRY_FLAG]
+    report["phonetic_treatments"] = {
+        "mean_abs_asymmetry": phon["asymmetry"].abs().mean() if not phon.empty else None,
+        "flagged_pairs": {f"{k[0]} vs {k[1]}": v for k, v in flagged_phonetic.to_dict().items()} if not flagged_phonetic.empty else {},
+    }
+
+    # 3. Within-phonetic vs cross-phonetic
     within_phonetic = [("Aeloria", "Brevnia"), ("Zembala", "Kotundi"), ("Junwei", "Khemara")]
     cross_phonetic = [("Aeloria", "Zembala"), ("Aeloria", "Junwei"), ("Zembala", "Junwei")]
     wp_set, cp_set = {tuple(p) for p in within_phonetic}, {tuple(p) for p in cross_phonetic}
 
-    wp_asym = fict[fict.apply(lambda r: (r["country_1"], r["country_2"]) in wp_set, axis=1)]["asymmetry"].abs().mean()
-    cp_asym = fict[fict.apply(lambda r: (r["country_1"], r["country_2"]) in cp_set, axis=1)]["asymmetry"].abs().mean()
+    wp_asym = phon[phon.apply(lambda r: (r["country_1"], r["country_2"]) in wp_set, axis=1)]["asymmetry"].abs().mean()
+    cp_asym = phon[phon.apply(lambda r: (r["country_1"], r["country_2"]) in cp_set, axis=1)]["asymmetry"].abs().mean()
     report["phonetic_comparison"] = {
         "within_phonetic_mean_abs": wp_asym if not np.isnan(wp_asym) else None,
         "cross_phonetic_mean_abs": cp_asym if not np.isnan(cp_asym) else None,
     }
 
-    # 3. Compliance scores
+    # 4. Compliance scores
     low_compliance = asym_df[
         (asym_df["compliance_fwd"] < COMPLIANCE_WARN) | (asym_df["compliance_rev"] < COMPLIANCE_WARN)
     ]

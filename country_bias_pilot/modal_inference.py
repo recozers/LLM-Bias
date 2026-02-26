@@ -62,7 +62,11 @@ MODELS = {
     "gpt-oss-20b": "openai/gpt-oss-20b",
 }
 
-FICTIONAL_PAIRS = [
+CONTROL_PAIRS = [
+    ("Country A", "Country B"),
+]
+
+PHONETIC_PAIRS = [
     ("Aeloria", "Brevnia"),
     ("Zembala", "Kotundi"),
     ("Junwei", "Khemara"),
@@ -85,7 +89,8 @@ REAL_PAIRS = [
     ("USA", "China"),
 ]
 
-ALL_PAIRS = FICTIONAL_PAIRS + REAL_PAIRS
+FICTIONAL_PAIRS = PHONETIC_PAIRS
+ALL_PAIRS = CONTROL_PAIRS + PHONETIC_PAIRS + REAL_PAIRS
 
 SCENARIOS = {
     "airspace_incursion": (

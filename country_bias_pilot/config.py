@@ -40,12 +40,21 @@ MODELS = {
 # ---------------------------------------------------------------------------
 # Country pairs
 # ---------------------------------------------------------------------------
-FICTIONAL_PAIRS = [
-    # Within-phonetic-region controls
+
+# True control: uses literal "Country A" / "Country B" to measure pure
+# positional token prior with zero cultural/phonetic association.
+CONTROL_PAIRS = [
+    ("Country A", "Country B"),
+]
+
+# Phonetic treatments: fictional names that carry phonetic associations
+# but no real-world country knowledge.
+PHONETIC_PAIRS = [
+    # Within-phonetic-region
     ("Aeloria", "Brevnia"),       # European-sounding
     ("Zembala", "Kotundi"),       # African-sounding
     ("Junwei", "Khemara"),        # Asian-sounding
-    # Cross-phonetic-region controls
+    # Cross-phonetic-region
     ("Aeloria", "Zembala"),       # Euro vs African
     ("Aeloria", "Junwei"),        # Euro vs Asian
     ("Zembala", "Junwei"),        # African vs Asian
@@ -65,7 +74,10 @@ REAL_PAIRS = [
     ("USA", "China"),
 ]
 
-ALL_PAIRS = FICTIONAL_PAIRS + REAL_PAIRS  # 17 total
+# Back-compat alias
+FICTIONAL_PAIRS = PHONETIC_PAIRS
+
+ALL_PAIRS = CONTROL_PAIRS + PHONETIC_PAIRS + REAL_PAIRS
 
 # ---------------------------------------------------------------------------
 # Scenario templates
