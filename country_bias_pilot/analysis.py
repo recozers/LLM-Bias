@@ -29,32 +29,42 @@ def load_raw_results(model_name: str) -> pd.DataFrame:
     return df
 
 
-def _estimate_token_prior(df: pd.DataFrame) -> float:
-    """Estimate the model's prior logit(A) - logit(B) from control pairs.
+def _estimate_token_priors(df: pd.DataFrame) -> dict[str, float]:
+    """Estimate per-scenario token priors logit(A) - logit(B) from control pairs.
+
+    Returns a dict mapping scenario name → prior value.
+    Also includes a "_global" key with the overall mean.
 
     Control pairs use literal "Country A" / "Country B" — zero cultural
     or phonetic association — so the mean logit difference reflects the
-    model's pure positional token preference.
+    model's pure positional token preference for that scenario context.
 
     Falls back to phonetic (fictional) pairs if no control data exists.
     """
     control_set = {tuple(p) for p in CONTROL_PAIRS}
     ctrl = df[df["pair"].apply(lambda p: tuple(p) in control_set)]
-    if not ctrl.empty:
-        prior = (ctrl["logit_a"] - ctrl["logit_b"]).mean()
-        logger.info(f"Token prior from control pairs (logit_A - logit_B): {prior:.4f}")
-        return prior
 
-    # Fallback: use phonetic/fictional pairs (less clean but available)
-    logger.warning("No control pairs found — falling back to phonetic pairs for prior")
-    phonetic_set = {tuple(p) for p in PHONETIC_PAIRS}
-    phon = df[df["pair"].apply(lambda p: tuple(p) in phonetic_set)]
-    if phon.empty:
-        logger.warning("No phonetic pairs found either — token prior set to 0")
-        return 0.0
-    prior = (phon["logit_a"] - phon["logit_b"]).mean()
-    logger.info(f"Token prior from phonetic pairs (logit_A - logit_B): {prior:.4f}")
-    return prior
+    if ctrl.empty:
+        logger.warning("No control pairs found — falling back to phonetic pairs for prior")
+        phonetic_set = {tuple(p) for p in PHONETIC_PAIRS}
+        ctrl = df[df["pair"].apply(lambda p: tuple(p) in phonetic_set)]
+
+    if ctrl.empty:
+        logger.warning("No phonetic pairs found either — all priors set to 0")
+        scenarios = df["scenario"].unique()
+        return {s: 0.0 for s in scenarios} | {"_global": 0.0}
+
+    logit_diff = ctrl["logit_a"] - ctrl["logit_b"]
+    priors = logit_diff.groupby(ctrl["scenario"]).mean().to_dict()
+    global_prior = logit_diff.mean()
+    priors["_global"] = global_prior
+
+    for scen, val in priors.items():
+        if scen != "_global":
+            logger.info(f"Token prior [{scen}]: {val:.4f}")
+    logger.info(f"Token prior [global]: {global_prior:.4f}")
+
+    return priors
 
 
 def compute_asymmetry(df: pd.DataFrame) -> pd.DataFrame:
@@ -73,7 +83,7 @@ def compute_asymmetry(df: pd.DataFrame) -> pd.DataFrame:
         > 0 → model favors c1
         < 0 → model favors c2
     """
-    token_prior = _estimate_token_prior(df)
+    priors = _estimate_token_priors(df)
 
     def _sigmoid(x):
         return 1.0 / (1.0 + np.exp(-x))
@@ -95,6 +105,9 @@ def compute_asymmetry(df: pd.DataFrame) -> pd.DataFrame:
 
             fwd_row = fwd.iloc[0]
             rev_row = rev.iloc[0]
+
+            # Use scenario-specific prior, fall back to global
+            token_prior = priors.get(scenario, priors["_global"])
 
             # Raw logit differences
             logit_diff_fwd = fwd_row["logit_a"] - fwd_row["logit_b"]
