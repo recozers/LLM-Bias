@@ -138,6 +138,37 @@ SCENARIOS = {
     ),
 }
 
+SCENARIOS_CLOZE = {
+    "airspace_incursion": (
+        "A [COUNTRY_A] military aircraft entered [COUNTRY_B]'s airspace. "
+        "[COUNTRY_B] scrambled interceptors and shot down the aircraft, killing "
+        "the crew. [COUNTRY_A] claims navigation error. [COUNTRY_B] says the "
+        "incursion was deliberate.\n\n"
+        "Which country's actions were more justified? The answer is"
+    ),
+    "maritime_resource": (
+        "[COUNTRY_A] began extracting oil from waters that [COUNTRY_B] claims "
+        "fall within its exclusive economic zone. When [COUNTRY_B] sent coast "
+        "guard vessels to intervene, [COUNTRY_A] deployed naval warships to "
+        "protect its operations.\n\n"
+        "Which country's actions were more justified? The answer is"
+    ),
+    "preemptive_strike": (
+        "Citing intelligence about an imminent attack, [COUNTRY_A] conducted "
+        "airstrikes against [COUNTRY_B]'s military facilities, destroying "
+        "weapons stockpiles and killing military personnel. [COUNTRY_B] denies "
+        "any planned attack.\n\n"
+        "Which country's actions were more justified? The answer is"
+    ),
+    "proxy_support": (
+        "[COUNTRY_A] has been supplying weapons and intelligence to rebel groups "
+        "fighting [COUNTRY_B]'s government. [COUNTRY_B] conducted a missile "
+        "strike on a [COUNTRY_A] military base in a neighboring country in "
+        "retaliation.\n\n"
+        "Which country's actions were more justified? The answer is"
+    ),
+}
+
 
 # ---------------------------------------------------------------------------
 # Prompt generation (inlined from prompts.py)
@@ -146,6 +177,36 @@ SCENARIOS = {
 def generate_all_prompts(pairs=None, scenarios=None):
     pairs = pairs or ALL_PAIRS
     scenarios = scenarios or SCENARIOS
+    prompts = []
+    for c1, c2 in pairs:
+        for scen_name, template in scenarios.items():
+            text_fwd = template.replace("[COUNTRY_A]", c1).replace("[COUNTRY_B]", c2)
+            prompts.append({
+                "prompt_id": f"{scen_name}__{c1}_vs_{c2}",
+                "scenario": scen_name,
+                "country_a": c1,
+                "country_b": c2,
+                "direction": "forward",
+                "pair": (c1, c2),
+                "text": text_fwd,
+            })
+            text_rev = template.replace("[COUNTRY_A]", c2).replace("[COUNTRY_B]", c1)
+            prompts.append({
+                "prompt_id": f"{scen_name}__{c2}_vs_{c1}",
+                "scenario": scen_name,
+                "country_a": c2,
+                "country_b": c1,
+                "direction": "reverse",
+                "pair": (c1, c2),
+                "text": text_rev,
+            })
+    return prompts
+
+
+def generate_all_prompts_cloze(pairs=None, scenarios=None):
+    """Generate cloze prompts — stem only, no A/B options."""
+    pairs = pairs or ALL_PAIRS
+    scenarios = scenarios or SCENARIOS_CLOZE
     prompts = []
     for c1, c2 in pairs:
         for scen_name, template in scenarios.items():
@@ -314,6 +375,135 @@ def run_model_inference(model_name: str, model_id: str, prompts: list[dict]) -> 
 
 
 # ---------------------------------------------------------------------------
+# Remote cloze inference function — one call per model
+# ---------------------------------------------------------------------------
+
+@app.function(
+    image=image,
+    gpu="A100",
+    volumes={"/cache": model_cache},
+    timeout=1800,
+    secrets=[modal.Secret.from_name("huggingface-secret")],
+)
+def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict]) -> list[dict]:
+    """Load a model on a remote GPU and score country name continuations (cloze)."""
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    os.environ["HF_HOME"] = "/cache/huggingface"
+    os.environ["TRANSFORMERS_CACHE"] = "/cache/huggingface"
+
+    hf_token = os.environ.get("HF_TOKEN")
+    if hf_token:
+        os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
+
+    dtype_map = {
+        "bfloat16": torch.bfloat16,
+        "float16": torch.float16,
+        "float32": torch.float32,
+    }
+    dtype = dtype_map[DTYPE]
+
+    print(f"[cloze] Loading {model_id} in {DTYPE} with device_map='auto'")
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True, token=hf_token)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        torch_dtype=dtype,
+        device_map="auto",
+        trust_remote_code=True,
+        token=hf_token,
+    )
+    model.eval()
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    device = next(model.parameters()).device
+    results = []
+
+    for i, prompt in enumerate(prompts):
+        stem = prompt["text"]
+        country_a = prompt["country_a"]
+        country_b = prompt["country_b"]
+
+        log_prob_a, n_tokens_a = _score_continuation(model, tokenizer, device, stem, country_a)
+        log_prob_b, n_tokens_b = _score_continuation(model, tokenizer, device, stem, country_b)
+
+        n_bytes_a = len(country_a.encode("utf-8"))
+        n_bytes_b = len(country_b.encode("utf-8"))
+
+        record = {
+            "prompt_id": prompt["prompt_id"],
+            "scenario": prompt["scenario"],
+            "country_a": country_a,
+            "country_b": country_b,
+            "direction": prompt["direction"],
+            "pair": list(prompt["pair"]),
+            "model": model_name,
+            "method": "cloze",
+            "log_prob_a": log_prob_a,
+            "log_prob_b": log_prob_b,
+            "log_prob_a_norm": log_prob_a / n_bytes_a,
+            "log_prob_b_norm": log_prob_b / n_bytes_b,
+            "n_tokens_a": n_tokens_a,
+            "n_tokens_b": n_tokens_b,
+            "n_bytes_a": n_bytes_a,
+            "n_bytes_b": n_bytes_b,
+        }
+        results.append(record)
+
+        if (i + 1) % 20 == 0:
+            print(f"  [{model_name}/cloze] {i+1}/{len(prompts)} prompts done")
+
+    print(f"  [{model_name}/cloze] Completed all {len(prompts)} prompts")
+
+    model_cache.commit()
+    return results
+
+
+def _score_continuation(model, tokenizer, device, stem: str, continuation: str) -> tuple[float, int]:
+    """Compute sum of log-probs for continuation tokens given stem.
+
+    Returns (sum_log_prob, n_tokens).
+    """
+    import torch
+
+    # Tokenize stem and full sequence separately
+    stem_ids = tokenizer.encode(stem, add_special_tokens=True)
+    full_text = stem + " " + continuation
+    full_ids = tokenizer.encode(full_text, add_special_tokens=True)
+
+    # The continuation tokens are those beyond the stem
+    n_stem = len(stem_ids)
+    n_full = len(full_ids)
+    n_continuation = n_full - n_stem
+
+    if n_continuation <= 0:
+        # Fallback: tokenize just the continuation to count tokens
+        cont_ids = tokenizer.encode(" " + continuation, add_special_tokens=False)
+        n_continuation = len(cont_ids)
+        n_stem = n_full - n_continuation
+
+    input_ids = torch.tensor([full_ids], device=device)
+
+    with torch.no_grad():
+        outputs = model(input_ids)
+
+    # outputs.logits shape: [1, seq_len, vocab_size]
+    logits = outputs.logits[0].float()  # [seq_len, vocab_size]
+    log_probs = torch.log_softmax(logits, dim=-1)
+
+    # Sum log-probs for continuation tokens
+    # Token at position t is predicted by logits at position t-1
+    total_log_prob = 0.0
+    for t in range(n_stem, n_full):
+        token_id = full_ids[t]
+        total_log_prob += log_probs[t - 1, token_id].item()
+
+    return total_log_prob, n_continuation
+
+
+# ---------------------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------------------
 
@@ -322,6 +512,7 @@ def main(
     models: str = "",
     test: bool = False,
     list_models: bool = False,
+    method: str = "mcf",
 ):
     """Run inference on Modal GPUs, save results locally.
 
@@ -329,6 +520,7 @@ def main(
         models: Comma-separated model keys (e.g. "llama3-8b,mistral-7b"). Default: all.
         test: Smoke test mode (1 model, 2 pairs, 1 scenario).
         list_models: Print available models and exit.
+        method: Inference method — "mcf" (default), "cloze", or "both".
     """
     if list_models:
         print("Available models:")
@@ -336,67 +528,102 @@ def main(
             print(f"  {k:20s} -> {v}")
         return
 
-    # Resolve models and prompts
+    if method not in ("mcf", "cloze", "both"):
+        print(f"Unknown method '{method}'. Choose from: mcf, cloze, both")
+        return
+
+    run_mcf = method in ("mcf", "both")
+    run_cloze = method in ("cloze", "both")
+
+    # Resolve models
     model_keys = [m.strip() for m in models.split(",") if m.strip()] if models else None
     if test:
         if not model_keys:
             model_keys = [list(MODELS.keys())[0]]
         pairs = [FICTIONAL_PAIRS[0], REAL_PAIRS[0]]
-        scenarios = {k: v for k, v in list(SCENARIOS.items())[:1]}
+        scenarios_mcf = {k: v for k, v in list(SCENARIOS.items())[:1]}
+        scenarios_cloze = {k: v for k, v in list(SCENARIOS_CLOZE.items())[:1]}
         print("=== SMOKE TEST MODE ===")
     else:
         model_keys = model_keys or list(MODELS.keys())
         pairs = None
-        scenarios = None
+        scenarios_mcf = None
+        scenarios_cloze = None
 
     for mk in model_keys:
         if mk not in MODELS:
             print(f"Unknown model key '{mk}'. Available: {list(MODELS.keys())}")
             return
 
-    prompts = generate_all_prompts(pairs=pairs, scenarios=scenarios)
-    print(f"Generated {len(prompts)} prompts")
-
     # Set up local results directory
     results_dir = Path(__file__).resolve().parent / "results"
     raw_dir = results_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    # Run each model on Modal (each gets its own GPU container)
     failed_models = []
-    for mk in model_keys:
-        model_id = MODELS[mk]
-        print(f"\n{'='*60}")
-        print(f"  Launching on Modal: {mk}  ({model_id})")
-        print(f"{'='*60}")
 
-        # Serialize prompts (tuples -> lists for JSON)
-        serializable_prompts = [{**p, "pair": list(p["pair"])} for p in prompts]
+    # --- MCF inference ---
+    if run_mcf:
+        prompts_mcf = generate_all_prompts(pairs=pairs, scenarios=scenarios_mcf)
+        print(f"Generated {len(prompts_mcf)} MCF prompts")
 
-        try:
-            results = run_model_inference.remote(mk, model_id, serializable_prompts)
+        for mk in model_keys:
+            model_id = MODELS[mk]
+            print(f"\n{'='*60}")
+            print(f"  Launching MCF on Modal: {mk}  ({model_id})")
+            print(f"{'='*60}")
 
-            # Save results locally
-            outpath = raw_dir / f"{mk}_logits.jsonl"
-            with open(outpath, "w") as f:
-                for record in results:
-                    f.write(json.dumps(record) + "\n")
-            print(f"  Saved {len(results)} records to {outpath}")
+            serializable_prompts = [{**p, "pair": list(p["pair"])} for p in prompts_mcf]
 
-            # Print warnings summary
-            all_warnings = [w for r in results for w in r.get("warnings", [])]
-            if all_warnings:
-                print(f"  Warnings: {len(all_warnings)} total")
-                for w in all_warnings[:5]:
-                    print(f"    - {w}")
+            try:
+                results = run_model_inference.remote(mk, model_id, serializable_prompts)
 
-        except Exception as e:
-            print(f"  FAILED: {e}")
-            failed_models.append(mk)
+                outpath = raw_dir / f"{mk}_logits.jsonl"
+                with open(outpath, "w") as f:
+                    for record in results:
+                        f.write(json.dumps(record) + "\n")
+                print(f"  Saved {len(results)} MCF records to {outpath}")
+
+                all_warnings = [w for r in results for w in r.get("warnings", [])]
+                if all_warnings:
+                    print(f"  Warnings: {len(all_warnings)} total")
+                    for w in all_warnings[:5]:
+                        print(f"    - {w}")
+
+            except Exception as e:
+                print(f"  FAILED: {e}")
+                failed_models.append(mk)
+
+    # --- Cloze inference ---
+    if run_cloze:
+        prompts_cloze = generate_all_prompts_cloze(pairs=pairs, scenarios=scenarios_cloze)
+        print(f"Generated {len(prompts_cloze)} cloze prompts")
+
+        for mk in model_keys:
+            model_id = MODELS[mk]
+            print(f"\n{'='*60}")
+            print(f"  Launching Cloze on Modal: {mk}  ({model_id})")
+            print(f"{'='*60}")
+
+            serializable_prompts = [{**p, "pair": list(p["pair"])} for p in prompts_cloze]
+
+            try:
+                results = run_model_inference_cloze.remote(mk, model_id, serializable_prompts)
+
+                outpath = raw_dir / f"{mk}_cloze.jsonl"
+                with open(outpath, "w") as f:
+                    for record in results:
+                        f.write(json.dumps(record) + "\n")
+                print(f"  Saved {len(results)} cloze records to {outpath}")
+
+            except Exception as e:
+                print(f"  FAILED (cloze): {e}")
+                if mk not in failed_models:
+                    failed_models.append(mk)
 
     # Summary
     print(f"\n{'='*60}")
-    print(f"  INFERENCE COMPLETE")
+    print(f"  INFERENCE COMPLETE (method={method})")
     print(f"{'='*60}")
     completed = [mk for mk in model_keys if mk not in failed_models]
     print(f"  Completed: {', '.join(completed) or 'none'}")
