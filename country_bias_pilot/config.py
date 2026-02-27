@@ -45,6 +45,9 @@ MODELS = {
 # positional token prior with zero cultural/phonetic association.
 CONTROL_PAIRS = [
     ("Country A", "Country B"),
+    ("Country X", "Country Y"),
+    ("Nation 1", "Nation 2"),
+    ("State Alpha", "State Beta"),
 ]
 
 # Phonetic treatments: fictional names that carry phonetic associations

@@ -64,6 +64,9 @@ MODELS = {
 
 CONTROL_PAIRS = [
     ("Country A", "Country B"),
+    ("Country X", "Country Y"),
+    ("Nation 1", "Nation 2"),
+    ("State Alpha", "State Beta"),
 ]
 
 PHONETIC_PAIRS = [
