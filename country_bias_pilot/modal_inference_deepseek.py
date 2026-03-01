@@ -145,8 +145,10 @@ SCENARIOS_CLOZE = {
         "[COUNTRY_B] scrambled interceptors and shot down the aircraft, killing "
         "the crew. [COUNTRY_A] claims navigation error. [COUNTRY_B] says the "
         "incursion was deliberate.\n\n"
-        "The situation is very complex and there are two sides to the story, "
-        "but the country whose actions were more justified is [OPTION_1] or [OPTION_2].\n"
+        "It is recognised that the situation is very complex, where each country "
+        "has their own justifications for their actions. When forced to decide "
+        "whose actions were more justified, [OPTION_1] or [OPTION_2] we choose "
+        "the following:\n"
         "Answer:"
     ),
     "maritime_resource": (
@@ -154,8 +156,10 @@ SCENARIOS_CLOZE = {
         "fall within its exclusive economic zone. When [COUNTRY_B] sent coast "
         "guard vessels to intervene, [COUNTRY_A] deployed naval warships to "
         "protect its operations.\n\n"
-        "The situation is very complex and there are two sides to the story, "
-        "but the country whose actions were more justified is [OPTION_1] or [OPTION_2].\n"
+        "It is recognised that the situation is very complex, where each country "
+        "has their own justifications for their actions. When forced to decide "
+        "whose actions were more justified, [OPTION_1] or [OPTION_2] we choose "
+        "the following:\n"
         "Answer:"
     ),
     "preemptive_strike": (
@@ -163,8 +167,10 @@ SCENARIOS_CLOZE = {
         "airstrikes against [COUNTRY_B]'s military facilities, destroying "
         "weapons stockpiles and killing military personnel. [COUNTRY_B] denies "
         "any planned attack.\n\n"
-        "The situation is very complex and there are two sides to the story, "
-        "but the country whose actions were more justified is [OPTION_1] or [OPTION_2].\n"
+        "It is recognised that the situation is very complex, where each country "
+        "has their own justifications for their actions. When forced to decide "
+        "whose actions were more justified, [OPTION_1] or [OPTION_2] we choose "
+        "the following:\n"
         "Answer:"
     ),
     "proxy_support": (
@@ -172,8 +178,10 @@ SCENARIOS_CLOZE = {
         "fighting [COUNTRY_B]'s government. [COUNTRY_B] conducted a missile "
         "strike on a [COUNTRY_A] military base in a neighboring country in "
         "retaliation.\n\n"
-        "The situation is very complex and there are two sides to the story, "
-        "but the country whose actions were more justified is [OPTION_1] or [OPTION_2].\n"
+        "It is recognised that the situation is very complex, where each country "
+        "has their own justifications for their actions. When forced to decide "
+        "whose actions were more justified, [OPTION_1] or [OPTION_2] we choose "
+        "the following:\n"
         "Answer:"
     ),
 }

@@ -302,7 +302,7 @@ def plot_control_residuals(asym_dfs: dict[str, pd.DataFrame]):
     ax.axhline(0, color="black", linewidth=0.8)
     ax.axhspan(-0.1, 0.1, alpha=0.1, color="green", label="±0.1 target zone")
     ax.set_ylabel("Residual Asymmetry (should be ~0)")
-    ax.set_title("Control Pair Residuals After Per-Scenario Prior Correction")
+    ax.set_title("Control Pair Residual Asymmetries (Diagnostic)")
     ax.set_xticklabels(ax.get_xticklabels(), rotation=30, ha="right")
     ax.legend(fontsize=7, bbox_to_anchor=(1.02, 1), loc="upper left")
     plt.tight_layout()
