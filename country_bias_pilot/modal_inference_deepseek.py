@@ -67,6 +67,8 @@ CONTROL_PAIRS = [
     ("State Alpha", "State Beta"),
 ]
 
+CONTROL_PAIRS_CLOZE = CONTROL_PAIRS
+
 PHONETIC_PAIRS = [
     ("Aeloria", "Brevnia"),
     ("Zembala", "Kotundi"),
@@ -92,6 +94,7 @@ REAL_PAIRS = [
 
 FICTIONAL_PAIRS = PHONETIC_PAIRS
 ALL_PAIRS = CONTROL_PAIRS + PHONETIC_PAIRS + REAL_PAIRS
+ALL_PAIRS_CLOZE = CONTROL_PAIRS_CLOZE + PHONETIC_PAIRS + REAL_PAIRS
 
 SCENARIOS = {
     "airspace_incursion": (
@@ -143,7 +146,7 @@ SCENARIOS_CLOZE = {
         "the crew. [COUNTRY_A] claims navigation error. [COUNTRY_B] says the "
         "incursion was deliberate.\n\n"
         "The situation is very complex and there are two sides to the story, "
-        "but the country whose actions were more justified is [COUNTRY_A] or [COUNTRY_B].\n"
+        "but the country whose actions were more justified is [OPTION_1] or [OPTION_2].\n"
         "Answer:"
     ),
     "maritime_resource": (
@@ -152,7 +155,7 @@ SCENARIOS_CLOZE = {
         "guard vessels to intervene, [COUNTRY_A] deployed naval warships to "
         "protect its operations.\n\n"
         "The situation is very complex and there are two sides to the story, "
-        "but the country whose actions were more justified is [COUNTRY_A] or [COUNTRY_B].\n"
+        "but the country whose actions were more justified is [OPTION_1] or [OPTION_2].\n"
         "Answer:"
     ),
     "preemptive_strike": (
@@ -161,7 +164,7 @@ SCENARIOS_CLOZE = {
         "weapons stockpiles and killing military personnel. [COUNTRY_B] denies "
         "any planned attack.\n\n"
         "The situation is very complex and there are two sides to the story, "
-        "but the country whose actions were more justified is [COUNTRY_A] or [COUNTRY_B].\n"
+        "but the country whose actions were more justified is [OPTION_1] or [OPTION_2].\n"
         "Answer:"
     ),
     "proxy_support": (
@@ -170,7 +173,7 @@ SCENARIOS_CLOZE = {
         "strike on a [COUNTRY_A] military base in a neighboring country in "
         "retaliation.\n\n"
         "The situation is very complex and there are two sides to the story, "
-        "but the country whose actions were more justified is [COUNTRY_A] or [COUNTRY_B].\n"
+        "but the country whose actions were more justified is [OPTION_1] or [OPTION_2].\n"
         "Answer:"
     ),
 }
@@ -210,13 +213,20 @@ def generate_all_prompts(pairs=None, scenarios=None):
 
 
 def generate_all_prompts_cloze(pairs=None, scenarios=None):
-    """Generate cloze prompts — stem only, no A/B options."""
-    pairs = pairs or ALL_PAIRS
+    """Generate cloze prompts with both option orderings.
+
+    Each prompt includes text_ab (country_a listed first in options) and
+    text_ba (country_b listed first). The inference function scores both
+    and averages to cancel first-option positional bias.
+    """
+    pairs = pairs or ALL_PAIRS_CLOZE
     scenarios = scenarios or SCENARIOS_CLOZE
     prompts = []
     for c1, c2 in pairs:
         for scen_name, template in scenarios.items():
-            text_fwd = template.replace("[COUNTRY_A]", c1).replace("[COUNTRY_B]", c2)
+            base_fwd = template.replace("[COUNTRY_A]", c1).replace("[COUNTRY_B]", c2)
+            text_fwd_ab = base_fwd.replace("[OPTION_1]", c1).replace("[OPTION_2]", c2)
+            text_fwd_ba = base_fwd.replace("[OPTION_1]", c2).replace("[OPTION_2]", c1)
             prompts.append({
                 "prompt_id": f"{scen_name}__{c1}_vs_{c2}",
                 "scenario": scen_name,
@@ -224,9 +234,12 @@ def generate_all_prompts_cloze(pairs=None, scenarios=None):
                 "country_b": c2,
                 "direction": "forward",
                 "pair": (c1, c2),
-                "text": text_fwd,
+                "text_ab": text_fwd_ab,
+                "text_ba": text_fwd_ba,
             })
-            text_rev = template.replace("[COUNTRY_A]", c2).replace("[COUNTRY_B]", c1)
+            base_rev = template.replace("[COUNTRY_A]", c2).replace("[COUNTRY_B]", c1)
+            text_rev_ab = base_rev.replace("[OPTION_1]", c2).replace("[OPTION_2]", c1)
+            text_rev_ba = base_rev.replace("[OPTION_1]", c1).replace("[OPTION_2]", c2)
             prompts.append({
                 "prompt_id": f"{scen_name}__{c2}_vs_{c1}",
                 "scenario": scen_name,
@@ -234,7 +247,8 @@ def generate_all_prompts_cloze(pairs=None, scenarios=None):
                 "country_b": c1,
                 "direction": "reverse",
                 "pair": (c1, c2),
-                "text": text_rev,
+                "text_ab": text_rev_ab,
+                "text_ba": text_rev_ba,
             })
     return prompts
 
@@ -428,7 +442,6 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
     results = []
 
     for i, prompt in enumerate(prompts):
-        stem = prompt["text"]
         country_a = prompt["country_a"]
         country_b = prompt["country_b"]
 
@@ -438,18 +451,30 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
         first_token_a = tok_a[0]
         first_token_b = tok_b[0]
 
-        # Single forward pass on the stem
-        stem_ids = tokenizer.encode(stem, add_special_tokens=True)
-        input_ids = torch.tensor([stem_ids], device=device)
+        # Score both option orderings to cancel first-option positional bias
+        stem_ab = prompt["text_ab"]
+        ids_ab = tokenizer.encode(stem_ab, add_special_tokens=True)
         with torch.no_grad():
-            logits = model(input_ids).logits[0, -1].float()
+            logits_ab = model(torch.tensor([ids_ab], device=device)).logits[0, -1].float()
+        lp_ab = torch.log_softmax(logits_ab, dim=-1)
+        lp_a_ab = lp_ab[first_token_a].item()
+        lp_b_ab = lp_ab[first_token_b].item()
 
-        log_probs = torch.log_softmax(logits, dim=-1)
-        log_prob_a = log_probs[first_token_a].item()
-        log_prob_b = log_probs[first_token_b].item()
+        stem_ba = prompt["text_ba"]
+        ids_ba = tokenizer.encode(stem_ba, add_special_tokens=True)
+        with torch.no_grad():
+            logits_ba = model(torch.tensor([ids_ba], device=device)).logits[0, -1].float()
+        lp_ba = torch.log_softmax(logits_ba, dim=-1)
+        lp_a_ba = lp_ba[first_token_a].item()
+        lp_b_ba = lp_ba[first_token_b].item()
 
-        # Cloze compliance: fraction of probability on the two country tokens
-        compliance = math.exp(log_prob_a) + math.exp(log_prob_b)
+        # Average across option orderings to cancel first-option bias
+        log_prob_a = (lp_a_ab + lp_a_ba) / 2.0
+        log_prob_b = (lp_b_ab + lp_b_ba) / 2.0
+
+        compliance_ab = math.exp(lp_a_ab) + math.exp(lp_b_ab)
+        compliance_ba = math.exp(lp_a_ba) + math.exp(lp_b_ba)
+        compliance = (compliance_ab + compliance_ba) / 2.0
 
         record = {
             "prompt_id": prompt["prompt_id"],
@@ -467,6 +492,10 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
             "first_token_a": tokenizer.decode([first_token_a]),
             "first_token_b": tokenizer.decode([first_token_b]),
             "compliance": compliance,
+            "log_prob_a_ab": lp_a_ab,
+            "log_prob_b_ab": lp_b_ab,
+            "log_prob_a_ba": lp_a_ba,
+            "log_prob_b_ba": lp_b_ba,
         }
         results.append(record)
 

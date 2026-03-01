@@ -9,7 +9,7 @@ import numpy as np
 
 from config import (
     RAW_DIR, ASYMMETRY_DIR, SUMMARY_DIR,
-    CONTROL_PAIRS, PHONETIC_PAIRS, FICTIONAL_PAIRS, REAL_PAIRS, ALL_PAIRS,
+    CONTROL_PAIRS, CONTROL_PAIRS_CLOZE, PHONETIC_PAIRS, FICTIONAL_PAIRS, REAL_PAIRS, ALL_PAIRS,
     CONTROL_ASYMMETRY_FLAG, COMPLIANCE_WARN,
 )
 
@@ -274,9 +274,9 @@ def load_cloze_results(model_name: str) -> pd.DataFrame:
 def _estimate_cloze_priors(df: pd.DataFrame) -> dict[str, float]:
     """Estimate per-scenario cloze priors from control pairs.
 
-    Uses byte-normalized log-prob difference: log_prob_a_norm - log_prob_b_norm.
+    Uses first-token log-prob difference: log_prob_a_norm - log_prob_b_norm.
     """
-    control_set = {tuple(p) for p in CONTROL_PAIRS}
+    control_set = {tuple(p) for p in CONTROL_PAIRS_CLOZE}
     ctrl = df[df["pair"].apply(lambda p: tuple(p) in control_set)]
 
     if ctrl.empty:

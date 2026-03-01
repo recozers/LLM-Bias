@@ -82,6 +82,12 @@ FICTIONAL_PAIRS = PHONETIC_PAIRS
 
 ALL_PAIRS = CONTROL_PAIRS + PHONETIC_PAIRS + REAL_PAIRS
 
+# Cloze controls: same as MCF. Both names in each pair share a first token
+# ("Country"), so log_prob difference is exactly 0 — validates the method.
+CONTROL_PAIRS_CLOZE = CONTROL_PAIRS
+
+ALL_PAIRS_CLOZE = CONTROL_PAIRS_CLOZE + PHONETIC_PAIRS + REAL_PAIRS
+
 # ---------------------------------------------------------------------------
 # Scenario templates
 # ---------------------------------------------------------------------------
