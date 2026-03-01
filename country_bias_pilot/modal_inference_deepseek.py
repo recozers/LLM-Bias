@@ -378,11 +378,12 @@ def run_model_inference(model_name: str, model_id: str, prompts: list[dict]) -> 
     image=image,
     gpu="A100",
     volumes={"/cache": model_cache},
-    timeout=1800,
+    timeout=3600,
     secrets=[modal.Secret.from_name("huggingface-secret")],
 )
 def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict]) -> list[dict]:
-    """Load a model on a remote GPU and score country name continuations (cloze)."""
+    """Load a model on a remote GPU and score first token of country names (cloze)."""
+    import math
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -423,11 +424,24 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
         country_a = prompt["country_a"]
         country_b = prompt["country_b"]
 
-        log_prob_a, n_tokens_a = _score_continuation(model, tokenizer, device, stem, country_a)
-        log_prob_b, n_tokens_b = _score_continuation(model, tokenizer, device, stem, country_b)
+        # Get first token ID for each country
+        tok_a = tokenizer.encode(" " + country_a, add_special_tokens=False)
+        tok_b = tokenizer.encode(" " + country_b, add_special_tokens=False)
+        first_token_a = tok_a[0]
+        first_token_b = tok_b[0]
 
-        n_bytes_a = len(country_a.encode("utf-8"))
-        n_bytes_b = len(country_b.encode("utf-8"))
+        # Single forward pass on the stem
+        stem_ids = tokenizer.encode(stem, add_special_tokens=True)
+        input_ids = torch.tensor([stem_ids], device=device)
+        with torch.no_grad():
+            logits = model(input_ids).logits[0, -1].float()
+
+        log_probs = torch.log_softmax(logits, dim=-1)
+        log_prob_a = log_probs[first_token_a].item()
+        log_prob_b = log_probs[first_token_b].item()
+
+        # Cloze compliance: fraction of probability on the two country tokens
+        compliance = math.exp(log_prob_a) + math.exp(log_prob_b)
 
         record = {
             "prompt_id": prompt["prompt_id"],
@@ -440,12 +454,11 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
             "method": "cloze",
             "log_prob_a": log_prob_a,
             "log_prob_b": log_prob_b,
-            "log_prob_a_norm": log_prob_a / n_bytes_a,
-            "log_prob_b_norm": log_prob_b / n_bytes_b,
-            "n_tokens_a": n_tokens_a,
-            "n_tokens_b": n_tokens_b,
-            "n_bytes_a": n_bytes_a,
-            "n_bytes_b": n_bytes_b,
+            "log_prob_a_norm": log_prob_a,
+            "log_prob_b_norm": log_prob_b,
+            "first_token_a": tokenizer.decode([first_token_a]),
+            "first_token_b": tokenizer.decode([first_token_b]),
+            "compliance": compliance,
         }
         results.append(record)
 
@@ -456,42 +469,6 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
 
     model_cache.commit()
     return results
-
-
-def _score_continuation(model, tokenizer, device, stem: str, continuation: str) -> tuple[float, int]:
-    """Compute sum of log-probs for continuation tokens given stem.
-
-    Returns (sum_log_prob, n_tokens).
-    """
-    import torch
-
-    stem_ids = tokenizer.encode(stem, add_special_tokens=True)
-    full_text = stem + " " + continuation
-    full_ids = tokenizer.encode(full_text, add_special_tokens=True)
-
-    n_stem = len(stem_ids)
-    n_full = len(full_ids)
-    n_continuation = n_full - n_stem
-
-    if n_continuation <= 0:
-        cont_ids = tokenizer.encode(" " + continuation, add_special_tokens=False)
-        n_continuation = len(cont_ids)
-        n_stem = n_full - n_continuation
-
-    input_ids = torch.tensor([full_ids], device=device)
-
-    with torch.no_grad():
-        outputs = model(input_ids)
-
-    logits = outputs.logits[0].float()
-    log_probs = torch.log_softmax(logits, dim=-1)
-
-    total_log_prob = 0.0
-    for t in range(n_stem, n_full):
-        token_id = full_ids[t]
-        total_log_prob += log_probs[t - 1, token_id].item()
-
-    return total_log_prob, n_continuation
 
 
 # ---------------------------------------------------------------------------

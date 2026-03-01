@@ -300,7 +300,7 @@ def _estimate_cloze_priors(df: pd.DataFrame) -> dict[str, float]:
 def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
     """Compute asymmetry from cloze log-prob results.
 
-    Uses byte-normalized log-probs as the logit difference analog:
+    Uses first-token log-probs as the logit difference analog:
       logit_diff = log_prob_a_norm - log_prob_b_norm
     Then applies the same per-scenario prior correction and sigmoid
     conversion as the MCF path.
@@ -353,8 +353,8 @@ def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
                 "p_forward": p_forward,
                 "p_reverse": p_reverse,
                 "asymmetry": asymmetry,
-                "compliance_fwd": 1.0,  # no compliance metric for cloze
-                "compliance_rev": 1.0,
+                "compliance_fwd": fwd_row.get("compliance", 1.0),
+                "compliance_rev": rev_row.get("compliance", 1.0),
                 "model": fwd_row["model"],
             })
 
