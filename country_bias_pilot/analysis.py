@@ -300,13 +300,17 @@ def _estimate_cloze_priors(df: pd.DataFrame) -> dict[str, float]:
 def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
     """Compute asymmetry from cloze log-prob results.
 
-    Uses first-token log-probs as the logit difference analog:
-      logit_diff = log_prob_a_norm - log_prob_b_norm
-    Then applies the same per-scenario prior correction and sigmoid
-    conversion as the MCF path.
-    """
-    priors = _estimate_cloze_priors(df)
+    No prior correction is applied — cloze scores country name tokens
+    directly, so control-pair token priors (A/B/X/Y) are not transferable.
+    Controls are retained to verify low positional/role bias.
 
+    For a canonical pair (c1, c2):
+      forward: country_a=c1  → p_forward = sigmoid(log_prob_c1 - log_prob_c2)
+      reverse: country_a=c2  → p_reverse = sigmoid(log_prob_c2 - log_prob_c1)
+      asymmetry = p_forward + p_reverse - 1
+        > 0 → model favors c1
+        < 0 → model favors c2
+    """
     def _sigmoid(x):
         return 1.0 / (1.0 + np.exp(-x))
 
@@ -328,16 +332,11 @@ def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
             fwd_row = fwd.iloc[0]
             rev_row = rev.iloc[0]
 
-            token_prior = priors.get(scenario, priors["_global"])
-
             logit_diff_fwd = fwd_row["log_prob_a_norm"] - fwd_row["log_prob_b_norm"]
             logit_diff_rev = rev_row["log_prob_a_norm"] - rev_row["log_prob_b_norm"]
 
-            adj_fwd = logit_diff_fwd - token_prior
-            adj_rev = logit_diff_rev - token_prior
-
-            p_forward = _sigmoid(adj_fwd)
-            p_reverse = _sigmoid(adj_rev)
+            p_forward = _sigmoid(logit_diff_fwd)
+            p_reverse = _sigmoid(logit_diff_rev)
 
             asymmetry = p_forward + p_reverse - 1.0
 
@@ -347,9 +346,6 @@ def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
                 "scenario": scenario,
                 "logit_diff_fwd": logit_diff_fwd,
                 "logit_diff_rev": logit_diff_rev,
-                "token_prior": token_prior,
-                "adj_logit_diff_fwd": adj_fwd,
-                "adj_logit_diff_rev": adj_rev,
                 "p_forward": p_forward,
                 "p_reverse": p_reverse,
                 "asymmetry": asymmetry,

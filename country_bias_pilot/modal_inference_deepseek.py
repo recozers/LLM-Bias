@@ -445,28 +445,48 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
         country_a = prompt["country_a"]
         country_b = prompt["country_b"]
 
-        # Get first token ID for each country
+        # Tokenize each country name (with leading space for natural BPE)
         tok_a = tokenizer.encode(" " + country_a, add_special_tokens=False)
         tok_b = tokenizer.encode(" " + country_b, add_special_tokens=False)
-        first_token_a = tok_a[0]
-        first_token_b = tok_b[0]
+
+        # Find shared token prefix (e.g. "Country A" / "Country B" both
+        # start with the "Country" token — prefill it and score "A" vs "B")
+        shared_prefix_len = 0
+        for ta, tb in zip(tok_a, tok_b):
+            if ta == tb:
+                shared_prefix_len += 1
+            else:
+                break
+
+        if shared_prefix_len > 0 and shared_prefix_len < min(len(tok_a), len(tok_b)):
+            prefill_ids = tok_a[:shared_prefix_len]
+            score_token_a = tok_a[shared_prefix_len]
+            score_token_b = tok_b[shared_prefix_len]
+            if i < 20:
+                print(f"  [prefill] {country_a!r} vs {country_b!r}: "
+                      f"prefill={tokenizer.decode(prefill_ids)!r}, "
+                      f"score {tokenizer.decode([score_token_a])!r} vs {tokenizer.decode([score_token_b])!r}")
+        else:
+            prefill_ids = []
+            score_token_a = tok_a[0]
+            score_token_b = tok_b[0]
 
         # Score both option orderings to cancel first-option positional bias
         stem_ab = prompt["text_ab"]
-        ids_ab = tokenizer.encode(stem_ab, add_special_tokens=True)
+        ids_ab = tokenizer.encode(stem_ab, add_special_tokens=True) + prefill_ids
         with torch.no_grad():
             logits_ab = model(torch.tensor([ids_ab], device=device)).logits[0, -1].float()
         lp_ab = torch.log_softmax(logits_ab, dim=-1)
-        lp_a_ab = lp_ab[first_token_a].item()
-        lp_b_ab = lp_ab[first_token_b].item()
+        lp_a_ab = lp_ab[score_token_a].item()
+        lp_b_ab = lp_ab[score_token_b].item()
 
         stem_ba = prompt["text_ba"]
-        ids_ba = tokenizer.encode(stem_ba, add_special_tokens=True)
+        ids_ba = tokenizer.encode(stem_ba, add_special_tokens=True) + prefill_ids
         with torch.no_grad():
             logits_ba = model(torch.tensor([ids_ba], device=device)).logits[0, -1].float()
         lp_ba = torch.log_softmax(logits_ba, dim=-1)
-        lp_a_ba = lp_ba[first_token_a].item()
-        lp_b_ba = lp_ba[first_token_b].item()
+        lp_a_ba = lp_ba[score_token_a].item()
+        lp_b_ba = lp_ba[score_token_b].item()
 
         # Average across option orderings to cancel first-option bias
         log_prob_a = (lp_a_ab + lp_a_ba) / 2.0
@@ -489,8 +509,9 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
             "log_prob_b": log_prob_b,
             "log_prob_a_norm": log_prob_a,
             "log_prob_b_norm": log_prob_b,
-            "first_token_a": tokenizer.decode([first_token_a]),
-            "first_token_b": tokenizer.decode([first_token_b]),
+            "first_token_a": tokenizer.decode([score_token_a]),
+            "first_token_b": tokenizer.decode([score_token_b]),
+            "prefill": tokenizer.decode(prefill_ids) if prefill_ids else "",
             "compliance": compliance,
             "log_prob_a_ab": lp_a_ab,
             "log_prob_b_ab": lp_b_ab,
@@ -544,7 +565,7 @@ def main(
     if test:
         if not model_keys:
             model_keys = [list(MODELS.keys())[0]]
-        pairs = [FICTIONAL_PAIRS[0], REAL_PAIRS[0]]
+        pairs = [CONTROL_PAIRS[0], PHONETIC_PAIRS[0], REAL_PAIRS[0]]
         scenarios_mcf = {k: v for k, v in list(SCENARIOS.items())[:1]}
         scenarios_cloze = {k: v for k, v in list(SCENARIOS_CLOZE.items())[:1]}
         print("=== SMOKE TEST MODE (DeepSeek, transformers<5) ===")
