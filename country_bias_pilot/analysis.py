@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 def load_raw_results(model_name: str) -> pd.DataFrame:
     """Load JSONL raw results into a DataFrame."""
-    path = RAW_DIR / f"{model_name}_logits.jsonl"
+    path = RAW_DIR / "mcf" / f"{model_name}_logits.jsonl"
+    if not path.exists():
+        path = RAW_DIR / f"{model_name}_logits.jsonl"
     records = []
     with open(path) as f:
         for line in f:
@@ -261,7 +263,9 @@ def run_analysis(model_name: str) -> dict:
 
 def load_cloze_results(model_name: str) -> pd.DataFrame:
     """Load cloze JSONL raw results into a DataFrame."""
-    path = RAW_DIR / f"{model_name}_cloze.jsonl"
+    path = RAW_DIR / "cloze" / f"{model_name}_cloze.jsonl"
+    if not path.exists():
+        path = RAW_DIR / f"{model_name}_cloze.jsonl"
     records = []
     with open(path) as f:
         for line in f:
@@ -305,11 +309,21 @@ def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
     Controls are retained to verify low positional/role bias.
 
     For a canonical pair (c1, c2):
-      forward: country_a=c1  → p_forward = sigmoid(log_prob_c1 - log_prob_c2)
-      reverse: country_a=c2  → p_reverse = sigmoid(log_prob_c2 - log_prob_c1)
-      asymmetry = p_forward + p_reverse - 1
+      forward: country_a=c1  → p_c1_fwd = sigmoid(log_prob_c1 - log_prob_c2)
+      reverse: country_a=c2  → p_c2_rev = sigmoid(log_prob_c2 - log_prob_c1)
+                                p_c1_rev = 1 - p_c2_rev
+
+    Unlike MCF (where both directions score the same A/B tokens and
+    p_forward + p_reverse - 1 correctly cancels positional bias), cloze
+    scores actual country name tokens.  p_forward measures P(c1 > c2)
+    and p_reverse measures P(c2 > c1), so:
+
+      asymmetry = p_c1_fwd - p_c2_rev  =  p_forward - p_reverse
         > 0 → model favors c1
         < 0 → model favors c2
+
+    Equivalently: avg P(c1 favored) across both roles minus 0.5,
+    scaled by 2.
     """
     def _sigmoid(x):
         return 1.0 / (1.0 + np.exp(-x))
@@ -338,7 +352,10 @@ def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
             p_forward = _sigmoid(logit_diff_fwd)
             p_reverse = _sigmoid(logit_diff_rev)
 
-            asymmetry = p_forward + p_reverse - 1.0
+            # p_forward = P(c1 favored | c1 in COUNTRY_A role)
+            # p_reverse = P(c2 favored | c2 in COUNTRY_A role)
+            # Country bias toward c1 = p_forward - p_reverse
+            asymmetry = p_forward - p_reverse
 
             rows.append({
                 "country_1": c1,

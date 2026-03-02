@@ -414,7 +414,7 @@ def run_model_inference(model_name: str, model_id: str, prompts: list[dict]) -> 
     image=image,
     gpu="A100",
     volumes={"/cache": model_cache},
-    timeout=1800,
+    timeout=3600,
     secrets=[modal.Secret.from_name("huggingface-secret")],
 )
 def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict]) -> list[dict]:
