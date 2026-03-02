@@ -14,15 +14,20 @@ from config import PLOTS_DIR, CONTROL_PAIRS, PHONETIC_PAIRS, FICTIONAL_PAIRS
 
 logger = logging.getLogger(__name__)
 
-sns.set_theme(style="whitegrid", font_scale=1.1)
+sns.set_theme(style="ticks", font_scale=1.0)
 
 
 def _pair_label(row) -> str:
     return f"{row['country_1']} vs {row['country_2']}"
 
 
-def plot_heatmap(asym_dfs: dict[str, pd.DataFrame]):
-    """Heatmap: asymmetry by pair × model.
+_WESTERN = ["llama3-8b", "mistral-7b", "falcon3-7b", "gemma2-9b", "gpt-oss-20b"]
+_CHINESE = ["qwen2.5-7b", "deepseek-v2-lite", "deepseek-moe-16b"]
+_CLR_W, _CLR_C = "#4878CF", "#D65F5F"
+
+
+def plot_heatmap(asym_dfs: dict[str, pd.DataFrame], suffix: str = "", title_extra: str = ""):
+    """Dot strip plot: asymmetry by pair, one dot per model.
 
     asym_dfs: {model_name: asymmetry DataFrame from compute_asymmetry()}
     """
@@ -30,41 +35,64 @@ def plot_heatmap(asym_dfs: dict[str, pd.DataFrame]):
     for model, df in asym_dfs.items():
         agg = df.groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
         agg["model"] = model
+        agg["group"] = "Western" if model in _WESTERN else "Chinese"
         records.append(agg)
     combined = pd.concat(records, ignore_index=True)
     combined["pair"] = combined.apply(_pair_label, axis=1)
 
-    pivot = combined.pivot_table(index="pair", columns="model", values="asymmetry")
-
-    # Separate control, phonetic, and real for ordering
+    # Order: control, phonetic, real — with gaps between sections
     ctrl_set = {f"{a} vs {b}" for a, b in CONTROL_PAIRS}
     phon_set = {f"{a} vs {b}" for a, b in PHONETIC_PAIRS}
-    ctrl_labels = [p for p in pivot.index if p in ctrl_set]
-    phon_labels = [p for p in pivot.index if p in phon_set]
-    real_labels = [p for p in pivot.index if p not in ctrl_set and p not in phon_set]
-    pivot = pivot.reindex(ctrl_labels + phon_labels + real_labels)
+    all_pairs = sorted(combined["pair"].unique())
+    ctrl_labels = [p for p in all_pairs if p in ctrl_set]
+    phon_labels = [p for p in all_pairs if p in phon_set]
+    real_labels = [p for p in all_pairs if p not in ctrl_set and p not in phon_set]
 
-    fig, ax = plt.subplots(figsize=(max(8, len(asym_dfs) * 2.5), max(10, len(pivot) * 0.5)))
-    vmax = max(0.3, pivot.abs().max().max())
-    sns.heatmap(
-        pivot, annot=True, fmt=".3f", center=0, cmap="RdBu_r",
-        vmin=-vmax, vmax=vmax, linewidths=0.5, ax=ax,
-    )
-    ax.set_title("Country Preference Asymmetry by Pair × Model")
-    ax.set_ylabel("")
-    ax.set_xlabel("")
-
-    # Draw lines between control/phonetic/real sections
+    # Build y-positions with gaps between sections
+    y_positions = {}
+    y = 0
+    for label in ctrl_labels:
+        y_positions[label] = y
+        y += 1
     if ctrl_labels and (phon_labels or real_labels):
-        ax.axhline(y=len(ctrl_labels), color="black", linewidth=2)
+        y += 0.8  # gap
+    for label in phon_labels:
+        y_positions[label] = y
+        y += 1
     if phon_labels and real_labels:
-        ax.axhline(y=len(ctrl_labels) + len(phon_labels), color="black", linewidth=2)
+        y += 0.8  # gap
+    for label in real_labels:
+        y_positions[label] = y
+        y += 1
 
+    combined["y"] = combined["pair"].map(y_positions)
+
+    fig, ax = plt.subplots(figsize=(10, max(8, y * 0.45)))
+
+    for group, color, marker in [("Western", _CLR_W, "o"), ("Chinese", _CLR_C, "^")]:
+        subset = combined[combined["group"] == group]
+        ax.scatter(
+            subset["asymmetry"], subset["y"],
+            c=color, marker=marker, s=35, alpha=0.65,
+            label=f"{group} models", zorder=3,
+        )
+
+    ax.axvline(0, color="black", linewidth=0.8, zorder=1)
+    ax.set_yticks(list(y_positions.values()))
+    ax.set_yticklabels(list(y_positions.keys()), fontsize=9)
+    ax.invert_yaxis()
+    ax.set_xlabel("Asymmetry (positive = favors Country 1)")
+    ax.set_title(f"Country Preference Asymmetry{title_extra}", fontsize=12, pad=10)
+    ax.legend(fontsize=8, loc="lower right")
+    ax.grid(axis="x", alpha=0.3, linewidth=0.5)
+    ax.tick_params(axis="y", length=0)
+    sns.despine(ax=ax, left=True)
     plt.tight_layout()
-    path = PLOTS_DIR / "heatmap_pair_model.png"
+
+    path = PLOTS_DIR / f"heatmap_pair_model{suffix}.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
-    logger.info(f"Saved heatmap to {path}")
+    logger.info(f"Saved dot strip plot to {path}")
 
 
 def plot_bar_chart(asym_dfs: dict[str, pd.DataFrame]):
@@ -238,19 +266,15 @@ def plot_phonetic_bias(asym_dfs: dict[str, pd.DataFrame]):
     logger.info(f"Saved phonetic bias chart to {path}")
 
 
-def plot_western_vs_chinese(asym_dfs: dict[str, pd.DataFrame]):
-    """Compare Western vs Chinese model biases for real pairs."""
-    western = ["llama3-8b", "mistral-7b", "falcon3-7b", "gemma2-9b", "gpt-oss-20b"]
-    chinese = ["qwen2.5-7b", "deepseek-v2-lite", "deepseek-moe-16b"]
-
+def plot_western_vs_chinese(asym_dfs: dict[str, pd.DataFrame], suffix: str = "", title_extra: str = ""):
+    """Forest plot: Western vs Chinese model group means for real pairs."""
     records = []
     non_real = {tuple(p) for p in CONTROL_PAIRS + PHONETIC_PAIRS}
     for model, df in asym_dfs.items():
         real = df[~df.apply(lambda r: (r["country_1"], r["country_2"]) in non_real, axis=1)]
         agg = real.groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
         agg["model"] = model
-        group = "Western" if model in western else "Chinese" if model in chinese else "Other"
-        agg["group"] = group
+        agg["group"] = "Western" if model in _WESTERN else "Chinese" if model in _CHINESE else "Other"
         records.append(agg)
     combined = pd.concat(records, ignore_index=True)
     combined["pair"] = combined.apply(_pair_label, axis=1)
@@ -258,30 +282,61 @@ def plot_western_vs_chinese(asym_dfs: dict[str, pd.DataFrame]):
     # Aggregate by group
     group_agg = combined.groupby(["pair", "group"])["asymmetry"].agg(["mean", "std"]).reset_index()
 
-    fig, ax = plt.subplots(figsize=(14, 6))
-    pairs_order = sorted(group_agg["pair"].unique())
-    x = np.arange(len(pairs_order))
+    # Order pairs by absolute difference between Western and Chinese means
+    pivot_means = group_agg.pivot(index="pair", columns="group", values="mean").fillna(0)
+    if "Western" in pivot_means.columns and "Chinese" in pivot_means.columns:
+        order_key = (pivot_means["Western"] - pivot_means["Chinese"]).abs()
+    else:
+        order_key = pivot_means.iloc[:, 0].abs()
+    pairs_order = order_key.sort_values(ascending=True).index.tolist()
 
-    for i, (group, color) in enumerate([("Western", "#2166ac"), ("Chinese", "#b2182b")]):
+    fig, ax = plt.subplots(figsize=(10, max(5, len(pairs_order) * 0.5)))
+    y_offset = 0.12  # vertical offset so dots don't overlap
+
+    for group, color, marker, dy in [
+        ("Western", _CLR_W, "o", -y_offset),
+        ("Chinese", _CLR_C, "^", y_offset),
+    ]:
         gdata = group_agg[group_agg["group"] == group].set_index("pair").reindex(pairs_order)
-        ax.bar(x + i * 0.35, gdata["mean"], 0.35, yerr=gdata["std"], label=group,
-               color=color, alpha=0.8, capsize=3)
+        y = np.arange(len(pairs_order)) + dy
+        ax.errorbar(
+            gdata["mean"], y,
+            xerr=gdata["std"], fmt="none",
+            ecolor=color, elinewidth=1.2, capsize=3, capthick=1.2, alpha=0.6, zorder=2,
+        )
+        ax.scatter(
+            gdata["mean"], y,
+            c=color, marker=marker, s=50, label=f"{group} models",
+            zorder=3, edgecolors="white", linewidths=0.5,
+        )
+        # Connect Western and Chinese dots for each pair
+        for i, pair in enumerate(pairs_order):
+            w_val = group_agg[(group_agg["pair"] == pair) & (group_agg["group"] == "Western")]["mean"]
+            c_val = group_agg[(group_agg["pair"] == pair) & (group_agg["group"] == "Chinese")]["mean"]
+            if not w_val.empty and not c_val.empty:
+                ax.plot(
+                    [w_val.values[0], c_val.values[0]],
+                    [i - y_offset, i + y_offset],
+                    color="gray", linewidth=0.6, alpha=0.4, zorder=1,
+                )
 
-    ax.set_xticks(x + 0.175)
-    ax.set_xticklabels(pairs_order, rotation=45, ha="right")
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.set_ylabel("Mean Asymmetry (positive = favors Country 1)")
-    ax.set_title("Western vs Chinese Model Bias Comparison (Real Pairs)")
-    ax.legend()
+    ax.axvline(0, color="black", linewidth=0.8, zorder=1)
+    ax.set_yticks(np.arange(len(pairs_order)))
+    ax.set_yticklabels(pairs_order, fontsize=9)
+    ax.set_xlabel("Mean Asymmetry (positive = favors Country 1)")
+    ax.set_title(f"Western vs Chinese Model Bias{title_extra}", fontsize=12, pad=10)
+    ax.legend(fontsize=8, loc="lower right")
+    ax.tick_params(axis="y", length=0)
+    sns.despine(ax=ax, left=True)
     plt.tight_layout()
 
-    path = PLOTS_DIR / "western_vs_chinese.png"
+    path = PLOTS_DIR / f"western_vs_chinese{suffix}.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
-    logger.info(f"Saved western vs chinese to {path}")
+    logger.info(f"Saved forest plot to {path}")
 
 
-def plot_control_residuals(asym_dfs: dict[str, pd.DataFrame]):
+def plot_control_residuals(asym_dfs: dict[str, pd.DataFrame], suffix: str = "", title_extra: str = ""):
     """Show control pair residual asymmetries as a validation check."""
     ctrl_set = {tuple(p) for p in CONTROL_PAIRS}
     records = []
@@ -302,12 +357,12 @@ def plot_control_residuals(asym_dfs: dict[str, pd.DataFrame]):
     ax.axhline(0, color="black", linewidth=0.8)
     ax.axhspan(-0.1, 0.1, alpha=0.1, color="green", label="±0.1 target zone")
     ax.set_ylabel("Residual Asymmetry (should be ~0)")
-    ax.set_title("Control Pair Residual Asymmetries (Diagnostic)")
+    ax.set_title(f"Control Pair Residual Asymmetries (Diagnostic){title_extra}")
     ax.set_xticklabels(ax.get_xticklabels(), rotation=30, ha="right")
     ax.legend(fontsize=7, bbox_to_anchor=(1.02, 1), loc="upper left")
     plt.tight_layout()
 
-    path = PLOTS_DIR / "control_residuals.png"
+    path = PLOTS_DIR / f"control_residuals{suffix}.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
     logger.info(f"Saved control residuals to {path}")
