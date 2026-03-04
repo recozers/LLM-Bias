@@ -304,26 +304,24 @@ def _estimate_cloze_priors(df: pd.DataFrame) -> dict[str, float]:
 def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
     """Compute asymmetry from cloze log-prob results.
 
-    No prior correction is applied — cloze scores country name tokens
-    directly, so control-pair token priors (A/B/X/Y) are not transferable.
-    Controls are retained to verify low positional/role bias.
+    Cloze scores country name tokens directly, so MCF-style control priors
+    over A/B tokens are not transferable. Instead, we estimate and remove
+    role prior per (pair, scenario) from the forward/reverse decomposition:
+
+      d_fwd = log_prob(c1 in A role) - log_prob(c2 in B role)
+      d_rev = log_prob(c2 in A role) - log_prob(c1 in B role)
+
+      role_prior = (d_fwd + d_rev) / 2
+      pref_logit = (d_fwd - d_rev) / 2
 
     For a canonical pair (c1, c2):
-      forward: country_a=c1  → p_c1_fwd = sigmoid(log_prob_c1 - log_prob_c2)
-      reverse: country_a=c2  → p_c2_rev = sigmoid(log_prob_c2 - log_prob_c1)
-                                p_c1_rev = 1 - p_c2_rev
-
-    Unlike MCF (where both directions score the same A/B tokens and
-    p_forward + p_reverse - 1 correctly cancels positional bias), cloze
-    scores actual country name tokens.  p_forward measures P(c1 > c2)
-    and p_reverse measures P(c2 > c1), so:
-
-      asymmetry = p_c1_fwd - p_c2_rev  =  p_forward - p_reverse
+      p_forward = sigmoid(d_fwd - role_prior)
+      p_reverse = sigmoid(d_rev - role_prior)
+      asymmetry = p_forward - p_reverse
         > 0 → model favors c1
         < 0 → model favors c2
 
-    Equivalently: avg P(c1 favored) across both roles minus 0.5,
-    scaled by 2.
+    We also retain raw (no role-prior correction) scores for diagnostics.
     """
     def _sigmoid(x):
         return 1.0 / (1.0 + np.exp(-x))
@@ -349,13 +347,18 @@ def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
             logit_diff_fwd = fwd_row["log_prob_a_norm"] - fwd_row["log_prob_b_norm"]
             logit_diff_rev = rev_row["log_prob_a_norm"] - rev_row["log_prob_b_norm"]
 
-            p_forward = _sigmoid(logit_diff_fwd)
-            p_reverse = _sigmoid(logit_diff_rev)
+            # Decompose into role prior and preference signal in log-odds space.
+            role_prior = 0.5 * (logit_diff_fwd + logit_diff_rev)
+            pref_logit = 0.5 * (logit_diff_fwd - logit_diff_rev)
 
-            # p_forward = P(c1 favored | c1 in COUNTRY_A role)
-            # p_reverse = P(c2 favored | c2 in COUNTRY_A role)
-            # Country bias toward c1 = p_forward - p_reverse
+            # Prior-corrected directional probabilities.
+            p_forward = _sigmoid(logit_diff_fwd - role_prior)
+            p_reverse = _sigmoid(logit_diff_rev - role_prior)
             asymmetry = p_forward - p_reverse
+
+            # Raw probabilities without role-prior correction (for diagnostics).
+            p_forward_raw = _sigmoid(logit_diff_fwd)
+            p_reverse_raw = _sigmoid(logit_diff_rev)
 
             rows.append({
                 "country_1": c1,
@@ -363,9 +366,14 @@ def compute_asymmetry_cloze(df: pd.DataFrame) -> pd.DataFrame:
                 "scenario": scenario,
                 "logit_diff_fwd": logit_diff_fwd,
                 "logit_diff_rev": logit_diff_rev,
+                "role_prior_logit": role_prior,
+                "preference_logit": pref_logit,
                 "p_forward": p_forward,
                 "p_reverse": p_reverse,
                 "asymmetry": asymmetry,
+                "p_forward_raw": p_forward_raw,
+                "p_reverse_raw": p_reverse_raw,
+                "asymmetry_raw": p_forward_raw - p_reverse_raw,
                 "compliance_fwd": fwd_row.get("compliance", 1.0),
                 "compliance_rev": rev_row.get("compliance", 1.0),
                 "model": fwd_row["model"],
