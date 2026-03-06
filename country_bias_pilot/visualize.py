@@ -1,498 +1,363 @@
-"""Plotting functions for bias analysis results."""
+"""Plotting functions for cloze bias analysis results."""
 
 import logging
 
 import matplotlib
-matplotlib.use("Agg")  # headless-safe backend — must precede pyplot import
+matplotlib.use("Agg")
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from config import PLOTS_DIR, CONTROL_PAIRS, PHONETIC_PAIRS, FICTIONAL_PAIRS
+from config import PLOTS_DIR, CONTROL_PAIRS, PHONETIC_PAIRS
 
 logger = logging.getLogger(__name__)
 
-sns.set_theme(style="ticks", font_scale=1.0)
+sns.set_theme(style="ticks", font_scale=1.05)
+
+_WESTERN = ["llama3-8b", "mistral-7b", "gemma2-9b", "gpt-oss-20b"]
+_CHINESE = ["qwen2.5-7b", "deepseek-v2-lite", "deepseek-moe-16b"]
+_OTHER = ["falcon3-7b"]  # TII, UAE
+_CLR_W, _CLR_C, _CLR_O = "#2166ac", "#b2182b", "#1b7837"
+
+_CTRL_SET = {tuple(p) for p in CONTROL_PAIRS}
+_PHON_SET = {tuple(p) for p in PHONETIC_PAIRS}
 
 
 def _pair_label(row) -> str:
     return f"{row['country_1']} vs {row['country_2']}"
 
 
-_WESTERN = ["llama3-8b", "mistral-7b", "falcon3-7b", "gemma2-9b", "gpt-oss-20b"]
-_CHINESE = ["qwen2.5-7b", "deepseek-v2-lite", "deepseek-moe-16b"]
-_CLR_W, _CLR_C = "#4878CF", "#D65F5F"
+def _is_real(row) -> bool:
+    return (row["country_1"], row["country_2"]) not in _CTRL_SET | _PHON_SET
 
 
-def plot_heatmap(asym_dfs: dict[str, pd.DataFrame], suffix: str = "", title_extra: str = ""):
-    """Dot strip plot: asymmetry by pair, one dot per model.
+def _build_combined(asym_dfs, real_only=False):
+    """Stack all models into one DataFrame with pair labels and group tags."""
+    rows = []
+    for model, df in asym_dfs.items():
+        sub = df.copy()
+        if real_only:
+            sub = sub[sub.apply(_is_real, axis=1)]
+        agg = sub.groupby(["country_1", "country_2"])["asymmetry"].agg(
+            ["mean", "std", "count"]
+        ).reset_index()
+        agg.columns = ["country_1", "country_2", "asymmetry", "std", "n"]
+        agg["model"] = model
+        if model in _WESTERN:
+            agg["group"] = "Western"
+        elif model in _CHINESE:
+            agg["group"] = "Chinese"
+        else:
+            agg["group"] = "Other"
+        agg["pair"] = agg.apply(_pair_label, axis=1)
+        rows.append(agg)
+    return pd.concat(rows, ignore_index=True)
 
-    asym_dfs: {model_name: asymmetry DataFrame from compute_asymmetry()}
+
+# ── Plot 1: Main heatmap ─────────────────────────────────────────────────
+
+def plot_main_heatmap(asym_dfs, suffix=""):
+    """Heatmap of mean asymmetry: real country pairs × models.
+
+    Rows ordered by absolute cross-model mean so the strongest
+    biases appear at the top.
     """
-    records = []
-    for model, df in asym_dfs.items():
-        agg = df.groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-        agg["model"] = model
-        agg["group"] = "Western" if model in _WESTERN else "Chinese"
-        records.append(agg)
-    combined = pd.concat(records, ignore_index=True)
-    combined["pair"] = combined.apply(_pair_label, axis=1)
+    combined = _build_combined(asym_dfs, real_only=True)
+    pivot = combined.pivot_table(index="pair", columns="model", values="asymmetry")
 
-    # Order: control, phonetic, real — with gaps between sections
-    ctrl_set = {f"{a} vs {b}" for a, b in CONTROL_PAIRS}
-    phon_set = {f"{a} vs {b}" for a, b in PHONETIC_PAIRS}
-    all_pairs = sorted(combined["pair"].unique())
-    ctrl_labels = [p for p in all_pairs if p in ctrl_set]
-    phon_labels = [p for p in all_pairs if p in phon_set]
-    real_labels = [p for p in all_pairs if p not in ctrl_set and p not in phon_set]
+    # Order rows by mean |asymmetry| descending
+    pivot = pivot.loc[pivot.abs().mean(axis=1).sort_values(ascending=False).index]
 
-    # Build y-positions with gaps between sections
-    y_positions = {}
-    y = 0
-    for label in ctrl_labels:
-        y_positions[label] = y
-        y += 1
-    if ctrl_labels and (phon_labels or real_labels):
-        y += 0.8  # gap
-    for label in phon_labels:
-        y_positions[label] = y
-        y += 1
-    if phon_labels and real_labels:
-        y += 0.8  # gap
-    for label in real_labels:
-        y_positions[label] = y
-        y += 1
+    # Order columns: western, other, chinese
+    col_order = [m for m in _WESTERN + _OTHER + _CHINESE if m in pivot.columns]
+    pivot = pivot[col_order]
 
-    combined["y"] = combined["pair"].map(y_positions)
+    fig, ax = plt.subplots(figsize=(10, 7))
+    vmax = max(0.3, pivot.abs().max().max())
+    sns.heatmap(
+        pivot, annot=True, fmt=".2f", center=0, cmap="RdBu_r",
+        vmin=-vmax, vmax=vmax, linewidths=0.5, ax=ax,
+        annot_kws={"fontsize": 9},
+    )
+    # Move x-tick labels to bottom and add group annotations there
+    ax.xaxis.tick_bottom()
+    ax.xaxis.set_label_position("bottom")
+    ax.set_ylabel("")
+    ax.set_xlabel("")
 
-    fig, ax = plt.subplots(figsize=(10, max(8, y * 0.45)))
+    ax.set_title(
+        "Country Bias in Cloze Completions\n"
+        "Each cell averages 16 scenario paraphrases × 2 role orderings\n"
+        "Positive (red) = favours first-listed country  |  "
+        "Negative (blue) = favours second-listed country",
+        fontsize=11, pad=12,
+    )
 
-    for group, color, marker in [("Western", _CLR_W, "o"), ("Chinese", _CLR_C, "^")]:
-        subset = combined[combined["group"] == group]
-        ax.scatter(
-            subset["asymmetry"], subset["y"],
-            c=color, marker=marker, s=35, alpha=0.65,
-            label=f"{group} models", zorder=3,
-        )
-
-    ax.axvline(0, color="black", linewidth=0.8, zorder=1)
-    ax.set_yticks(list(y_positions.values()))
-    ax.set_yticklabels(list(y_positions.keys()), fontsize=9)
-    ax.invert_yaxis()
-    ax.set_xlabel("Asymmetry (positive = favors Country 1)")
-    ax.set_title(f"Country Preference Asymmetry{title_extra}", fontsize=12, pad=10)
-    ax.legend(fontsize=8, loc="lower right")
-    ax.grid(axis="x", alpha=0.3, linewidth=0.5)
-    ax.tick_params(axis="y", length=0)
-    sns.despine(ax=ax, left=True)
-    plt.tight_layout()
-
-    path = PLOTS_DIR / f"heatmap_pair_model{suffix}.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    logger.info(f"Saved dot strip plot to {path}")
-
-
-def plot_bar_chart(asym_dfs: dict[str, pd.DataFrame]):
-    """Bar chart: mean asymmetry per pair, grouped by model."""
-    records = []
-    for model, df in asym_dfs.items():
-        agg = df.groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-        agg["model"] = model
-        records.append(agg)
-    combined = pd.concat(records, ignore_index=True)
-    combined["pair"] = combined.apply(_pair_label, axis=1)
-
-    # Only real pairs for clarity
-    non_real = {f"{a} vs {b}" for a, b in CONTROL_PAIRS + PHONETIC_PAIRS}
-    real = combined[~combined["pair"].isin(non_real)]
-
-    fig, ax = plt.subplots(figsize=(14, 6))
-    pairs_order = sorted(real["pair"].unique())
-    x = np.arange(len(pairs_order))
-    models = sorted(real["model"].unique())
-    width = 0.8 / len(models)
-
-    for i, model in enumerate(models):
-        model_data = real[real["model"] == model].set_index("pair").reindex(pairs_order)
-        ax.bar(x + i * width, model_data["asymmetry"], width, label=model, alpha=0.85)
-
-    ax.set_xticks(x + width * (len(models) - 1) / 2)
-    ax.set_xticklabels(pairs_order, rotation=45, ha="right")
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.set_ylabel("Mean Asymmetry (positive = favors Country 1)")
-    ax.set_title("Mean Asymmetry per Country Pair by Model")
-    ax.legend()
-    plt.tight_layout()
-
-    path = PLOTS_DIR / "bar_asymmetry_by_pair.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    logger.info(f"Saved bar chart to {path}")
-
-
-def plot_model_scatter(asym_dfs: dict[str, pd.DataFrame], model_x: str, model_y: str):
-    """Scatter: model_x asymmetry vs model_y asymmetry per pair."""
-    if model_x not in asym_dfs or model_y not in asym_dfs:
-        logger.warning(f"Need both {model_x} and {model_y} in results for scatter plot")
-        return
-
-    agg_x = asym_dfs[model_x].groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-    agg_y = asym_dfs[model_y].groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-
-    merged = agg_x.merge(agg_y, on=["country_1", "country_2"], suffixes=(f"_{model_x}", f"_{model_y}"))
-    merged["pair"] = merged.apply(_pair_label, axis=1)
-
-    ctrl_set = {f"{a} vs {b}" for a, b in CONTROL_PAIRS}
-    phon_set = {f"{a} vs {b}" for a, b in PHONETIC_PAIRS}
-
-    def _pair_category(pair):
-        if pair in ctrl_set:
-            return "Control"
-        if pair in phon_set:
-            return "Phonetic"
-        return "Real"
-
-    merged["category"] = merged["pair"].apply(_pair_category)
-
-    fig, ax = plt.subplots(figsize=(8, 8))
-
-    for cat, marker, color in [("Real", "o", None), ("Phonetic", "s", None), ("Control", "D", "red")]:
-        subset = merged[merged["category"] == cat]
-        kwargs = {"marker": marker, "s": 60, "label": cat, "alpha": 0.8}
-        if color:
-            kwargs["color"] = color
-        ax.scatter(
-            subset[f"asymmetry_{model_x}"], subset[f"asymmetry_{model_y}"],
-            **kwargs,
-        )
-        for _, row in subset.iterrows():
-            ax.annotate(
-                row["pair"], (row[f"asymmetry_{model_x}"], row[f"asymmetry_{model_y}"]),
-                fontsize=7, alpha=0.7, textcoords="offset points", xytext=(5, 5),
+    # Annotate column groups below the x-tick labels
+    n_rows = len(pivot)
+    label_y = n_rows + 1.8
+    for group_list, label, color in [
+        (_WESTERN, "Western-origin", _CLR_W),
+        (_OTHER, "Gulf-origin", _CLR_O),
+        (_CHINESE, "Chinese-origin", _CLR_C),
+    ]:
+        cols = [i for i, m in enumerate(col_order) if m in group_list]
+        if cols:
+            ax.text(
+                np.mean(cols) + 0.5, label_y, label,
+                ha="center", fontsize=9, color=color, fontweight="bold",
             )
 
-    lim = max(0.3, merged[[f"asymmetry_{model_x}", f"asymmetry_{model_y}"]].abs().max().max()) * 1.1
-    ax.set_xlim(-lim, lim)
-    ax.set_ylim(-lim, lim)
-    ax.axhline(0, color="gray", linewidth=0.5)
-    ax.axvline(0, color="gray", linewidth=0.5)
-    ax.plot([-lim, lim], [-lim, lim], "k--", alpha=0.3, label="y=x")
-    ax.set_xlabel(f"{model_x} asymmetry")
-    ax.set_ylabel(f"{model_y} asymmetry")
-    ax.set_title(f"Cross-Model Asymmetry Correlation: {model_x} vs {model_y}")
-    ax.legend()
     plt.tight_layout()
-
-    path = PLOTS_DIR / f"scatter_{model_x}_vs_{model_y}.png"
-    fig.savefig(path, dpi=150)
+    path = PLOTS_DIR / f"cloze_heatmap{suffix}.png"
+    fig.savefig(path, dpi=180, bbox_inches="tight")
     plt.close(fig)
-    logger.info(f"Saved scatter to {path}")
+    logger.info(f"Saved {path}")
 
 
-def plot_scenario_heatmap(asym_dfs: dict[str, pd.DataFrame]):
-    """Heatmap: mean asymmetry by scenario × model (real pairs only)."""
-    records = []
-    for model, df in asym_dfs.items():
-        non_real = {tuple(p) for p in CONTROL_PAIRS + PHONETIC_PAIRS}
-        real = df[~df.apply(lambda r: (r["country_1"], r["country_2"]) in non_real, axis=1)]
-        agg = real.groupby("scenario")["asymmetry"].agg(["mean", "std"]).reset_index()
-        agg["model"] = model
-        records.append(agg)
-    combined = pd.concat(records, ignore_index=True)
-    pivot = combined.pivot_table(index="scenario", columns="model", values="mean")
+# ── Plot 2: Western vs Chinese forest plot ────────────────────────────────
 
-    fig, ax = plt.subplots(figsize=(max(8, len(asym_dfs) * 2.5), 4))
-    vmax = max(0.15, pivot.abs().max().max())
-    sns.heatmap(
-        pivot, annot=True, fmt=".3f", center=0, cmap="RdBu_r",
-        vmin=-vmax, vmax=vmax, linewidths=0.5, ax=ax,
+def plot_western_vs_chinese(asym_dfs, suffix=""):
+    """Forest plot comparing Western and Chinese model group means.
+
+    Each real pair gets one row.  Blue dot = Western mean, red triangle =
+    Chinese mean, with ±1 SD error bars across models in each group.
+    Pairs ordered by the gap between the two groups.
+    """
+    combined = _build_combined(asym_dfs, real_only=True)
+
+    group_agg = (
+        combined.groupby(["pair", "group"])["asymmetry"]
+        .agg(["mean", "std"])
+        .reset_index()
     )
-    ax.set_title("Mean Asymmetry by Scenario × Model (Real Pairs Only)")
-    ax.set_ylabel("")
-    plt.tight_layout()
-    path = PLOTS_DIR / "heatmap_scenario_model.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    logger.info(f"Saved scenario heatmap to {path}")
 
-
-def plot_phonetic_bias(asym_dfs: dict[str, pd.DataFrame]):
-    """Bar chart showing phonetic pair asymmetries — do European-sounding names get favored?"""
-    records = []
-    phon_set = {tuple(p) for p in PHONETIC_PAIRS}
-    for model, df in asym_dfs.items():
-        phon = df[df.apply(lambda r: (r["country_1"], r["country_2"]) in phon_set, axis=1)]
-        agg = phon.groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-        agg["model"] = model
-        records.append(agg)
-    combined = pd.concat(records, ignore_index=True)
-    combined["pair"] = combined.apply(_pair_label, axis=1)
-
-    # Separate within-region vs cross-region
-    cross = {"Aeloria vs Zembala", "Aeloria vs Junwei", "Zembala vs Junwei"}
-    combined["type"] = combined["pair"].apply(lambda p: "Cross-region" if p in cross else "Within-region")
-
-    fig, ax = plt.subplots(figsize=(12, 5))
-    pairs_order = ["Aeloria vs Brevnia", "Zembala vs Kotundi", "Junwei vs Khemara",
-                    "Aeloria vs Zembala", "Aeloria vs Junwei", "Zembala vs Junwei"]
-    pairs_order = [p for p in pairs_order if p in combined["pair"].values]
-
-    x = np.arange(len(pairs_order))
-    models = sorted(combined["model"].unique())
-    width = 0.8 / len(models)
-    colors = plt.cm.tab10(np.linspace(0, 1, len(models)))
-
-    for i, model in enumerate(models):
-        mdata = combined[combined["model"] == model].set_index("pair").reindex(pairs_order)
-        ax.bar(x + i * width, mdata["asymmetry"], width, label=model, color=colors[i], alpha=0.85)
-
-    ax.set_xticks(x + width * (len(models) - 1) / 2)
-    ax.set_xticklabels(pairs_order, rotation=30, ha="right")
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.axvline(2.5, color="gray", linewidth=1, linestyle="--", alpha=0.5)
-    ax.text(1.0, ax.get_ylim()[1] * 0.9, "Within-region", ha="center", fontsize=9, style="italic")
-    ax.text(4.0, ax.get_ylim()[1] * 0.9, "Cross-region", ha="center", fontsize=9, style="italic")
-    ax.set_ylabel("Asymmetry (positive = favors first name)")
-    ax.set_title("Phonetic Bias: Do European-Sounding Names Get Favored?")
-    ax.legend(fontsize=7, ncol=4)
-    plt.tight_layout()
-
-    path = PLOTS_DIR / "phonetic_bias.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    logger.info(f"Saved phonetic bias chart to {path}")
-
-
-def plot_western_vs_chinese(asym_dfs: dict[str, pd.DataFrame], suffix: str = "", title_extra: str = ""):
-    """Forest plot: Western vs Chinese model group means for real pairs."""
-    records = []
-    non_real = {tuple(p) for p in CONTROL_PAIRS + PHONETIC_PAIRS}
-    for model, df in asym_dfs.items():
-        real = df[~df.apply(lambda r: (r["country_1"], r["country_2"]) in non_real, axis=1)]
-        agg = real.groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-        agg["model"] = model
-        agg["group"] = "Western" if model in _WESTERN else "Chinese" if model in _CHINESE else "Other"
-        records.append(agg)
-    combined = pd.concat(records, ignore_index=True)
-    combined["pair"] = combined.apply(_pair_label, axis=1)
-
-    # Aggregate by group
-    group_agg = combined.groupby(["pair", "group"])["asymmetry"].agg(["mean", "std"]).reset_index()
-
-    # Order pairs by absolute difference between Western and Chinese means
-    pivot_means = group_agg.pivot(index="pair", columns="group", values="mean").fillna(0)
-    if "Western" in pivot_means.columns and "Chinese" in pivot_means.columns:
-        order_key = (pivot_means["Western"] - pivot_means["Chinese"]).abs()
+    # Order by |Western mean − Chinese mean|
+    pivot_m = group_agg.pivot(index="pair", columns="group", values="mean").fillna(0)
+    if "Western" in pivot_m.columns and "Chinese" in pivot_m.columns:
+        gap = (pivot_m["Western"] - pivot_m["Chinese"]).abs()
     else:
-        order_key = pivot_means.iloc[:, 0].abs()
-    pairs_order = order_key.sort_values(ascending=True).index.tolist()
+        gap = pivot_m.iloc[:, 0].abs()
+    pairs_order = gap.sort_values(ascending=True).index.tolist()
 
     fig, ax = plt.subplots(figsize=(10, max(5, len(pairs_order) * 0.5)))
-    y_offset = 0.12  # vertical offset so dots don't overlap
+    dy = 0.13
 
-    for group, color, marker, dy in [
-        ("Western", _CLR_W, "o", -y_offset),
-        ("Chinese", _CLR_C, "^", y_offset),
+    for group, color, marker, offset in [
+        ("Western", _CLR_W, "o", -dy),
+        ("Other", _CLR_O, "s", 0),
+        ("Chinese", _CLR_C, "^", dy),
     ]:
         gdata = group_agg[group_agg["group"] == group].set_index("pair").reindex(pairs_order)
-        y = np.arange(len(pairs_order)) + dy
+        if gdata["mean"].isna().all():
+            continue
+        y = np.arange(len(pairs_order)) + offset
+        label = {"Western": "Western-origin", "Chinese": "Chinese-origin",
+                 "Other": "Gulf-origin (Falcon)"}[group]
         ax.errorbar(
             gdata["mean"], y,
             xerr=gdata["std"], fmt="none",
-            ecolor=color, elinewidth=1.2, capsize=3, capthick=1.2, alpha=0.6, zorder=2,
+            ecolor=color, elinewidth=1.2, capsize=3, capthick=1.2, alpha=0.55, zorder=2,
         )
         ax.scatter(
             gdata["mean"], y,
-            c=color, marker=marker, s=50, label=f"{group} models",
+            c=color, marker=marker, s=55, label=label,
             zorder=3, edgecolors="white", linewidths=0.5,
         )
-        # Connect Western and Chinese dots for each pair
-        for i, pair in enumerate(pairs_order):
-            w_val = group_agg[(group_agg["pair"] == pair) & (group_agg["group"] == "Western")]["mean"]
-            c_val = group_agg[(group_agg["pair"] == pair) & (group_agg["group"] == "Chinese")]["mean"]
-            if not w_val.empty and not c_val.empty:
-                ax.plot(
-                    [w_val.values[0], c_val.values[0]],
-                    [i - y_offset, i + y_offset],
-                    color="gray", linewidth=0.6, alpha=0.4, zorder=1,
-                )
 
-    ax.axvline(0, color="black", linewidth=0.8, zorder=1)
+    # Connect Western and Chinese dots
+    for i, pair in enumerate(pairs_order):
+        w = group_agg[(group_agg["pair"] == pair) & (group_agg["group"] == "Western")]["mean"]
+        c = group_agg[(group_agg["pair"] == pair) & (group_agg["group"] == "Chinese")]["mean"]
+        if not w.empty and not c.empty:
+            ax.plot(
+                [w.values[0], c.values[0]], [i - dy, i + dy],
+                color="gray", linewidth=0.5, alpha=0.4, zorder=1,
+            )
+
+    ax.axvline(0, color="black", linewidth=0.8)
     ax.set_yticks(np.arange(len(pairs_order)))
     ax.set_yticklabels(pairs_order, fontsize=9)
-    ax.set_xlabel("Mean Asymmetry (positive = favors Country 1)")
-    ax.set_title(f"Western vs Chinese Model Bias{title_extra}", fontsize=12, pad=10)
-    ax.legend(fontsize=8, loc="lower right")
+    ax.set_xlabel(
+        "Mean asymmetry\n"
+        "← favours second-listed country          favours first-listed country →",
+        fontsize=10,
+    )
+    ax.set_title(
+        "Do Western and Chinese LLMs Disagree on Who Is Justified?\n"
+        "Dots = group mean across models  |  Bars = ±1 SD across models in group\n"
+        "Ordered by gap between Western and Chinese groups",
+        fontsize=11, pad=12,
+    )
+    ax.legend(fontsize=9, loc="lower right")
     ax.tick_params(axis="y", length=0)
     sns.despine(ax=ax, left=True)
     plt.tight_layout()
 
     path = PLOTS_DIR / f"western_vs_chinese{suffix}.png"
-    fig.savefig(path, dpi=150)
+    fig.savefig(path, dpi=180, bbox_inches="tight")
     plt.close(fig)
-    logger.info(f"Saved forest plot to {path}")
+    logger.info(f"Saved {path}")
 
 
-def plot_control_residuals(asym_dfs: dict[str, pd.DataFrame], suffix: str = "", title_extra: str = ""):
-    """Show control pair residual asymmetries as a validation check."""
-    ctrl_set = {tuple(p) for p in CONTROL_PAIRS}
-    records = []
-    for model, df in asym_dfs.items():
-        ctrl = df[df.apply(lambda r: (r["country_1"], r["country_2"]) in ctrl_set, axis=1)]
-        for _, row in ctrl.iterrows():
-            records.append({
-                "model": model,
-                "pair": f"{row['country_1']} vs {row['country_2']}",
-                "scenario": row["scenario"],
-                "asymmetry": row["asymmetry"],
-            })
-    combined = pd.DataFrame(records)
+# ── Plot 3: Per-pair boxplots showing paraphrase robustness ───────────────
 
-    fig, ax = plt.subplots(figsize=(12, 5))
-    sns.stripplot(data=combined, x="model", y="asymmetry", hue="pair",
-                  dodge=True, alpha=0.7, jitter=True, ax=ax, size=5)
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.axhspan(-0.1, 0.1, alpha=0.1, color="green", label="±0.1 target zone")
-    ax.set_ylabel("Residual Asymmetry (should be ~0)")
-    ax.set_title(f"Control Pair Residual Asymmetries (Diagnostic){title_extra}")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=30, ha="right")
-    ax.legend(fontsize=7, bbox_to_anchor=(1.02, 1), loc="upper left")
-    plt.tight_layout()
+def plot_paraphrase_robustness(asym_dfs, suffix=""):
+    """Box plots for each model showing asymmetry spread across 16 paraphrases.
 
-    path = PLOTS_DIR / f"control_residuals{suffix}.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    logger.info(f"Saved control residuals to {path}")
-
-
-def plot_pair_consistency(asym_dfs: dict[str, pd.DataFrame]):
-    """Dot plot: each model's asymmetry for each real pair, showing agreement/disagreement."""
-    non_real = {tuple(p) for p in CONTROL_PAIRS + PHONETIC_PAIRS}
-    records = []
-    for model, df in asym_dfs.items():
-        real = df[~df.apply(lambda r: (r["country_1"], r["country_2"]) in non_real, axis=1)]
-        agg = real.groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-        agg["model"] = model
-        records.append(agg)
-    combined = pd.concat(records, ignore_index=True)
-    combined["pair"] = combined.apply(_pair_label, axis=1)
-
-    # Order pairs by absolute mean asymmetry
-    pair_means = combined.groupby("pair")["asymmetry"].mean().sort_values(key=abs, ascending=True)
-    pairs_order = pair_means.index.tolist()
-
-    fig, ax = plt.subplots(figsize=(10, 7))
-    y = np.arange(len(pairs_order))
-
-    western = ["llama3-8b", "mistral-7b", "falcon3-7b", "gemma2-9b", "gpt-oss-20b"]
-    chinese = ["qwen2.5-7b", "deepseek-v2-lite", "deepseek-moe-16b"]
-
-    for model in sorted(combined["model"].unique()):
-        mdata = combined[combined["model"] == model].set_index("pair").reindex(pairs_order)
-        marker = "o" if model in western else "^"
-        color = "#2166ac" if model in western else "#b2182b"
-        ax.scatter(mdata["asymmetry"], y, marker=marker, s=40, alpha=0.6,
-                   color=color, label=model)
-
-    # Cross-model mean
-    for i, pair in enumerate(pairs_order):
-        mean_val = pair_means[pair]
-        ax.plot(mean_val, i, "k|", markersize=15, markeredgewidth=2)
-
-    ax.set_yticks(y)
-    ax.set_yticklabels(pairs_order)
-    ax.axvline(0, color="black", linewidth=0.8)
-    ax.set_xlabel("Asymmetry (positive = favors Country 1)")
-    ax.set_title("Per-Model Asymmetry for Each Real Pair\n(○ Western, △ Chinese, | cross-model mean)")
-    ax.legend(fontsize=7, bbox_to_anchor=(1.02, 1), loc="upper left")
-    plt.tight_layout()
-
-    path = PLOTS_DIR / "pair_consistency.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    logger.info(f"Saved pair consistency to {path}")
-
-
-def plot_mcf_vs_cloze(
-    mcf_asym_dfs: dict[str, pd.DataFrame],
-    cloze_asym_dfs: dict[str, pd.DataFrame],
-):
-    """Scatter: MCF asymmetry vs cloze asymmetry per pair, per model.
-
-    Each point is one (pair, model) combination. Points are colored by model.
+    Demonstrates that the bias signal is stable across different wordings,
+    not an artefact of one particular prompt.
     """
-    # Find models present in both
-    shared_models = sorted(set(mcf_asym_dfs) & set(cloze_asym_dfs))
-    if not shared_models:
-        logger.warning("No shared models between MCF and cloze results — skipping comparison plot")
+    # Pick 3 representative models: one Western, one Chinese, one neutral
+    candidates = ["llama3-8b", "qwen2.5-7b", "gemma2-9b"]
+    models = [m for m in candidates if m in asym_dfs]
+    if not models:
+        models = list(asym_dfs.keys())[:3]
+
+    fig, axes = plt.subplots(1, len(models), figsize=(6 * len(models), 7), sharey=False)
+    if len(models) == 1:
+        axes = [axes]
+
+    for ax, model in zip(axes, models):
+        df = asym_dfs[model]
+        real = df[df.apply(_is_real, axis=1)].copy()
+        real["pair"] = real.apply(_pair_label, axis=1)
+
+        pair_order = real.groupby("pair")["asymmetry"].mean().sort_values().index
+
+        if model in _CHINESE:
+            color, group_tag = _CLR_C, "Chinese"
+        elif model in _OTHER:
+            color, group_tag = _CLR_O, "Gulf"
+        else:
+            color, group_tag = _CLR_W, "Western"
+        sns.boxplot(
+            data=real, y="pair", x="asymmetry", order=pair_order,
+            ax=ax, color=color, fliersize=2, linewidth=0.8,
+        )
+        ax.axvline(0, color="black", linewidth=0.8)
+        ax.set_title(f"{model}  ({group_tag})", fontsize=10, color=color)
+        ax.set_ylabel("")
+        ax.set_xlabel(
+            "← favours 2nd country    Asymmetry    favours 1st country →",
+            fontsize=8,
+        )
+        ax.tick_params(axis="y", labelsize=8)
+
+    fig.suptitle(
+        "Bias Is Robust Across 16 Scenario Paraphrases\n"
+        "Each box = distribution of asymmetry across paraphrases for one country pair",
+        fontsize=12, y=1.02,
+    )
+    plt.tight_layout()
+    path = PLOTS_DIR / f"paraphrase_robustness{suffix}.png"
+    fig.savefig(path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    logger.info(f"Saved {path}")
+
+
+# ── Plot 4: Llama vs Qwen scatter ────────────────────────────────────────
+
+def plot_origin_scatter(asym_dfs, model_w="llama3-8b", model_c="qwen2.5-7b", suffix=""):
+    """Scatter of one Western vs one Chinese model's asymmetries.
+
+    Points off the diagonal reveal where training-data origin
+    drives disagreement.  Annotated with pair labels.
+    """
+    if model_w not in asym_dfs or model_c not in asym_dfs:
+        logger.warning(f"Need both {model_w} and {model_c} for scatter")
         return
 
-    records = []
-    for model in shared_models:
-        mcf_agg = mcf_asym_dfs[model].groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-        cloze_agg = cloze_asym_dfs[model].groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
-        merged = mcf_agg.merge(cloze_agg, on=["country_1", "country_2"], suffixes=("_mcf", "_cloze"))
-        merged["model"] = model
-        merged["pair"] = merged.apply(_pair_label, axis=1)
+    def _agg(model):
+        df = asym_dfs[model]
+        agg = df.groupby(["country_1", "country_2"])["asymmetry"].mean().reset_index()
+        agg["pair"] = agg.apply(_pair_label, axis=1)
+        return agg.set_index("pair")["asymmetry"]
 
-        ctrl_set = {f"{a} vs {b}" for a, b in CONTROL_PAIRS}
-        phon_set = {f"{a} vs {b}" for a, b in PHONETIC_PAIRS}
-        merged["category"] = merged["pair"].apply(
-            lambda p: "Control" if p in ctrl_set else ("Phonetic" if p in phon_set else "Real")
+    w = _agg(model_w)
+    c = _agg(model_c)
+    merged = pd.DataFrame({"western": w, "chinese": c}).dropna()
+
+    ctrl_labels = {f"{a} vs {b}" for a, b in CONTROL_PAIRS}
+    phon_labels = {f"{a} vs {b}" for a, b in PHONETIC_PAIRS}
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    for pair in merged.index:
+        x, y = merged.loc[pair, "western"], merged.loc[pair, "chinese"]
+        if pair in ctrl_labels:
+            marker, color, alpha = "D", "gray", 0.5
+        elif pair in phon_labels:
+            marker, color, alpha = "s", "#e08214", 0.7
+        else:
+            marker, color, alpha = "o", "#542788", 0.8
+        ax.scatter(x, y, marker=marker, s=55, color=color, alpha=alpha, zorder=3)
+        ax.annotate(
+            pair, (x, y), fontsize=7, alpha=0.75,
+            textcoords="offset points", xytext=(5, 5),
         )
-        records.append(merged)
 
-    combined = pd.concat(records, ignore_index=True)
-
-    fig, ax = plt.subplots(figsize=(9, 9))
-    colors = plt.cm.tab10(np.linspace(0, 1, len(shared_models)))
-
-    for idx, model in enumerate(shared_models):
-        subset = combined[combined["model"] == model]
-        for cat, marker in [("Real", "o"), ("Phonetic", "s"), ("Control", "D")]:
-            cat_sub = subset[subset["category"] == cat]
-            if cat_sub.empty:
-                continue
-            label = f"{model} ({cat})" if cat != "Real" else model
-            ax.scatter(
-                cat_sub["asymmetry_mcf"], cat_sub["asymmetry_cloze"],
-                marker=marker, s=40, alpha=0.7, color=colors[idx],
-                label=label if cat == "Real" else None,
-            )
-
-    lim = max(0.3, combined[["asymmetry_mcf", "asymmetry_cloze"]].abs().max().max()) * 1.1
+    lim = max(0.4, merged.abs().max().max()) * 1.15
     ax.set_xlim(-lim, lim)
     ax.set_ylim(-lim, lim)
     ax.axhline(0, color="gray", linewidth=0.5)
     ax.axvline(0, color="gray", linewidth=0.5)
-    ax.plot([-lim, lim], [-lim, lim], "k--", alpha=0.3, label="y=x")
-    ax.set_xlabel("MCF Asymmetry")
-    ax.set_ylabel("Cloze Asymmetry")
-    ax.set_title("MCF vs Cloze Formulation Asymmetry Comparison")
-    ax.legend(fontsize=7, bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.plot([-lim, lim], [-lim, lim], "k--", alpha=0.25, linewidth=1)
+
+    # Shade quadrants of disagreement
+    ax.fill_between(
+        [0, lim], 0, -lim, alpha=0.04, color=_CLR_W,
+    )
+    ax.fill_between(
+        [-lim, 0], 0, lim, alpha=0.04, color=_CLR_C,
+    )
+    ax.text(lim * 0.55, -lim * 0.85,
+            f"{model_w} favours\n1st country, {model_c}\nfavours 2nd",
+            fontsize=7.5, ha="center", color=_CLR_W, alpha=0.6)
+    ax.text(-lim * 0.55, lim * 0.85,
+            f"{model_c} favours\n1st country, {model_w}\nfavours 2nd",
+            fontsize=7.5, ha="center", color=_CLR_C, alpha=0.6)
+
+    ax.set_xlabel(
+        f"{model_w} asymmetry  (Western-developed)\n"
+        "← favours 2nd country          favours 1st country →",
+        fontsize=10, color=_CLR_W,
+    )
+    ax.set_ylabel(
+        f"{model_c} asymmetry  (Chinese-developed)\n"
+        "← favours 2nd country          favours 1st country →",
+        fontsize=10, color=_CLR_C,
+    )
+    ax.set_title(
+        "Training-Origin Bias: Where Do Models Disagree?\n"
+        "Points on the diagonal = models agree  |  Off diagonal = divergent preferences\n"
+        "o = Real pairs   s = Phonetic (fictional)   d = Controls",
+        fontsize=11, pad=12,
+    )
+    sns.despine(ax=ax)
     plt.tight_layout()
 
-    path = PLOTS_DIR / "mcf_vs_cloze.png"
-    fig.savefig(path, dpi=150)
+    path = PLOTS_DIR / f"origin_scatter_{model_w}_vs_{model_c}{suffix}.png"
+    fig.savefig(path, dpi=180, bbox_inches="tight")
     plt.close(fig)
-    logger.info(f"Saved MCF vs cloze comparison to {path}")
+    logger.info(f"Saved {path}")
 
 
-def generate_all_plots(asym_dfs: dict[str, pd.DataFrame]):
-    """Generate all standard visualizations."""
-    plot_heatmap(asym_dfs)
-    plot_bar_chart(asym_dfs)
-    plot_scenario_heatmap(asym_dfs)
-    plot_phonetic_bias(asym_dfs)
-    plot_western_vs_chinese(asym_dfs)
-    plot_control_residuals(asym_dfs)
-    plot_pair_consistency(asym_dfs)
+# ── Entry point ───────────────────────────────────────────────────────────
 
-    # Scatter plots for each pair of models
-    models = list(asym_dfs.keys())
-    for i in range(len(models)):
-        for j in range(i + 1, len(models)):
-            plot_model_scatter(asym_dfs, models[i], models[j])
+def generate_all_plots(asym_dfs, suffix=""):
+    """Generate the core set of publication-quality plots."""
+    plot_main_heatmap(asym_dfs, suffix=suffix)
+    plot_western_vs_chinese(asym_dfs, suffix=suffix)
+    plot_paraphrase_robustness(asym_dfs, suffix=suffix)
+
+    # Scatter for most interesting Western vs Chinese pair
+    w_models = [m for m in _WESTERN if m in asym_dfs]
+    c_models = [m for m in _CHINESE if m in asym_dfs]
+    if w_models and c_models:
+        # Prefer llama vs qwen
+        mw = "llama3-8b" if "llama3-8b" in asym_dfs else w_models[0]
+        mc = "qwen2.5-7b" if "qwen2.5-7b" in asym_dfs else c_models[0]
+        plot_origin_scatter(asym_dfs, mw, mc, suffix=suffix)
