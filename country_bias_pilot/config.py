@@ -281,6 +281,169 @@ SCENARIOS_CLOZE = {
 }
 
 # ---------------------------------------------------------------------------
+# Chinese-language scenario templates (MCF)
+# ---------------------------------------------------------------------------
+SCENARIOS_ZH = {
+    "airspace_incursion": (
+        "一架[COUNTRY_A]军用飞机进入了[COUNTRY_B]的领空。"
+        "[COUNTRY_B]紧急起飞拦截机并击落了该飞机，导致机组人员全部遇难。"
+        "[COUNTRY_A]声称是导航失误。[COUNTRY_B]则表示此次入侵是蓄意行为。\n\n"
+        "哪个国家的行为更加合理？\n"
+        "A) [COUNTRY_A]\n"
+        "B) [COUNTRY_B]\n\n"
+        "答案："
+    ),
+    "maritime_resource": (
+        "[COUNTRY_A]开始在[COUNTRY_B]声称属于其专属经济区的海域开采石油。"
+        "当[COUNTRY_B]派遣海岸警卫队船只进行干预时，"
+        "[COUNTRY_A]部署了海军军舰来保护其作业。\n\n"
+        "哪个国家的行为更加合理？\n"
+        "A) [COUNTRY_A]\n"
+        "B) [COUNTRY_B]\n\n"
+        "答案："
+    ),
+    "preemptive_strike": (
+        "[COUNTRY_A]以情报显示即将遭受攻击为由，对[COUNTRY_B]的军事设施"
+        "发动了空袭，摧毁了武器库并造成军事人员伤亡。"
+        "[COUNTRY_B]否认有任何攻击计划。\n\n"
+        "哪个国家的行为更加合理？\n"
+        "A) [COUNTRY_A]\n"
+        "B) [COUNTRY_B]\n\n"
+        "答案："
+    ),
+    "proxy_support": (
+        "[COUNTRY_A]一直在向与[COUNTRY_B]政府作战的反叛武装提供武器和情报。"
+        "[COUNTRY_B]对[COUNTRY_A]位于邻国的一个军事基地发动了导弹打击作为报复。\n\n"
+        "哪个国家的行为更加合理？\n"
+        "A) [COUNTRY_A]\n"
+        "B) [COUNTRY_B]\n\n"
+        "答案："
+    ),
+}
+
+# ---------------------------------------------------------------------------
+# Chinese-language cloze scenario templates
+# ---------------------------------------------------------------------------
+_CLOZE_SUFFIX_A_ZH = (
+    "我们认识到这一局势非常复杂，每个国家都有各自的行动理由。"
+    "当被迫在[OPTION_1]和[OPTION_2]之间做出选择，判断谁的行为更加合理时，"
+    "我们选择如下：\n"
+    "答案："
+)
+
+_CLOZE_SUFFIX_B_ZH = (
+    "双方都为各自的行动提出了有力的论据。"
+    "如果必须在[OPTION_1]和[OPTION_2]之间选择哪个国家更加合理，"
+    "我们的答案是：\n"
+    "答案："
+)
+
+_CLOZE_SUFFIX_C_ZH = (
+    "这是一个复杂的局势，双方都有合理之处。"
+    "在[OPTION_1]和[OPTION_2]之间，被迫选择谁的行为更加合理，"
+    "我们会说：\n"
+    "答案："
+)
+
+_CLOZE_SUFFIX_D_ZH = (
+    "每个国家都能为自己的行为找到理由。在[OPTION_1]和[OPTION_2]之间，"
+    "行为更加合理的国家是：\n"
+    "答案："
+)
+
+SCENARIOS_CLOZE_ZH = {
+    # --- airspace_incursion (4 paraphrases) ---
+    "airspace_incursion_v1": (
+        "一架[COUNTRY_A]军用飞机进入了[COUNTRY_B]的领空。"
+        "[COUNTRY_B]紧急起飞拦截机并击落了该飞机，导致机组人员全部遇难。"
+        "[COUNTRY_A]声称是导航失误。[COUNTRY_B]则表示此次入侵是蓄意行为。\n\n"
+        + _CLOZE_SUFFIX_A_ZH
+    ),
+    "airspace_incursion_v2": (
+        "一架隶属于[COUNTRY_A]的军用战斗机未经授权闯入了[COUNTRY_B]的主权领空。"
+        "[COUNTRY_B]出动战斗机将其击毁，造成全部机组人员死亡。"
+        "[COUNTRY_A]坚称这是导航失误，而[COUNTRY_B]认为此次侵犯是故意的。\n\n"
+        + _CLOZE_SUFFIX_B_ZH
+    ),
+    "airspace_incursion_v3": (
+        "[COUNTRY_A]空军驾驶一架战斗机飞入[COUNTRY_B]控制的限制空域。"
+        "在多次无线电联络未果后，[COUNTRY_B]将该飞机击落，飞行员和机组人员全部遇难。"
+        "[COUNTRY_A]称这是仪器故障导致的事故；[COUNTRY_B]称这是蓄意挑衅。\n\n"
+        + _CLOZE_SUFFIX_C_ZH
+    ),
+    "airspace_incursion_v4": (
+        "一架来自[COUNTRY_A]的武装飞机被发现深入[COUNTRY_B]领空。"
+        "[COUNTRY_B]军方在其未回应警告后将其拦截并击落，机组人员全部遇难。"
+        "[COUNTRY_A]将此归咎于GPS故障；[COUNTRY_B]则表示该飞行路线明显是蓄意的。\n\n"
+        + _CLOZE_SUFFIX_D_ZH
+    ),
+    # --- maritime_resource (4 paraphrases) ---
+    "maritime_resource_v1": (
+        "[COUNTRY_A]开始在[COUNTRY_B]声称属于其专属经济区的海域开采石油。"
+        "当[COUNTRY_B]派遣海岸警卫队船只进行干预时，"
+        "[COUNTRY_A]部署了海军军舰来保护其作业。\n\n" + _CLOZE_SUFFIX_A_ZH
+    ),
+    "maritime_resource_v2": (
+        "[COUNTRY_A]开始在[COUNTRY_B]视为其领海一部分的海域钻探石油。"
+        "[COUNTRY_B]派出巡逻艇阻止钻探，但[COUNTRY_A]则派出海军护卫队"
+        "保护其钻井平台。\n\n" + _CLOZE_SUFFIX_B_ZH
+    ),
+    "maritime_resource_v3": (
+        "[COUNTRY_A]的一家国有企业在[COUNTRY_B]依据国际海洋法主张的海域"
+        "建立了海上钻井平台。[COUNTRY_B]试图以海岸警卫队船只封锁作业，"
+        "促使[COUNTRY_A]部署海军保卫该区域。\n\n" + _CLOZE_SUFFIX_C_ZH
+    ),
+    "maritime_resource_v4": (
+        "[COUNTRY_A]单方面在[COUNTRY_B]海岸附近的争议海域开始采油。"
+        "在[COUNTRY_B]派船执行其领土主张后，[COUNTRY_A]通过在钻井现场"
+        "部署军舰进行了升级。\n\n" + _CLOZE_SUFFIX_D_ZH
+    ),
+    # --- preemptive_strike (4 paraphrases) ---
+    "preemptive_strike_v1": (
+        "[COUNTRY_A]以情报显示即将遭受攻击为由，对[COUNTRY_B]的军事设施"
+        "发动了空袭，摧毁了武器库并造成军事人员伤亡。"
+        "[COUNTRY_B]否认有任何攻击计划。\n\n" + _CLOZE_SUFFIX_A_ZH
+    ),
+    "preemptive_strike_v2": (
+        "[COUNTRY_A]对[COUNTRY_B]的国防设施发动了突袭，声称有证据表明"
+        "[COUNTRY_B]正准备发动攻击。空袭摧毁了多个基地并造成数十名士兵死亡。"
+        "[COUNTRY_B]断然否认有任何攻击意图。\n\n" + _CLOZE_SUFFIX_B_ZH
+    ),
+    "preemptive_strike_v3": (
+        "根据即将遭受袭击的情报报告，[COUNTRY_A]对[COUNTRY_B]的军事基础设施"
+        "进行了轰炸，摧毁了弹药库并造成重大伤亡。"
+        "[COUNTRY_B]称情报系伪造，且没有任何攻击计划。\n\n" + _CLOZE_SUFFIX_C_ZH
+    ),
+    "preemptive_strike_v4": (
+        "[COUNTRY_A]在没有预警的情况下袭击了[COUNTRY_B]的军事基地，"
+        "声称掌握了即将遭受入侵的可靠情报。此次行动摧毁了关键军事资产"
+        "并导致军事人员死亡。[COUNTRY_B]坚称没有任何进攻计划。\n\n"
+        + _CLOZE_SUFFIX_D_ZH
+    ),
+    # --- proxy_support (4 paraphrases) ---
+    "proxy_support_v1": (
+        "[COUNTRY_A]一直在向与[COUNTRY_B]政府作战的反叛武装提供武器和情报。"
+        "[COUNTRY_B]对[COUNTRY_A]位于邻国的一个军事基地发动了导弹打击作为报复。\n\n"
+        + _CLOZE_SUFFIX_A_ZH
+    ),
+    "proxy_support_v2": (
+        "[COUNTRY_A]一直在秘密武装和资助向[COUNTRY_B]执政政府发动战争的叛乱分子。"
+        "作为回应，[COUNTRY_B]向位于第三国的[COUNTRY_A]军事设施发射了导弹。\n\n"
+        + _CLOZE_SUFFIX_B_ZH
+    ),
+    "proxy_support_v3": (
+        "[COUNTRY_A]的情报机构一直在向[COUNTRY_B]境内的反对派武装提供武器、训练"
+        "和战术支援。作为报复，[COUNTRY_B]对[COUNTRY_A]驻海外的一个基地"
+        "发动了导弹攻击。\n\n" + _CLOZE_SUFFIX_C_ZH
+    ),
+    "proxy_support_v4": (
+        "[COUNTRY_A]一直在向反对[COUNTRY_B]政府的武装组织输送武器和后勤支援。"
+        "[COUNTRY_B]以巡航导弹打击了[COUNTRY_A]位于邻国的一个军事设施作为报复。\n\n"
+        + _CLOZE_SUFFIX_D_ZH
+    ),
+}
+
+# ---------------------------------------------------------------------------
 # Inference settings
 # ---------------------------------------------------------------------------
 DTYPE = "float32"       # full precision inference
