@@ -89,6 +89,50 @@ CONTROL_PAIRS_CLOZE = CONTROL_PAIRS
 ALL_PAIRS_CLOZE = CONTROL_PAIRS_CLOZE + PHONETIC_PAIRS + REAL_PAIRS
 
 # ---------------------------------------------------------------------------
+# Chinese-language country pairs
+# ---------------------------------------------------------------------------
+
+# Controls in Chinese: generic labels that share a token prefix
+CONTROL_PAIRS_ZH = [
+    ("甲国", "乙国"),
+    ("丙国", "丁国"),
+    ("第一国", "第二国"),
+    ("阿尔法国", "贝塔国"),
+]
+
+# Phonetic treatments: same fictional names (script-neutral) — these are
+# transliterated so they carry phonetic cues in Chinese context too.
+PHONETIC_PAIRS_ZH = [
+    # Within-phonetic-region
+    ("艾洛里亚", "布列夫尼亚"),     # European-sounding
+    ("泽姆巴拉", "科图恩迪"),       # African-sounding
+    ("君威", "凯玛拉"),             # Asian-sounding
+    # Cross-phonetic-region
+    ("艾洛里亚", "泽姆巴拉"),       # Euro vs African
+    ("艾洛里亚", "君威"),           # Euro vs Asian
+    ("泽姆巴拉", "君威"),           # African vs Asian
+]
+
+REAL_PAIRS_ZH = [
+    ("英国", "法国"),
+    ("德国", "日本"),
+    ("英国", "印度"),
+    ("德国", "韩国"),
+    ("日本", "中国"),
+    ("韩国", "沙特阿拉伯"),
+    ("印度", "俄罗斯"),
+    ("德国", "俄罗斯"),
+    ("沙特阿拉伯", "伊朗"),
+    ("英国", "尼日利亚"),
+    ("美国", "中国"),
+]
+
+ALL_PAIRS_ZH = CONTROL_PAIRS_ZH + PHONETIC_PAIRS_ZH + REAL_PAIRS_ZH
+
+CONTROL_PAIRS_CLOZE_ZH = CONTROL_PAIRS_ZH
+ALL_PAIRS_CLOZE_ZH = CONTROL_PAIRS_CLOZE_ZH + PHONETIC_PAIRS_ZH + REAL_PAIRS_ZH
+
+# ---------------------------------------------------------------------------
 # Scenario templates
 # ---------------------------------------------------------------------------
 SCENARIOS = {

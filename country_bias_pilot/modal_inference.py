@@ -548,9 +548,13 @@ def run_model_inference_cloze(model_name: str, model_id: str, prompts: list[dict
         country_a = prompt["country_a"]
         country_b = prompt["country_b"]
 
-        # Tokenize each country name (with leading space for natural BPE)
-        tok_a = tokenizer.encode(" " + country_a, add_special_tokens=False)
-        tok_b = tokenizer.encode(" " + country_b, add_special_tokens=False)
+        # Tokenize each country name (with leading space for natural BPE;
+        # skip the space for CJK names where spaces are not used)
+        def _needs_space(name: str) -> bool:
+            return not any('\u4e00' <= ch <= '\u9fff' for ch in name)
+
+        tok_a = tokenizer.encode((" " if _needs_space(country_a) else "") + country_a, add_special_tokens=False)
+        tok_b = tokenizer.encode((" " if _needs_space(country_b) else "") + country_b, add_special_tokens=False)
 
         # Find shared token prefix (e.g. "Country A" / "Country B" both
         # start with the "Country" token — prefill it and score "A" vs "B")
