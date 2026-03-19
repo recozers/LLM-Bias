@@ -14,9 +14,47 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from config import RAW_DIR, DTYPE, N_RUNS
+from config import RAW_DIR, DTYPE, N_RUNS, SCENARIOS_CLOZE, ALL_PAIRS_CLOZE
 
 logger = logging.getLogger(__name__)
+
+
+def generate_all_prompts_cloze(pairs=None, scenarios=None):
+    """Generate cloze prompts with both option orderings."""
+    pairs = pairs or ALL_PAIRS_CLOZE
+    scenarios = scenarios or SCENARIOS_CLOZE
+    prompts = []
+    for c1, c2 in pairs:
+        for scen_name, template in scenarios.items():
+            # Forward: c1 in COUNTRY_A role
+            base_fwd = template.replace("[COUNTRY_A]", c1).replace("[COUNTRY_B]", c2)
+            text_fwd_ab = base_fwd.replace("[OPTION_1]", c1).replace("[OPTION_2]", c2)
+            text_fwd_ba = base_fwd.replace("[OPTION_1]", c2).replace("[OPTION_2]", c1)
+            prompts.append({
+                "prompt_id": f"{scen_name}__{c1}_vs_{c2}",
+                "scenario": scen_name,
+                "country_a": c1,
+                "country_b": c2,
+                "direction": "forward",
+                "pair": (c1, c2),
+                "text_ab": text_fwd_ab,
+                "text_ba": text_fwd_ba,
+            })
+            # Reverse: c2 in COUNTRY_A role
+            base_rev = template.replace("[COUNTRY_A]", c2).replace("[COUNTRY_B]", c1)
+            text_rev_ab = base_rev.replace("[OPTION_1]", c2).replace("[OPTION_2]", c1)
+            text_rev_ba = base_rev.replace("[OPTION_1]", c1).replace("[OPTION_2]", c2)
+            prompts.append({
+                "prompt_id": f"{scen_name}__{c2}_vs_{c1}",
+                "scenario": scen_name,
+                "country_a": c2,
+                "country_b": c1,
+                "direction": "reverse",
+                "pair": (c1, c2),
+                "text_ab": text_rev_ab,
+                "text_ba": text_rev_ba,
+            })
+    return prompts
 
 
 def _needs_space(name: str) -> bool:

@@ -66,8 +66,7 @@ def main():
     args = parse_args()
 
     # Import here to avoid loading torch at parse time
-    from modal_inference import generate_all_prompts_cloze
-    from local_inference import run_cloze_inference
+    from local_inference import generate_all_prompts_cloze, run_cloze_inference
     from analysis import run_analysis, build_cross_model_summary
     from visualize import generate_all_plots
 
