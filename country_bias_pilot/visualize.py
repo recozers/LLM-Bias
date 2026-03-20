@@ -181,6 +181,90 @@ def plot_fwd_vs_rev(bias_dfs: dict[str, pd.DataFrame], suffix=""):
     logger.info(f"Saved {path}")
 
 
+# ── Plot 4: Cross-language comparison ─────────────────────────────────────
+
+def plot_lang_comparison(all_bias_dfs: dict[str, dict[str, pd.DataFrame]], suffix=""):
+    """Scatter: English bias vs Chinese bias per model.
+
+    Each point is a real country pair. Uses the corresponding country names
+    for each language (e.g. "UK" in en, "英国" in zh maps to the same pair
+    by index position in REAL_PAIRS / REAL_PAIRS_ZH).
+    """
+    from config import REAL_PAIRS, REAL_PAIRS_ZH
+
+    # Build mapping: zh pair → en pair label (by index)
+    zh_to_en = {}
+    for i, (en_pair, zh_pair) in enumerate(zip(REAL_PAIRS, REAL_PAIRS_ZH)):
+        zh_to_en[zh_pair] = f"{en_pair[0]} vs {en_pair[1]}"
+
+    en_dfs = all_bias_dfs.get("en", {})
+    zh_dfs = all_bias_dfs.get("zh", {})
+    models = [m for m in en_dfs if m in zh_dfs]
+    if not models:
+        logger.warning("No models with both en and zh results for comparison")
+        return
+
+    n_models = len(models)
+    cols = min(n_models, 2)
+    rows_n = (n_models + cols - 1) // cols
+
+    fig, axes = plt.subplots(rows_n, cols, figsize=(6 * cols, 6 * rows_n), squeeze=False)
+
+    for idx, model in enumerate(models):
+        ax = axes[idx // cols][idx % cols]
+
+        # Aggregate en
+        en_df = en_dfs[model]
+        en_real = en_df[en_df.apply(_is_real, axis=1)].copy()
+        en_real["pair"] = en_real.apply(_pair_label, axis=1)
+        en_agg = en_real.groupby("pair")["bias"].mean()
+
+        # Aggregate zh — map to en labels
+        zh_df = zh_dfs[model]
+        zh_real = zh_df.copy()
+        # Filter to real pairs by checking against zh_to_en keys
+        zh_real = zh_real[zh_real.apply(
+            lambda r: (r["country_1"], r["country_2"]) in zh_to_en, axis=1
+        )]
+        zh_real["pair"] = zh_real.apply(
+            lambda r: zh_to_en[(r["country_1"], r["country_2"])], axis=1
+        )
+        zh_agg = zh_real.groupby("pair")["bias"].mean()
+
+        merged = pd.DataFrame({"en": en_agg, "zh": zh_agg}).dropna()
+
+        ax.scatter(merged["en"], merged["zh"], s=50, alpha=0.7)
+        for pair in merged.index:
+            ax.annotate(pair, (merged.loc[pair, "en"], merged.loc[pair, "zh"]),
+                        fontsize=7, alpha=0.7, textcoords="offset points", xytext=(4, 4))
+
+        lim = max(0.5, merged.abs().max().max()) * 1.2
+        ax.set_xlim(-lim, lim)
+        ax.set_ylim(-lim, lim)
+        ax.plot([-lim, lim], [-lim, lim], "k--", alpha=0.2, linewidth=1)
+        ax.axhline(0, color="gray", linewidth=0.5)
+        ax.axvline(0, color="gray", linewidth=0.5)
+        ax.set_xlabel("Bias (English prompts)")
+        ax.set_ylabel("Bias (Chinese prompts)")
+        ax.set_title(model, fontsize=10)
+        ax.set_aspect("equal")
+
+    for idx in range(n_models, rows_n * cols):
+        axes[idx // cols][idx % cols].set_visible(False)
+
+    fig.suptitle(
+        "Does Prompt Language Change the Bias?\n"
+        "Points on diagonal → same bias in both languages\n"
+        "Off diagonal → language-dependent bias",
+        fontsize=11, y=1.02,
+    )
+    plt.tight_layout()
+    path = PLOTS_DIR / f"lang_comparison{suffix}.png"
+    fig.savefig(path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    logger.info(f"Saved {path}")
+
+
 # ── Entry point ───────────────────────────────────────────────────────────
 
 def generate_all_plots(bias_dfs: dict[str, pd.DataFrame], suffix=""):

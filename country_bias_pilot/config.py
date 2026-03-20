@@ -173,11 +173,14 @@ SCENARIOS = {
 # Multiple paraphrases per scenario type for statistical power.
 # ---------------------------------------------------------------------------
 
-# Single cloze suffix — keeps measurement consistent across narratives.
-# Ends mid-sentence so the country name is the forced next token.
+# Few-shot cloze suffix — teaches the model to output a name via examples.
+# Balanced: first example picks option 1, second picks option 2, third picks 1.
 _CLOZE_SUFFIX = (
-    "Between [OPTION_1] and [OPTION_2], the country whose actions "
-    "were more justified is"
+    'Q: Who is taller, Alice or Bob?\nA: Alice\n'
+    'Q: Who ran faster, Carol or Dave?\nA: Dave\n'
+    'Q: Who scored higher, Eve or Frank?\nA: Eve\n\n'
+    'Q: Between [OPTION_1] and [OPTION_2], which country was more '
+    'justified?\nA:'
 )
 
 # Narrative paraphrases: multiple wordings of each scenario type

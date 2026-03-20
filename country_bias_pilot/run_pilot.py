@@ -2,16 +2,19 @@
 """Main script — end-to-end cloze bias pipeline.
 
 Usage:
-    # Full run (all models, all pairs, all scenarios, 5 runs)
+    # Full run, English only (default)
     python run_pilot.py
 
-    # Quick smoke test (1 model, 2 pairs, 1 scenario, 1 run)
+    # Both languages
+    python run_pilot.py --lang en zh
+
+    # Chinese only
+    python run_pilot.py --lang zh
+
+    # Quick smoke test
     python run_pilot.py --test
 
-    # Single model, custom run count
-    python run_pilot.py --models gpt2 --n-runs 3
-
-    # Analysis + plots only (skip inference, use existing raw results)
+    # Analysis + plots only
     python run_pilot.py --analysis-only
 """
 
@@ -25,11 +28,23 @@ from datetime import datetime
 
 from config import (
     MODELS, N_RUNS, PHONETIC_PAIRS, REAL_PAIRS, CONTROL_PAIRS,
+    PHONETIC_PAIRS_ZH, REAL_PAIRS_ZH, CONTROL_PAIRS_ZH,
     SCENARIOS_CLOZE, ALL_PAIRS_CLOZE,
+    SCENARIOS_CLOZE_ZH, ALL_PAIRS_CLOZE_ZH,
     SUMMARY_DIR, RESULTS_DIR,
 )
 
 logger = logging.getLogger(__name__)
+
+# Per-language control/phonetic sets for summary filtering
+_FILTER_SETS = {
+    "en": (
+        {tuple(p) for p in CONTROL_PAIRS} | {tuple(p) for p in PHONETIC_PAIRS}
+    ),
+    "zh": (
+        {tuple(p) for p in CONTROL_PAIRS_ZH} | {tuple(p) for p in PHONETIC_PAIRS_ZH}
+    ),
+}
 
 
 def _setup_logging():
@@ -57,97 +72,126 @@ def parse_args():
     p.add_argument("--test", action="store_true", help="Smoke test: 1 model, 2 pairs, 1 scenario, 1 run")
     p.add_argument("--models", nargs="+", default=None, help="Model keys to run (default: all)")
     p.add_argument("--n-runs", type=int, default=N_RUNS, help=f"Number of inference runs per prompt (default: {N_RUNS})")
+    p.add_argument("--lang", nargs="+", default=["en"], choices=["en", "zh"], help="Languages to run (default: en)")
     p.add_argument("--analysis-only", action="store_true", help="Skip inference, run analysis + plots on existing results")
     return p.parse_args()
+
+
+def _run_lang(lang, model_keys, n_runs, analysis_only, generate_all_prompts_cloze, run_cloze_inference, run_analysis):
+    """Run inference + analysis for one language. Returns {model: bias_df}."""
+    logger.info(f"\n{'#'*60}\n  LANGUAGE: {lang.upper()}\n{'#'*60}")
+
+    # Test mode subsets
+    if lang == "zh":
+        test_pairs = [CONTROL_PAIRS_ZH[0], PHONETIC_PAIRS_ZH[0], REAL_PAIRS_ZH[0]]
+        test_scenarios = {k: v for k, v in list(SCENARIOS_CLOZE_ZH.items())[:1]}
+    else:
+        test_pairs = [CONTROL_PAIRS[0], PHONETIC_PAIRS[0], REAL_PAIRS[0]]
+        test_scenarios = {k: v for k, v in list(SCENARIOS_CLOZE.items())[:1]}
+
+    failed_models = []
+    if not analysis_only:
+        prompts = generate_all_prompts_cloze(lang=lang)
+        logger.info(f"[{lang}] Generated {len(prompts)} cloze prompts × {n_runs} runs = {len(prompts) * n_runs} total passes")
+
+        for mk in model_keys:
+            logger.info(f"\n{'='*60}\n  [{lang}] Running: {mk}  ({MODELS[mk]})\n{'='*60}")
+            try:
+                run_cloze_inference(mk, MODELS[mk], prompts, n_runs=n_runs, lang=lang)
+            except Exception:
+                logger.exception(f"[{lang}] Inference FAILED for {mk}")
+                failed_models.append(mk)
+
+    completed_models = [mk for mk in model_keys if mk not in failed_models]
+    bias_dfs = {}
+    for mk in completed_models:
+        logger.info(f"\n{'='*60}\n  [{lang}] Analyzing: {mk}\n{'='*60}")
+        try:
+            result = run_analysis(mk, lang=lang)
+            bias_dfs[mk] = result["bias"]
+        except Exception:
+            logger.exception(f"[{lang}] Analysis FAILED for {mk}")
+
+    return bias_dfs, failed_models
 
 
 def main():
     ts = _setup_logging()
     args = parse_args()
 
-    # Import here to avoid loading torch at parse time
     from local_inference import generate_all_prompts_cloze, run_cloze_inference
     from analysis import run_analysis, build_cross_model_summary
     from visualize import generate_all_plots
 
-    # --- Resolve what to run ---
+    model_keys = args.models or list(MODELS.keys())
+    n_runs = args.n_runs
+
     if args.test:
         model_keys = [list(MODELS.keys())[0]]
-        pairs = [CONTROL_PAIRS[0], PHONETIC_PAIRS[0], REAL_PAIRS[0]]
-        scenarios = {k: v for k, v in list(SCENARIOS_CLOZE.items())[:1]}
         n_runs = 1
         logger.info("=== SMOKE TEST MODE ===")
-    else:
-        model_keys = args.models or list(MODELS.keys())
-        pairs = None
-        scenarios = None
-        n_runs = args.n_runs
 
     for mk in model_keys:
         if mk not in MODELS:
             logger.error(f"Unknown model key '{mk}'. Available: {list(MODELS.keys())}")
             sys.exit(1)
 
-    # --- Inference ---
-    failed_models = []
-    if not args.analysis_only:
-        prompts = generate_all_prompts_cloze(pairs=pairs, scenarios=scenarios)
-        logger.info(f"Generated {len(prompts)} cloze prompts × {n_runs} runs = {len(prompts) * n_runs} total passes")
+    # Run each language
+    all_bias_dfs = {}  # {lang: {model: bias_df}}
+    all_failed = {}
+    for lang in args.lang:
+        bias_dfs, failed = _run_lang(
+            lang, model_keys, n_runs, args.analysis_only,
+            generate_all_prompts_cloze, run_cloze_inference, run_analysis,
+        )
+        all_bias_dfs[lang] = bias_dfs
+        all_failed[lang] = failed
 
-        for mk in model_keys:
-            logger.info(f"\n{'='*60}\n  Running: {mk}  ({MODELS[mk]})\n{'='*60}")
-            try:
-                run_cloze_inference(mk, MODELS[mk], prompts, n_runs=n_runs)
-            except Exception:
-                logger.exception(f"Inference FAILED for {mk}")
-                failed_models.append(mk)
+    # Plots per language
+    for lang, bias_dfs in all_bias_dfs.items():
+        if bias_dfs:
+            suffix = f"_{lang}" if len(args.lang) > 1 else ""
+            logger.info(f"\n{'='*60}\n  Generating plots ({lang})\n{'='*60}")
+            generate_all_plots(bias_dfs, suffix=suffix)
 
-    # --- Analysis ---
-    completed_models = [mk for mk in model_keys if mk not in failed_models]
-    bias_dfs = {}
-    for mk in completed_models:
-        logger.info(f"\n{'='*60}\n  Analyzing: {mk}\n{'='*60}")
-        try:
-            result = run_analysis(mk)
-            bias_dfs[mk] = result["bias"]
-        except Exception:
-            logger.exception(f"Analysis FAILED for {mk}")
+    # Cross-language comparison plot if both languages ran
+    if len(args.lang) > 1 and all(all_bias_dfs.get(l) for l in args.lang):
+        from visualize import plot_lang_comparison
+        logger.info(f"\n{'='*60}\n  Generating cross-language comparison\n{'='*60}")
+        plot_lang_comparison(all_bias_dfs)
 
-    # --- Cross-model summary ---
-    if len(bias_dfs) > 1:
-        build_cross_model_summary(list(bias_dfs.keys()))
-
-    # --- Visualizations ---
-    if bias_dfs:
-        logger.info(f"\n{'='*60}\n  Generating plots\n{'='*60}")
-        generate_all_plots(bias_dfs)
-
-    # --- Print summary ---
+    # Summary
     print(f"\n{'='*60}")
     print("  RESULTS SUMMARY")
     print(f"{'='*60}")
-    if failed_models:
-        print(f"\n  FAILED models: {', '.join(failed_models)}")
 
-    for mk, df in bias_dfs.items():
-        print(f"\n--- {mk} ---")
-        real = df[~df.apply(
-            lambda r: (r["country_1"], r["country_2"]) in
-            {tuple(p) for p in CONTROL_PAIRS} | {tuple(p) for p in PHONETIC_PAIRS},
-            axis=1,
-        )]
-        if not real.empty:
-            print(f"  Mean |bias| (real pairs): {real['bias'].abs().mean():.4f}")
-            print(f"  Mean diff_fwd: {real['diff_fwd'].mean():.4f}")
-            print(f"  Mean diff_rev: {real['diff_rev'].mean():.4f}")
-            print(f"  N scenarios: {real['scenario'].nunique()}")
+    for lang in args.lang:
+        bias_dfs = all_bias_dfs.get(lang, {})
+        failed = all_failed.get(lang, [])
+        filter_set = _FILTER_SETS[lang]
 
-    # --- Save metadata ---
+        if failed:
+            print(f"\n  [{lang}] FAILED models: {', '.join(failed)}")
+
+        for mk, df in bias_dfs.items():
+            print(f"\n--- {mk} ({lang}) ---")
+            real = df[~df.apply(
+                lambda r: (r["country_1"], r["country_2"]) in filter_set,
+                axis=1,
+            )]
+            if not real.empty:
+                print(f"  Mean |bias| (real pairs): {real['bias'].abs().mean():.4f}")
+                print(f"  Mean diff_fwd: {real['diff_fwd'].mean():.4f}")
+                print(f"  Mean diff_rev: {real['diff_rev'].mean():.4f}")
+                print(f"  N scenarios: {real['scenario'].nunique()}")
+
+    # Save metadata
     metadata = {
         "timestamp": ts,
         "models": model_keys,
         "model_ids": {mk: MODELS[mk] for mk in model_keys},
         "n_runs": n_runs,
+        "languages": args.lang,
         "test_mode": args.test,
         "analysis_only": args.analysis_only,
     }

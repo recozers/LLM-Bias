@@ -15,9 +15,10 @@ from config import (
 logger = logging.getLogger(__name__)
 
 
-def load_cloze_results(model_name: str) -> pd.DataFrame:
+def load_cloze_results(model_name: str, lang: str = "en") -> pd.DataFrame:
     """Load cloze JSONL raw results into a DataFrame."""
-    path = RAW_DIR / "cloze" / f"{model_name}_cloze.jsonl"
+    suffix = f"_{lang}" if lang != "en" else ""
+    path = RAW_DIR / "cloze" / f"{model_name}_cloze{suffix}.jsonl"
     records = []
     with open(path) as f:
         for line in f:
@@ -104,9 +105,10 @@ def aggregate_bias(bias_df: pd.DataFrame) -> pd.DataFrame:
     return agg
 
 
-def run_analysis(model_name: str) -> dict:
+def run_analysis(model_name: str, lang: str = "en") -> dict:
     """Full analysis pipeline for one model."""
-    df = load_cloze_results(model_name)
+    suffix = f"_{lang}" if lang != "en" else ""
+    df = load_cloze_results(model_name, lang=lang)
     bias_df = compute_bias(df)
 
     # Save per-scenario bias matrix
@@ -115,13 +117,13 @@ def run_analysis(model_name: str) -> dict:
         columns="scenario",
         values="bias",
     )
-    path = ASYMMETRY_DIR / f"{model_name}_cloze_bias.csv"
+    path = ASYMMETRY_DIR / f"{model_name}_cloze_bias{suffix}.csv"
     pivot.to_csv(path)
     logger.info(f"Saved bias matrix to {path}")
 
     # Aggregate
     agg = aggregate_bias(bias_df)
-    agg_path = SUMMARY_DIR / f"{model_name}_summary.csv"
+    agg_path = SUMMARY_DIR / f"{model_name}_summary{suffix}.csv"
     agg.to_csv(agg_path, index=False)
     logger.info(f"Saved summary to {agg_path}")
 

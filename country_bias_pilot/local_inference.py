@@ -14,15 +14,23 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from config import RAW_DIR, DTYPE, N_RUNS, SCENARIOS_CLOZE, ALL_PAIRS_CLOZE
+from config import (
+    RAW_DIR, DTYPE, N_RUNS,
+    SCENARIOS_CLOZE, ALL_PAIRS_CLOZE,
+    SCENARIOS_CLOZE_ZH, ALL_PAIRS_CLOZE_ZH,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def generate_all_prompts_cloze(pairs=None, scenarios=None):
+def generate_all_prompts_cloze(pairs=None, scenarios=None, lang="en"):
     """Generate cloze prompts with both option orderings."""
-    pairs = pairs or ALL_PAIRS_CLOZE
-    scenarios = scenarios or SCENARIOS_CLOZE
+    if lang == "zh":
+        pairs = pairs or ALL_PAIRS_CLOZE_ZH
+        scenarios = scenarios or SCENARIOS_CLOZE_ZH
+    else:
+        pairs = pairs or ALL_PAIRS_CLOZE
+        scenarios = scenarios or SCENARIOS_CLOZE
     prompts = []
     for c1, c2 in pairs:
         for scen_name, template in scenarios.items():
@@ -104,7 +112,7 @@ def _score_prompt(model, tokenizer, device, prompt_text: str,
 
 
 def run_cloze_inference(model_name: str, model_id: str, prompts: list[dict],
-                        n_runs: int = N_RUNS) -> list[dict]:
+                        n_runs: int = N_RUNS, lang: str = "en") -> list[dict]:
     """Run cloze inference locally with multiple runs per prompt.
 
     Returns one JSONL record per (prompt, run).
@@ -196,7 +204,8 @@ def run_cloze_inference(model_name: str, model_id: str, prompts: list[dict],
     # Save raw results
     out_dir = RAW_DIR / "cloze"
     out_dir.mkdir(parents=True, exist_ok=True)
-    outpath = out_dir / f"{model_name}_cloze.jsonl"
+    suffix = f"_{lang}" if lang != "en" else ""
+    outpath = out_dir / f"{model_name}_cloze{suffix}.jsonl"
     with open(outpath, "w") as f:
         for record in results:
             f.write(json.dumps(record) + "\n")
