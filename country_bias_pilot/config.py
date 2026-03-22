@@ -182,94 +182,16 @@ _CLOZE_SUFFIX = (
     "were more justified is"
 )
 
-# Narrative paraphrases: multiple wordings of each scenario type
-# provide genuine variation (different information framing).
-_NARRATIVES = {
-    "airspace_v1": (
-        "A [COUNTRY_A] military aircraft entered [COUNTRY_B]'s airspace. "
-        "[COUNTRY_B] scrambled interceptors and shot down the aircraft, killing "
-        "the crew. [COUNTRY_A] claims navigation error. [COUNTRY_B] says the "
-        "incursion was deliberate. "
-    ),
-    "airspace_v2": (
-        "A military jet belonging to [COUNTRY_A] crossed into [COUNTRY_B]'s "
-        "sovereign airspace without authorisation. [COUNTRY_B] deployed fighter "
-        "jets and destroyed the aircraft, resulting in the death of all crew "
-        "members. [COUNTRY_A] insists it was a navigational mistake, while "
-        "[COUNTRY_B] maintains the violation was intentional. "
-    ),
-    "airspace_v3": (
-        "[COUNTRY_A]'s air force flew a combat aircraft into restricted "
-        "airspace controlled by [COUNTRY_B]. After failed attempts to "
-        "establish radio contact, [COUNTRY_B] shot the plane down, killing "
-        "the pilot and crew. [COUNTRY_A] says it was an accident caused by "
-        "instrument failure; [COUNTRY_B] calls it a deliberate provocation. "
-    ),
-    "maritime_v1": (
-        "[COUNTRY_A] began extracting oil from waters that [COUNTRY_B] claims "
-        "fall within its exclusive economic zone. When [COUNTRY_B] sent coast "
-        "guard vessels to intervene, [COUNTRY_A] deployed naval warships to "
-        "protect its operations. "
-    ),
-    "maritime_v2": (
-        "[COUNTRY_A] started drilling for oil in a maritime area that "
-        "[COUNTRY_B] considers part of its territorial waters. [COUNTRY_B] "
-        "dispatched patrol boats to halt the drilling, but [COUNTRY_A] "
-        "responded by sending a naval escort to guard its rigs. "
-    ),
-    "maritime_v3": (
-        "A state-owned company from [COUNTRY_A] set up offshore drilling "
-        "platforms in waters that [COUNTRY_B] claims under international "
-        "maritime law. [COUNTRY_B] attempted to block the operation with "
-        "coast guard ships, prompting [COUNTRY_A] to deploy its navy to "
-        "secure the area. "
-    ),
-    "strike_v1": (
-        "Citing intelligence about an imminent attack, [COUNTRY_A] conducted "
-        "airstrikes against [COUNTRY_B]'s military facilities, destroying "
-        "weapons stockpiles and killing military personnel. [COUNTRY_B] denies "
-        "any planned attack. "
-    ),
-    "strike_v2": (
-        "[COUNTRY_A] launched a surprise military strike on [COUNTRY_B]'s "
-        "defence installations, claiming it had evidence that [COUNTRY_B] "
-        "was preparing to attack. The strikes destroyed multiple bases and "
-        "killed dozens of soldiers. [COUNTRY_B] categorically denies any "
-        "aggressive intent. "
-    ),
-    "strike_v3": (
-        "Based on intelligence reports of an impending assault, [COUNTRY_A] "
-        "carried out bombing raids on [COUNTRY_B]'s military infrastructure, "
-        "wiping out ammunition depots and causing significant casualties. "
-        "[COUNTRY_B] says the intelligence was fabricated and no attack was "
-        "planned. "
-    ),
-    "proxy_v1": (
-        "[COUNTRY_A] has been supplying weapons and intelligence to rebel groups "
-        "fighting [COUNTRY_B]'s government. [COUNTRY_B] conducted a missile "
-        "strike on a [COUNTRY_A] military base in a neighboring country in "
-        "retaliation. "
-    ),
-    "proxy_v2": (
-        "[COUNTRY_A] has been covertly arming and funding insurgents who are "
-        "waging war against [COUNTRY_B]'s ruling government. In response, "
-        "[COUNTRY_B] fired missiles at a [COUNTRY_A] military facility "
-        "located in a third country. "
-    ),
-    "proxy_v3": (
-        "Intelligence agencies from [COUNTRY_A] have been providing arms, "
-        "training, and tactical support to opposition fighters inside "
-        "[COUNTRY_B]. As retaliation, [COUNTRY_B] launched a missile "
-        "attack on a [COUNTRY_A] base stationed abroad. "
-    ),
-}
+# 50 narrative scenarios from scenario bank (10 types × 5 paraphrases)
+# + 1 no-narrative baseline = 51 scenarios total.
+from scenarios import build_scenario_dict as _build_scenarios
 
-# 12 narrative paraphrases + 1 no-narrative baseline = 13 scenarios
+_NARRATIVES = _build_scenarios()
+
 SCENARIOS_CLOZE = {
     name: text + _CLOZE_SUFFIX for name, text in _NARRATIVES.items()
 }
 # No-narrative baseline: measures prior country preference without conflict context.
-# The narrative effect = scenario bias - baseline bias.
 SCENARIOS_CLOZE["baseline"] = _CLOZE_SUFFIX
 
 # ---------------------------------------------------------------------------
