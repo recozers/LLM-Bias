@@ -179,11 +179,13 @@ def main():
                 lambda r: (r["country_1"], r["country_2"]) in filter_set,
                 axis=1,
             )]
-            if not real.empty:
-                print(f"  Mean |bias| (real pairs): {real['bias'].abs().mean():.4f}")
-                print(f"  Mean diff_fwd: {real['diff_fwd'].mean():.4f}")
-                print(f"  Mean diff_rev: {real['diff_rev'].mean():.4f}")
-                print(f"  N scenarios: {real['scenario'].nunique()}")
+            narratives = real[real["scenario"] != "baseline"]
+            baseline = real[real["scenario"] == "baseline"]
+            if not narratives.empty:
+                print(f"  Mean |bias| (narratives): {narratives['bias'].abs().mean():.4f}")
+                if not baseline.empty:
+                    print(f"  Mean |bias| (baseline):   {baseline['bias'].abs().mean():.4f}")
+                print(f"  N scenarios: {narratives['scenario'].nunique()}")
 
     # Save metadata
     metadata = {

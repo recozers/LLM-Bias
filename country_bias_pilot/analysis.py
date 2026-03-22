@@ -93,8 +93,14 @@ def compute_bias(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def aggregate_bias(bias_df: pd.DataFrame) -> pd.DataFrame:
-    """Mean bias per pair across scenarios."""
-    agg = bias_df.groupby(["model", "country_1", "country_2"]).agg(
+    """Mean bias per pair across narrative scenarios (excluding baseline).
+
+    Also computes narrative_effect = mean_narrative_bias - baseline_bias.
+    """
+    baseline = bias_df[bias_df["scenario"] == "baseline"].copy()
+    narratives = bias_df[bias_df["scenario"] != "baseline"].copy()
+
+    agg = narratives.groupby(["model", "country_1", "country_2"]).agg(
         mean_bias=("bias", "mean"),
         std_bias=("bias", "std"),
         mean_diff_fwd=("diff_fwd", "mean"),
@@ -102,6 +108,18 @@ def aggregate_bias(bias_df: pd.DataFrame) -> pd.DataFrame:
         mean_compliance=("compliance_fwd", "mean"),
         n_scenarios=("scenario", "count"),
     ).reset_index()
+
+    # Merge baseline bias
+    if not baseline.empty:
+        bl = baseline[["country_1", "country_2", "model", "bias"]].rename(
+            columns={"bias": "baseline_bias"}
+        )
+        agg = agg.merge(bl, on=["model", "country_1", "country_2"], how="left")
+        agg["narrative_effect"] = agg["mean_bias"] - agg["baseline_bias"]
+    else:
+        agg["baseline_bias"] = float("nan")
+        agg["narrative_effect"] = float("nan")
+
     return agg
 
 
