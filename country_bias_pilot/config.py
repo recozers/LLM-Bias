@@ -191,8 +191,12 @@ _NARRATIVES = _build_scenarios()
 SCENARIOS_CLOZE = {
     name: text + _CLOZE_SUFFIX for name, text in _NARRATIVES.items()
 }
-# No-narrative baseline: measures prior country preference without conflict context.
-SCENARIOS_CLOZE["baseline"] = _CLOZE_SUFFIX
+# No-narrative baseline: mentions the countries but with no conflict context.
+# Uses [COUNTRY_A] and [COUNTRY_B] so role-swapping works correctly.
+SCENARIOS_CLOZE["baseline"] = (
+    "[COUNTRY_A] and [COUNTRY_B] are involved in a dispute. "
+    + _CLOZE_SUFFIX
+)
 
 # ---------------------------------------------------------------------------
 # Chinese-language scenario templates (MCF)
