@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────
 
-COUNTRIES = ["USA", "UK", "France", "China", "Japan", "Venezuela"]
+COUNTRIES = ["United States", "United Kingdom", "France", "China", "Japan", "Venezuela"]
 
 MODELS = {
     "gpt2": "openai-community/gpt2",
