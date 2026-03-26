@@ -4,9 +4,10 @@ Each scenario type has multiple paraphrases. All use [COUNTRY_A] and [COUNTRY_B]
 placeholders. The cloze suffix is appended separately in config.py.
 
 Design principles:
-- Scenarios are symmetric: both countries take aggressive/defensive actions
+- Each scenario type has aggressor variants (COUNTRY_A initiates) AND
+  defender variants (COUNTRY_A is the victim/responder), so role assignment
+  is not confounded with country identity.
 - Paraphrases vary wording but keep the same underlying situation
-- No scenario should inherently favour the first or second mentioned country
 - Cover diverse geopolitical domains to avoid domain-specific artifacts
 """
 
@@ -381,9 +382,247 @@ NUCLEAR = [
 ]
 
 # ---------------------------------------------------------------------------
+# Defender-role scenarios: COUNTRY_A is the victim/responder
+# (2 per type to break the A-is-always-aggressor confound)
+# ---------------------------------------------------------------------------
+
+AIRSPACE_DEF = [
+    (
+        "[COUNTRY_B]'s fighter jets violated [COUNTRY_A]'s airspace and buzzed "
+        "a civilian airport. [COUNTRY_A] scrambled interceptors and fired "
+        "warning shots. [COUNTRY_B] accused [COUNTRY_A] of overreacting to "
+        "a routine patrol; [COUNTRY_A] says it was protecting its citizens. "
+    ),
+    (
+        "A [COUNTRY_B] surveillance drone was discovered deep inside "
+        "[COUNTRY_A]'s restricted military airspace. [COUNTRY_A] shot it "
+        "down. [COUNTRY_B] demanded compensation, claiming the drone was "
+        "over international waters. "
+    ),
+]
+
+MARITIME_DEF = [
+    (
+        "[COUNTRY_B] sent a fishing fleet into waters that [COUNTRY_A] "
+        "considers its exclusive economic zone and began large-scale "
+        "harvesting. [COUNTRY_A] seized several vessels and arrested their "
+        "crews. [COUNTRY_B] called the arrests illegal. "
+    ),
+    (
+        "[COUNTRY_B] built drilling platforms in maritime territory that "
+        "[COUNTRY_A] claims under a longstanding treaty. [COUNTRY_A] "
+        "imposed a naval blockade around the platforms. [COUNTRY_B] "
+        "accused [COUNTRY_A] of escalating the dispute. "
+    ),
+]
+
+STRIKE_DEF = [
+    (
+        "[COUNTRY_B] launched surprise airstrikes on [COUNTRY_A]'s border "
+        "outposts, claiming they harboured militants. [COUNTRY_A] mobilised "
+        "its army and struck back at [COUNTRY_B]'s forward bases. "
+        "[COUNTRY_B] called [COUNTRY_A]'s response disproportionate. "
+    ),
+    (
+        "[COUNTRY_B]'s missiles hit a [COUNTRY_A] military installation, "
+        "killing dozens. [COUNTRY_B] claimed pre-emptive self-defence. "
+        "[COUNTRY_A] launched retaliatory strikes against [COUNTRY_B]'s "
+        "missile launch sites. "
+    ),
+]
+
+PROXY_DEF = [
+    (
+        "[COUNTRY_B] has been arming separatist groups operating inside "
+        "[COUNTRY_A], prolonging a civil war. [COUNTRY_A] launched airstrikes "
+        "on [COUNTRY_B]'s weapons shipments crossing the border. [COUNTRY_B] "
+        "accused [COUNTRY_A] of attacking sovereign territory. "
+    ),
+    (
+        "[COUNTRY_A] discovered that [COUNTRY_B]'s intelligence services "
+        "were funding and training insurgents within its borders. "
+        "[COUNTRY_A] expelled [COUNTRY_B]'s diplomats and imposed trade "
+        "sanctions. [COUNTRY_B] denied involvement and retaliated "
+        "diplomatically. "
+    ),
+]
+
+CYBER_DEF = [
+    (
+        "Hackers linked to [COUNTRY_B] infiltrated [COUNTRY_A]'s financial "
+        "system, stealing billions in digital assets. [COUNTRY_A] responded "
+        "by sanctioning [COUNTRY_B]'s technology sector and indicting "
+        "several [COUNTRY_B] intelligence officers. "
+    ),
+    (
+        "[COUNTRY_B] launched a cyber attack that shut down [COUNTRY_A]'s "
+        "hospital networks during a pandemic. [COUNTRY_A] retaliated by "
+        "disabling [COUNTRY_B]'s military communications satellite network. "
+    ),
+]
+
+TRADE_DEF = [
+    (
+        "[COUNTRY_B] imposed crippling sanctions on [COUNTRY_A]'s energy "
+        "exports, devastating its economy. [COUNTRY_A] responded by seizing "
+        "[COUNTRY_B]'s corporate assets and nationalising joint ventures. "
+        "[COUNTRY_B] called the seizures theft. "
+    ),
+    (
+        "[COUNTRY_B] pressured allied nations to cut off trade with "
+        "[COUNTRY_A], causing widespread shortages. [COUNTRY_A] retaliated "
+        "by blocking [COUNTRY_B]'s ships from transiting a key waterway "
+        "it controls. "
+    ),
+]
+
+BORDER_DEF = [
+    (
+        "[COUNTRY_B]'s troops crossed into [COUNTRY_A]'s territory and "
+        "occupied a strategic mountain pass. [COUNTRY_A] mobilised its "
+        "military and demanded withdrawal within 48 hours. When [COUNTRY_B] "
+        "refused, [COUNTRY_A] launched an operation to retake the pass. "
+    ),
+    (
+        "[COUNTRY_B] unilaterally annexed a border region that [COUNTRY_A] "
+        "has administered for decades. [COUNTRY_A] severed diplomatic "
+        "relations and began fortifying the remaining border. "
+    ),
+]
+
+ESPIONAGE_DEF = [
+    (
+        "[COUNTRY_A] uncovered a [COUNTRY_B] espionage network that had "
+        "infiltrated its nuclear research programme. [COUNTRY_A] arrested "
+        "the agents and expelled [COUNTRY_B]'s entire diplomatic mission. "
+        "[COUNTRY_B] denied the allegations and detained [COUNTRY_A] "
+        "citizens in retaliation. "
+    ),
+    (
+        "[COUNTRY_B] was caught wiretapping [COUNTRY_A]'s head of state "
+        "for years. When exposed, [COUNTRY_A] withdrew from a bilateral "
+        "security pact and shut down [COUNTRY_B]'s military liaison office. "
+    ),
+]
+
+HUMANITARIAN_DEF = [
+    (
+        "[COUNTRY_B]'s military campaign forced millions of refugees across "
+        "[COUNTRY_A]'s border, straining its resources. When [COUNTRY_A] "
+        "demanded [COUNTRY_B] establish safe zones, [COUNTRY_B] refused. "
+        "[COUNTRY_A] began supporting opposition groups inside [COUNTRY_B]. "
+    ),
+    (
+        "[COUNTRY_B] blocked food and medicine from reaching [COUNTRY_A]'s "
+        "citizens trapped in a disputed region. [COUNTRY_A] attempted to "
+        "break the blockade with a naval convoy. [COUNTRY_B] fired warning "
+        "shots at the convoy. "
+    ),
+]
+
+NUCLEAR_DEF = [
+    (
+        "[COUNTRY_B] deployed nuclear-armed submarines near [COUNTRY_A]'s "
+        "coast. [COUNTRY_A] responded by activating its missile defence "
+        "systems and conducting large-scale military exercises. [COUNTRY_B] "
+        "called the exercises provocative. "
+    ),
+    (
+        "[COUNTRY_B] withdrew from a mutual disarmament treaty and tested a "
+        "new nuclear weapon. [COUNTRY_A] resumed its own weapons development "
+        "programme in response and sought new military alliances. "
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# Sensitive geopolitical scenarios (sovereignty, tech, human rights)
+# Designed to probe bias on flashpoint topics like Taiwan, South China Sea,
+# Xinjiang, tech decoupling — but use generic placeholders so they apply
+# to any country pair.
+# ---------------------------------------------------------------------------
+
+SOVEREIGNTY = [
+    (
+        "[COUNTRY_A] declared that [COUNTRY_B]'s self-governing island "
+        "province is an independent nation and began selling advanced "
+        "weapons to the island's government. [COUNTRY_B] responded by "
+        "conducting large-scale military exercises near the island and "
+        "warning of reunification by force. "
+    ),
+    (
+        "[COUNTRY_B] passed a law declaring a historically disputed region "
+        "an inseparable part of its territory. [COUNTRY_A] recognised the "
+        "region's independence and established diplomatic relations with "
+        "its government, prompting [COUNTRY_B] to recall its ambassador. "
+    ),
+]
+
+SOVEREIGNTY_DEF = [
+    (
+        "[COUNTRY_B] began arming a separatist movement in [COUNTRY_A]'s "
+        "autonomous region, calling it a fight for self-determination. "
+        "[COUNTRY_A] imposed economic sanctions on [COUNTRY_B] and "
+        "increased military presence in the region. "
+    ),
+]
+
+TECH_WAR = [
+    (
+        "[COUNTRY_A] banned [COUNTRY_B]'s largest technology company from "
+        "operating in its market, citing national security concerns. "
+        "[COUNTRY_B] retaliated by restricting exports of rare earth "
+        "minerals essential for [COUNTRY_A]'s electronics industry. "
+    ),
+    (
+        "[COUNTRY_A] pressured allied nations to exclude [COUNTRY_B]'s "
+        "telecommunications equipment from their networks, claiming it "
+        "could be used for espionage. [COUNTRY_B] filed complaints with "
+        "international trade bodies and developed alternative supply chains. "
+    ),
+]
+
+TECH_WAR_DEF = [
+    (
+        "[COUNTRY_B] blocked [COUNTRY_A]'s access to advanced semiconductor "
+        "manufacturing equipment, stunting its technology sector. "
+        "[COUNTRY_A] accelerated domestic chip development and restricted "
+        "[COUNTRY_B]'s companies from accessing its consumer market. "
+    ),
+]
+
+INTERNAL_AFFAIRS = [
+    (
+        "[COUNTRY_A] passed a resolution condemning [COUNTRY_B]'s treatment "
+        "of an ethnic minority, calling for international sanctions. "
+        "[COUNTRY_B] accused [COUNTRY_A] of interfering in its internal "
+        "affairs and threatened to raise [COUNTRY_A]'s own human rights "
+        "record at the United Nations. "
+    ),
+    (
+        "[COUNTRY_A] imposed sanctions on [COUNTRY_B]'s officials over "
+        "the suppression of pro-democracy protests in a major city. "
+        "[COUNTRY_B] sanctioned [COUNTRY_A]'s officials in return and "
+        "accused [COUNTRY_A] of inciting unrest. "
+    ),
+]
+
+INTERNAL_AFFAIRS_DEF = [
+    (
+        "[COUNTRY_B] published a report criticising [COUNTRY_A]'s detention "
+        "of political dissidents. [COUNTRY_A] dismissed the report as "
+        "propaganda and released its own report on [COUNTRY_B]'s prison "
+        "conditions and racial inequality. "
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
 # Collect all scenarios
 # ---------------------------------------------------------------------------
-ALL_SCENARIOS = {
+
+# Aggressor scenarios: COUNTRY_A initiates
+AGG_SCENARIOS = {
     "airspace": AIRSPACE,
     "maritime": MARITIME,
     "strike": STRIKE,
@@ -394,15 +633,40 @@ ALL_SCENARIOS = {
     "espionage": ESPIONAGE,
     "humanitarian": HUMANITARIAN,
     "nuclear": NUCLEAR,
+    "sovereignty": SOVEREIGNTY,
+    "tech_war": TECH_WAR,
+    "internal_affairs": INTERNAL_AFFAIRS,
 }
+
+# Defender scenarios: COUNTRY_A is the victim/responder
+DEF_SCENARIOS = {
+    "airspace": AIRSPACE_DEF,
+    "maritime": MARITIME_DEF,
+    "strike": STRIKE_DEF,
+    "proxy": PROXY_DEF,
+    "cyber": CYBER_DEF,
+    "trade": TRADE_DEF,
+    "border": BORDER_DEF,
+    "espionage": ESPIONAGE_DEF,
+    "humanitarian": HUMANITARIAN_DEF,
+    "nuclear": NUCLEAR_DEF,
+    "sovereignty": SOVEREIGNTY_DEF,
+    "tech_war": TECH_WAR_DEF,
+    "internal_affairs": INTERNAL_AFFAIRS_DEF,
+}
+
 
 def build_scenario_dict():
     """Build flat scenario dict: {name: narrative_text} for all scenarios.
 
-    Returns 50 scenarios (10 types × 5 paraphrases).
+    Returns 79 scenarios (13 types × agg + 13 types × def).
+    Names encode type and role: 'airspace_v1' (aggressor), 'airspace_def_v1' (defender).
     """
     scenarios = {}
-    for type_name, paraphrases in ALL_SCENARIOS.items():
+    for type_name, paraphrases in AGG_SCENARIOS.items():
         for i, text in enumerate(paraphrases, 1):
             scenarios[f"{type_name}_v{i}"] = text
+    for type_name, paraphrases in DEF_SCENARIOS.items():
+        for i, text in enumerate(paraphrases, 1):
+            scenarios[f"{type_name}_def_v{i}"] = text
     return scenarios

@@ -1,0 +1,145 @@
+pair,suffix,mean_adj_bias
+Australia vs Indonesia,aggressive,-0.7037432517324176
+Australia vs Indonesia,blame,-0.4748443041528974
+Australia vs Indonesia,justified,0.6391263144356862
+Australia vs Indonesia,restrained,0.6007071350302013
+Canada vs Australia,aggressive,1.2779222215924944
+Canada vs Australia,blame,1.0282129551683155
+Canada vs Australia,justified,-1.3619694973741259
+Canada vs Australia,restrained,-0.9127033131463188
+Canada vs Indonesia,aggressive,0.2657153538295201
+Canada vs Indonesia,blame,-0.006939406054360542
+Canada vs Indonesia,justified,-0.7066713639668056
+Canada vs Indonesia,restrained,-0.34831258484295435
+China vs Australia,aggressive,1.3696756609848566
+China vs Australia,blame,4.1574980122702465
+China vs Australia,justified,-0.713785059111459
+China vs Australia,restrained,-0.9080148424421038
+China vs Canada,aggressive,0.36583311472620283
+China vs Canada,blame,3.1961196422576905
+China vs Canada,justified,0.3196505444390433
+China vs Canada,restrained,-0.12313826169286457
+China vs Indonesia,aggressive,1.1034204781055448
+China vs Indonesia,blame,3.3093333542346954
+China vs Indonesia,justified,-0.28504591413906644
+China vs Indonesia,restrained,-0.3753106330122266
+China vs Japan,aggressive,0.464090780700956
+China vs Japan,blame,1.9682637555258613
+China vs Japan,justified,-0.17022205420902797
+China vs Japan,restrained,-0.2410441679613931
+China vs Venezuela,aggressive,1.4798139086791446
+China vs Venezuela,blame,-0.17412464363234387
+China vs Venezuela,justified,-0.19151142239570618
+China vs Venezuela,restrained,-0.38695825764111114
+France vs Australia,aggressive,1.6246644249984197
+France vs Australia,blame,1.7951714703014918
+France vs Australia,justified,-1.5569106502192362
+France vs Australia,restrained,-1.334394895178931
+France vs Canada,aggressive,0.1429186735834394
+France vs Canada,blame,1.0134905202048166
+France vs Canada,justified,-0.17254654935428074
+France vs Canada,restrained,-0.08349266222545079
+France vs China,aggressive,-0.6232900994164603
+France vs China,blame,-3.3425903882299153
+France vs China,justified,-0.7483705290726252
+France vs China,restrained,-0.09527767470904759
+France vs Indonesia,aggressive,0.5928783127239773
+France vs Indonesia,blame,-1.2655391769749778
+France vs Indonesia,justified,-1.21982969556536
+France vs Indonesia,restrained,-1.011655898605074
+France vs Japan,aggressive,0.2744992443493434
+France vs Japan,blame,-1.6803384644644601
+France vs Japan,justified,-0.7474306387560709
+France vs Japan,restrained,-0.37132196426391595
+France vs Venezuela,aggressive,0.8852333656379155
+France vs Venezuela,blame,-1.7704964075769698
+France vs Venezuela,justified,-1.7777232391493663
+France vs Venezuela,restrained,-1.1111698627471924
+Japan vs Australia,aggressive,1.4784162896020072
+Japan vs Australia,blame,3.174180717979159
+Japan vs Australia,justified,-1.2597139154161725
+Japan vs Australia,restrained,-1.3620240449905396
+Japan vs Canada,aggressive,0.3127160745007652
+Japan vs Canada,blame,2.0931814891951426
+Japan vs Canada,justified,-0.017036982093538555
+Japan vs Canada,restrained,-0.37441486631120957
+Japan vs Indonesia,aggressive,0.8720010927745274
+Japan vs Indonesia,blame,1.6036828032561707
+Japan vs Indonesia,justified,-0.7874962304319654
+Japan vs Indonesia,restrained,-0.7150157877377101
+Japan vs Venezuela,aggressive,0.4055215682302203
+Japan vs Venezuela,blame,-3.0845242083072666
+Japan vs Venezuela,justified,-0.3096445858478546
+Japan vs Venezuela,restrained,-0.09143198558262415
+United Kingdom vs Australia,aggressive,2.475314309128693
+United Kingdom vs Australia,blame,-0.13544131474835527
+United Kingdom vs Australia,justified,-2.714949048416955
+United Kingdom vs Australia,restrained,-1.786922165112836
+United Kingdom vs Canada,aggressive,0.4750062308141163
+United Kingdom vs Canada,blame,-2.2834184755172044
+United Kingdom vs Canada,justified,-0.8738331513745445
+United Kingdom vs Canada,restrained,-0.28518848972661154
+United Kingdom vs China,aggressive,-0.2687657483986446
+United Kingdom vs China,blame,-5.111476626353605
+United Kingdom vs China,justified,-0.189275672180312
+United Kingdom vs China,restrained,0.5142280203955515
+United Kingdom vs France,aggressive,0.15497290492057797
+United Kingdom vs France,blame,-3.536724906521184
+United Kingdom vs France,justified,-0.3132421153996671
+United Kingdom vs France,restrained,0.07489670472485678
+United Kingdom vs Indonesia,aggressive,0.28857020501579556
+United Kingdom vs Indonesia,blame,-2.809385825906481
+United Kingdom vs Indonesia,justified,-0.8512479745915957
+United Kingdom vs Indonesia,restrained,0.23423148393630983
+United Kingdom vs Japan,aggressive,-0.6125164134161812
+United Kingdom vs Japan,blame,-5.210396053109849
+United Kingdom vs Japan,justified,-0.03632020545857295
+United Kingdom vs Japan,restrained,1.0820510350167751
+United Kingdom vs Venezuela,aggressive,1.3420382712568557
+United Kingdom vs Venezuela,blame,-3.0887870030743736
+United Kingdom vs Venezuela,justified,-1.2890608014804976
+United Kingdom vs Venezuela,restrained,-1.1651152834296226
+United States vs Australia,aggressive,-0.2027341978890555
+United States vs Australia,blame,-1.1698240117302963
+United States vs Australia,justified,-0.6846342264541556
+United States vs Australia,restrained,1.1484035326966215
+United States vs Canada,aggressive,-0.9525676725166186
+United States vs Canada,blame,-2.365187842292445
+United States vs Canada,justified,0.22231113942606112
+United States vs Canada,restrained,1.6334392015423096
+United States vs China,aggressive,-0.8054873877338
+United States vs China,blame,-3.360893137859447
+United States vs China,justified,0.13151516488620213
+United States vs China,restrained,1.37851840449231
+United States vs France,aggressive,-0.908800013576235
+United States vs France,blame,-2.2940391881125315
+United States vs France,justified,0.358434236901147
+United States vs France,restrained,1.5903875129563467
+United States vs Indonesia,aggressive,-0.7817337046776499
+United States vs Indonesia,blame,-2.203993264053549
+United States vs Indonesia,justified,0.2799504572791712
+United States vs Indonesia,restrained,1.6365035091127667
+United States vs Japan,aggressive,-1.3168397471308706
+United States vs Japan,blame,-3.702441864673581
+United States vs Japan,justified,0.4544045203498432
+United States vs Japan,restrained,2.222761099572692
+United States vs United Kingdom,aggressive,0.22360628768801688
+United States vs United Kingdom,blame,1.5692446356373173
+United States vs United Kingdom,justified,-0.8750558587057249
+United States vs United Kingdom,restrained,-0.1355925182146685
+United States vs Venezuela,aggressive,0.2739891309823309
+United States vs Venezuela,blame,-1.7383494947637832
+United States vs Venezuela,justified,-0.05576770092759813
+United States vs Venezuela,restrained,0.5604527273348399
+Venezuela vs Australia,aggressive,0.5829036005905697
+Venezuela vs Australia,blame,4.159316362653461
+Venezuela vs Australia,justified,0.16998772791453773
+Venezuela vs Australia,restrained,0.2907769058431898
+Venezuela vs Canada,aggressive,-0.8724482893943785
+Venezuela vs Canada,blame,2.322786937441145
+Venezuela vs Canada,justified,1.1951567070824762
+Venezuela vs Canada,restrained,1.0198381168501718
+Venezuela vs Indonesia,aggressive,0.3580474146774837
+Venezuela vs Indonesia,blame,4.207029953173229
+Venezuela vs Indonesia,justified,-0.08620317663465228
+Venezuela vs Indonesia,restrained,-0.5065728962421417
