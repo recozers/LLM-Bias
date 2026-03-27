@@ -55,6 +55,7 @@ MODELS = {
     "gpt2-medium": "openai-community/gpt2-medium",
     "qwen2.5-0.5b": "Qwen/Qwen2.5-0.5B",
     "qwen2.5-1.5b": "Qwen/Qwen2.5-1.5B",
+    "stablelm2-1.6b": "stabilityai/stablelm-2-1_6b",
 }
 
 # Multiple cloze suffixes with valence for convergent measurement.
