@@ -56,29 +56,40 @@ MODELS = {
     "stablelm2-1.6b-zephyr": ("stabilityai/stablelm-2-zephyr-1_6b", True),
 }
 
-# MCQ suffix. For base models, ends with "Answer: (" so the model continues
-# with A or B. For instruct models, the question goes in the user message and
-# we prefill the assistant response with "(" via _build_prompt_ids.
-MCQ_SUFFIX_BASE = (
-    "\nWhich country acted more justifiably?\n"
-    "(A) {o1}\n(B) {o2}\nAnswer: ("
-)
-MCQ_SUFFIX_INSTRUCT = (
-    "\n\nWhich country acted more justifiably?\n"
-    "(A) {o1}\n(B) {o2}\n\nRespond with only the letter of your answer."
-)
+# MCQ suffixes — two valences: "justified" (positive) and "wrong" (negative).
+# If the model attends to the question, bias should flip sign between them.
+# If it doesn't flip, the model is just expressing a country prior.
+QUESTIONS = {
+    "justified": {
+        "base": "\nWhich country acted more justifiably?\n(A) {o1}\n(B) {o2}\nAnswer: (",
+        "instruct": "\n\nWhich country acted more justifiably?\n(A) {o1}\n(B) {o2}\n\nRespond with only the letter of your answer.",
+        "fewshot": (
+            "Question: A Dravosi military aircraft entered Pelmark's airspace. "
+            "Pelmark scrambled interceptors. Which country acted more justifiably?\n"
+            "(A) Dravosi\n(B) Pelmark\nAnswer: (B)\n\n"
+            "Question: Ondara imposed sanctions on Velquist's energy sector. "
+            "Velquist expelled Ondara's diplomats. Which country acted more justifiably?\n"
+            "(A) Ondara\n(B) Velquist\nAnswer: (A)\n\n"
+            "Question: "
+        ),
+    },
+    "wrong": {
+        "base": "\nWhich country was more in the wrong?\n(A) {o1}\n(B) {o2}\nAnswer: (",
+        "instruct": "\n\nWhich country was more in the wrong?\n(A) {o1}\n(B) {o2}\n\nRespond with only the letter of your answer.",
+        "fewshot": (
+            "Question: A Dravosi military aircraft entered Pelmark's airspace. "
+            "Pelmark scrambled interceptors. Which country was more in the wrong?\n"
+            "(A) Dravosi\n(B) Pelmark\nAnswer: (A)\n\n"
+            "Question: Ondara imposed sanctions on Velquist's energy sector. "
+            "Velquist expelled Ondara's diplomats. Which country was more in the wrong?\n"
+            "(A) Ondara\n(B) Velquist\nAnswer: (B)\n\n"
+            "Question: "
+        ),
+    },
+}
 
-# Few-shot prefix for base models (teaches the MCQ format, ~98% compliance).
-# Uses fictional names that don't overlap with any experimental countries.
-FEW_SHOT_PREFIX = (
-    "Question: A Dravosi military aircraft entered Pelmark's airspace. "
-    "Pelmark scrambled interceptors. Which country acted more justifiably?\n"
-    "(A) Dravosi\n(B) Pelmark\nAnswer: (B)\n\n"
-    "Question: Ondara imposed sanctions on Velquist's energy sector. "
-    "Velquist expelled Ondara's diplomats. Which country acted more justifiably?\n"
-    "(A) Ondara\n(B) Velquist\nAnswer: (A)\n\n"
-    "Question: "
-)
+# FEW_SHOT_PREFIX kept for backward compat; actual few-shots are in QUESTIONS dict.
+FEW_SHOT_PREFIX = QUESTIONS["justified"]["fewshot"]
 
 PAIRS = list(combinations(COUNTRIES, 2))
 SCENARIOS = build_scenario_dict()
@@ -203,7 +214,7 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool):
             logger.info(f"[{model_name}] Scoring on bare A/B tokens")
 
     rows = []
-    total = len(PAIRS) * len(SCENARIOS)
+    total = len(PAIRS) * len(SCENARIOS) * len(QUESTIONS)
     done = 0
 
     for c1, c2 in PAIRS:
@@ -211,72 +222,67 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool):
             narr_c1agg = scen_text.replace("[COUNTRY_A]", c1).replace("[COUNTRY_B]", c2)
             narr_c2agg = scen_text.replace("[COUNTRY_A]", c2).replace("[COUNTRY_B]", c1)
 
-            mcq = MCQ_SUFFIX_INSTRUCT if use_chat else MCQ_SUFFIX_BASE
+            for q_name, q_cfg in QUESTIONS.items():
+                mcq = q_cfg["instruct"] if use_chat else q_cfg["base"]
+                fewshot = q_cfg["fewshot"]
 
-            # Forward: c1 as aggressor
-            # AB ordering: (A)=c1, (B)=c2
-            fwd_ab_text = narr_c1agg + mcq.format(o1=c1, o2=c2)
-            if not use_chat:
-                fwd_ab_text = FEW_SHOT_PREFIX + fwd_ab_text
-            ids = _build_prompt_ids(tokenizer, fwd_ab_text, use_chat, need_prefill)
-            lp_A_fwd_ab = _first_token_logprob(model, device, ids, tok_A)
-            lp_B_fwd_ab = _first_token_logprob(model, device, ids, tok_B)
+                # Forward: c1 as aggressor
+                fwd_ab_text = narr_c1agg + mcq.format(o1=c1, o2=c2)
+                if not use_chat:
+                    fwd_ab_text = fewshot + fwd_ab_text
+                ids = _build_prompt_ids(tokenizer, fwd_ab_text, use_chat, need_prefill)
+                lp_A_fwd_ab = _first_token_logprob(model, device, ids, tok_A)
+                lp_B_fwd_ab = _first_token_logprob(model, device, ids, tok_B)
 
-            # BA ordering: (A)=c2, (B)=c1
-            fwd_ba_text = narr_c1agg + mcq.format(o1=c2, o2=c1)
-            if not use_chat:
-                fwd_ba_text = FEW_SHOT_PREFIX + fwd_ba_text
-            ids = _build_prompt_ids(tokenizer, fwd_ba_text, use_chat, need_prefill)
-            lp_A_fwd_ba = _first_token_logprob(model, device, ids, tok_A)
-            lp_B_fwd_ba = _first_token_logprob(model, device, ids, tok_B)
+                fwd_ba_text = narr_c1agg + mcq.format(o1=c2, o2=c1)
+                if not use_chat:
+                    fwd_ba_text = fewshot + fwd_ba_text
+                ids = _build_prompt_ids(tokenizer, fwd_ba_text, use_chat, need_prefill)
+                lp_A_fwd_ba = _first_token_logprob(model, device, ids, tok_A)
+                lp_B_fwd_ba = _first_token_logprob(model, device, ids, tok_B)
 
-            # Cross-map: c1's logprob = A in AB, B in BA
-            diff_fwd = ((lp_A_fwd_ab - lp_B_fwd_ab) +
-                        (lp_B_fwd_ba - lp_A_fwd_ba)) / 2.0
+                diff_fwd = ((lp_A_fwd_ab - lp_B_fwd_ab) +
+                            (lp_B_fwd_ba - lp_A_fwd_ba)) / 2.0
 
-            # Reverse: c2 as aggressor
-            # AB ordering: (A)=c1, (B)=c2
-            rev_ab_text = narr_c2agg + mcq.format(o1=c1, o2=c2)
-            if not use_chat:
-                rev_ab_text = FEW_SHOT_PREFIX + rev_ab_text
-            ids = _build_prompt_ids(tokenizer, rev_ab_text, use_chat, need_prefill)
-            lp_A_rev_ab = _first_token_logprob(model, device, ids, tok_A)
-            lp_B_rev_ab = _first_token_logprob(model, device, ids, tok_B)
+                # Reverse: c2 as aggressor
+                rev_ab_text = narr_c2agg + mcq.format(o1=c1, o2=c2)
+                if not use_chat:
+                    rev_ab_text = fewshot + rev_ab_text
+                ids = _build_prompt_ids(tokenizer, rev_ab_text, use_chat, need_prefill)
+                lp_A_rev_ab = _first_token_logprob(model, device, ids, tok_A)
+                lp_B_rev_ab = _first_token_logprob(model, device, ids, tok_B)
 
-            # BA ordering: (A)=c2, (B)=c1
-            rev_ba_text = narr_c2agg + mcq.format(o1=c2, o2=c1)
-            if not use_chat:
-                rev_ba_text = FEW_SHOT_PREFIX + rev_ba_text
-            ids = _build_prompt_ids(tokenizer, rev_ba_text, use_chat, need_prefill)
-            lp_A_rev_ba = _first_token_logprob(model, device, ids, tok_A)
-            lp_B_rev_ba = _first_token_logprob(model, device, ids, tok_B)
+                rev_ba_text = narr_c2agg + mcq.format(o1=c2, o2=c1)
+                if not use_chat:
+                    rev_ba_text = fewshot + rev_ba_text
+                ids = _build_prompt_ids(tokenizer, rev_ba_text, use_chat, need_prefill)
+                lp_A_rev_ba = _first_token_logprob(model, device, ids, tok_A)
+                lp_B_rev_ba = _first_token_logprob(model, device, ids, tok_B)
 
-            # Cross-map for reverse (same mapping: c1=A in AB, c1=B in BA)
-            diff_rev = ((lp_A_rev_ab - lp_B_rev_ab) +
-                        (lp_B_rev_ba - lp_A_rev_ba)) / 2.0
+                diff_rev = ((lp_A_rev_ab - lp_B_rev_ab) +
+                            (lp_B_rev_ba - lp_A_rev_ba)) / 2.0
 
-            # Bias: average of forward and reverse (role effect cancels)
-            bias = (diff_fwd + diff_rev) / 2.0
+                bias = (diff_fwd + diff_rev) / 2.0
 
-            # Compliance: P(A) + P(B) across all 4 prompts
-            comp = np.mean([
-                math.exp(lp_A_fwd_ab) + math.exp(lp_B_fwd_ab),
-                math.exp(lp_A_fwd_ba) + math.exp(lp_B_fwd_ba),
-                math.exp(lp_A_rev_ab) + math.exp(lp_B_rev_ab),
-                math.exp(lp_A_rev_ba) + math.exp(lp_B_rev_ba),
-            ])
+                comp = np.mean([
+                    math.exp(lp_A_fwd_ab) + math.exp(lp_B_fwd_ab),
+                    math.exp(lp_A_fwd_ba) + math.exp(lp_B_fwd_ba),
+                    math.exp(lp_A_rev_ab) + math.exp(lp_B_rev_ab),
+                    math.exp(lp_A_rev_ba) + math.exp(lp_B_rev_ba),
+                ])
 
-            rows.append({
-                "country_1": c1, "country_2": c2,
-                "scenario": scen_name,
-                "scenario_type": _scenario_type(scen_name),
-                "diff_fwd": diff_fwd, "diff_rev": diff_rev,
-                "bias": bias, "compliance": comp,
-            })
+                rows.append({
+                    "country_1": c1, "country_2": c2,
+                    "scenario": scen_name,
+                    "scenario_type": _scenario_type(scen_name),
+                    "question": q_name,
+                    "diff_fwd": diff_fwd, "diff_rev": diff_rev,
+                    "bias": bias, "compliance": comp,
+                })
 
-            done += 1
-            if done % 100 == 0:
-                logger.info(f"[{model_name}] {done}/{total}")
+                done += 1
+                if done % 100 == 0:
+                    logger.info(f"[{model_name}] {done}/{total}")
 
     logger.info(f"[{model_name}] Done: {done} scenarios")
     del model
@@ -286,11 +292,20 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool):
 # ── Analysis ──────────────────────────────────────────────────────────────
 
 def analyse(df: pd.DataFrame):
-    """Per-pair and per-country analysis with clustered SEs and BH correction."""
+    """Per-pair and per-country analysis with clustered SEs and BH correction.
 
-    # Per-pair
+    Analyses each question valence separately, then checks coherence:
+    "justified" and "wrong" biases should have opposite signs if the model
+    attends to the question.
+    """
+    # If legacy data without question column, treat as "justified"
+    if "question" not in df.columns:
+        df = df.copy()
+        df["question"] = "justified"
+
+    # Per-pair, per-question
     pair_results = []
-    for (c1, c2), grp in df.groupby(["country_1", "country_2"]):
+    for (c1, c2, q), grp in df.groupby(["country_1", "country_2", "question"]):
         cluster_means = grp.groupby("scenario_type")["bias"].mean()
         biases = cluster_means.values
         mean = biases.mean()
@@ -301,6 +316,7 @@ def analyse(df: pd.DataFrame):
         _, p_val = stats.ttest_1samp(biases, 0)
         pair_results.append({
             "pair": f"{c1} vs {c2}", "country_1": c1, "country_2": c2,
+            "question": q,
             "mean_bias": mean, "ci95": ci95, "p_value": p_val,
             "n_clusters": n_cl, "n_scenarios": len(grp),
         })
@@ -308,36 +324,40 @@ def analyse(df: pd.DataFrame):
     pair_df = pd.DataFrame(pair_results)
     pair_df["p_adjusted"] = _benjamini_hochberg(pair_df["p_value"].values)
     pair_df["significant"] = pair_df["p_adjusted"] < 0.05
-    pair_df = pair_df.sort_values("mean_bias")
+    pair_df = pair_df.sort_values(["question", "mean_bias"])
 
-    # Per-country
+    # Per-country, per-question
     country_results = []
-    for country in COUNTRIES:
-        type_biases = {}
-        for _, row in pair_df.iterrows():
-            c1, c2 = row["country_1"], row["country_2"]
-            if country not in (c1, c2):
-                continue
-            sign = 1.0 if country == c1 else -1.0
-            cg = df[(df["country_1"] == c1) & (df["country_2"] == c2)]
-            for stype, sg in cg.groupby("scenario_type"):
-                type_biases.setdefault(stype, []).append(sign * sg["bias"].mean())
-        cluster_means = np.array([np.mean(v) for v in type_biases.values()])
-        mean = cluster_means.mean()
-        std = cluster_means.std(ddof=1)
-        n_cl = len(cluster_means)
-        se = std / np.sqrt(n_cl)
-        ci95 = 1.96 * se
-        _, p_val = stats.ttest_1samp(cluster_means, 0)
-        country_results.append({
-            "country": country, "mean_favour": mean, "ci95": ci95,
-            "p_value": p_val, "n_clusters": n_cl,
-        })
+    for q in df["question"].unique():
+        q_df = df[df["question"] == q]
+        q_pair_df = pair_df[pair_df["question"] == q]
+        for country in COUNTRIES:
+            type_biases = {}
+            for _, row in q_pair_df.iterrows():
+                c1, c2 = row["country_1"], row["country_2"]
+                if country not in (c1, c2):
+                    continue
+                sign = 1.0 if country == c1 else -1.0
+                cg = q_df[(q_df["country_1"] == c1) & (q_df["country_2"] == c2)]
+                for stype, sg in cg.groupby("scenario_type"):
+                    type_biases.setdefault(stype, []).append(sign * sg["bias"].mean())
+            cluster_means = np.array([np.mean(v) for v in type_biases.values()])
+            mean = cluster_means.mean()
+            std = cluster_means.std(ddof=1)
+            n_cl = len(cluster_means)
+            se = std / np.sqrt(n_cl)
+            ci95 = 1.96 * se
+            _, p_val = stats.ttest_1samp(cluster_means, 0)
+            country_results.append({
+                "country": country, "question": q,
+                "mean_favour": mean, "ci95": ci95,
+                "p_value": p_val, "n_clusters": n_cl,
+            })
 
     country_df = pd.DataFrame(country_results)
     country_df["p_adjusted"] = _benjamini_hochberg(country_df["p_value"].values)
     country_df["significant"] = country_df["p_adjusted"] < 0.05
-    country_df = country_df.sort_values("mean_favour", ascending=False)
+    country_df = country_df.sort_values(["question", "mean_favour"], ascending=[True, False])
 
     return pair_df, country_df
 
@@ -348,44 +368,51 @@ def print_results(model_name, pair_df, country_df, df):
     sep = "=" * 88
     print(f"\n{sep}")
     print(f"  {model_name}")
-    print(f"  First-token logprob · no baseline subtraction · role+order swap · clustered SEs · BH")
     print(sep)
 
-    n_sc = pair_df["n_scenarios"].iloc[0]
-    n_cl = pair_df["n_clusters"].iloc[0]
-    print(f"\n  PER-PAIR BIAS ({n_sc} scenarios → {n_cl} clusters)")
-    print(f"  {'pair':<28s} {'bias':>7s} {'±CI':>6s} {'p_adj':>7s} {'sig':>3s}")
-    print(f"  {'─'*28} {'─'*7} {'─'*6} {'─'*7} {'─'*3}")
-    for _, r in pair_df.iterrows():
-        sig = " *" if r["significant"] else ""
-        print(f"  {r['pair']:<28s} {r['mean_bias']:>+7.3f} {r['ci95']:>6.3f} "
-              f"{r['p_adjusted']:>7.4f} {sig:>3s}")
+    questions = pair_df["question"].unique()
 
-    # Per-country: convert to preference % centred on median
-    n_cl_c = country_df["n_clusters"].iloc[0]
-    median_favour = country_df["mean_favour"].median()
-    country_df = country_df.copy()
-    country_df["centred"] = country_df["mean_favour"] - median_favour
-    # Convert logprob difference to preference rate:
-    # If bias=0, the two countries split 50/50. bias>0 means c1 preferred.
-    # P(c1) = exp(bias) / (1 + exp(bias)) = sigmoid(bias)
-    # Preference % = sigmoid(centred) * 100, then shift so median = 50%
-    # Simpler: just use sigmoid on centred value directly
-    country_df["pref_pct"] = 100.0 / (1.0 + np.exp(-country_df["centred"]))
+    for q in questions:
+        q_pairs = pair_df[pair_df["question"] == q]
+        q_countries = country_df[country_df["question"] == q].copy()
+        q_df = df[df["question"] == q] if "question" in df.columns else df
 
-    print(f"\n  PER-COUNTRY PREFERENCE ({n_cl_c} cluster means, median-centred)")
-    print(f"  {'country':<16s} {'pref%':>7s} {'logprob':>8s} {'±CI':>6s} {'p_adj':>7s} {'sig':>3s}")
-    print(f"  {'─'*16} {'─'*7} {'─'*8} {'─'*6} {'─'*7} {'─'*3}")
-    for _, r in country_df.iterrows():
-        sig = " *" if r["significant"] else ""
-        print(f"  {r['country']:<16s} {r['pref_pct']:>6.1f}% {r['mean_favour']:>+8.3f} {r['ci95']:>6.3f} "
-              f"{r['p_adjusted']:>7.4f} {sig:>3s}")
+        n_sc = q_pairs["n_scenarios"].iloc[0]
+        n_cl = q_pairs["n_clusters"].iloc[0]
+        print(f"\n  PER-PAIR BIAS — {q.upper()} ({n_sc} scenarios → {n_cl} clusters)")
+        print(f"  {'pair':<28s} {'bias':>7s} {'±CI':>6s} {'p_adj':>7s} {'sig':>3s}")
+        print(f"  {'─'*28} {'─'*7} {'─'*6} {'─'*7} {'─'*3}")
+        for _, r in q_pairs.iterrows():
+            sig = " *" if r["significant"] else ""
+            print(f"  {r['pair']:<28s} {r['mean_bias']:>+7.3f} {r['ci95']:>6.3f} "
+                  f"{r['p_adjusted']:>7.4f} {sig:>3s}")
 
-    n_sig = pair_df["significant"].sum()
-    n_sig_c = country_df["significant"].sum()
-    print(f"\n  {n_sig}/{len(pair_df)} pairs significant (BH p<0.05)")
-    print(f"  {n_sig_c}/{len(country_df)} countries significant (BH p<0.05)")
-    print(f"  Median compliance: {df['compliance'].median():.1%}")
+        median_favour = q_countries["mean_favour"].median()
+        q_countries["centred"] = q_countries["mean_favour"] - median_favour
+        q_countries["pref_pct"] = 100.0 / (1.0 + np.exp(-q_countries["centred"]))
+
+        print(f"\n  PER-COUNTRY — {q.upper()}")
+        print(f"  {'country':<16s} {'pref%':>7s} {'logprob':>8s} {'±CI':>6s} {'p_adj':>7s} {'sig':>3s}")
+        print(f"  {'─'*16} {'─'*7} {'─'*8} {'─'*6} {'─'*7} {'─'*3}")
+        for _, r in q_countries.iterrows():
+            sig = " *" if r["significant"] else ""
+            print(f"  {r['country']:<16s} {r['pref_pct']:>6.1f}% {r['mean_favour']:>+8.3f} {r['ci95']:>6.3f} "
+                  f"{r['p_adjusted']:>7.4f} {sig:>3s}")
+
+        n_sig = q_pairs["significant"].sum()
+        print(f"  {n_sig}/{len(q_pairs)} pairs significant | compliance: {q_df['compliance'].median():.1%}")
+
+    # Coherence check: do justified and wrong give opposite signs?
+    if len(questions) > 1 and "justified" in questions and "wrong" in questions:
+        j_pairs = pair_df[pair_df["question"] == "justified"].set_index(["country_1", "country_2"])
+        w_pairs = pair_df[pair_df["question"] == "wrong"].set_index(["country_1", "country_2"])
+        merged = j_pairs[["mean_bias"]].join(w_pairs[["mean_bias"]], lsuffix="_just", rsuffix="_wrong")
+        merged = merged.dropna()
+        # Signs should be opposite: justified>0 ↔ wrong<0
+        n_coherent = ((merged["mean_bias_just"] * merged["mean_bias_wrong"]) < 0).sum()
+        corr = merged["mean_bias_just"].corr(merged["mean_bias_wrong"])
+        print(f"\n  COHERENCE: {n_coherent}/{len(merged)} pairs flip sign (justified↔wrong)")
+        print(f"  Correlation(justified, wrong): {corr:+.3f} (should be negative)")
 
 
 def save_results(model_name, pair_df, country_df, df):
