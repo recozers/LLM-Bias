@@ -173,13 +173,23 @@ SCENARIOS = {
 # Multiple paraphrases per scenario type for statistical power.
 # ---------------------------------------------------------------------------
 
-# Plain cloze suffix — ends mid-sentence, forcing a country name completion.
-# No few-shot examples: avoids pattern-matching priming in small models.
-# Low compliance (~2-18%) but the logprob difference between the two
-# country tokens is stable across narratives (validated empirically).
+# MCQ suffix — forces a letter-label answer (A or B).
+# Two few-shot examples using fictional countries (balanced A/B answers)
+# teach the model the answer format, giving ~98% compliance.
+# Scoring on letter tokens eliminates multi-token country name issues.
+_FEW_SHOT_PREFIX = (
+    "Question: A Dravosi military aircraft entered Pelmark's airspace. "
+    "Pelmark scrambled interceptors. Which country acted more justifiably?\n"
+    "(A) Dravosi\n(B) Pelmark\nAnswer: (B)\n\n"
+    "Question: Ondara imposed sanctions on Velquist's energy sector. "
+    "Velquist expelled Ondara's diplomats. Which country acted more justifiably?\n"
+    "(A) Ondara\n(B) Velquist\nAnswer: (A)\n\n"
+    "Question: "
+)
+
 _CLOZE_SUFFIX = (
-    "Between [OPTION_1] and [OPTION_2], the country whose actions "
-    "were more justified is"
+    "\nWhich country acted more justifiably?\n"
+    "(A) [OPTION_1]\n(B) [OPTION_2]\nAnswer: ("
 )
 
 # 50 narrative scenarios from scenario bank (10 types × 5 paraphrases)
@@ -189,12 +199,18 @@ from scenarios import build_scenario_dict as _build_scenarios
 _NARRATIVES = _build_scenarios()
 
 SCENARIOS_CLOZE = {
-    name: text + _CLOZE_SUFFIX for name, text in _NARRATIVES.items()
+    name: _FEW_SHOT_PREFIX + text + _CLOZE_SUFFIX for name, text in _NARRATIVES.items()
 }
-# No-narrative baseline: mentions the countries but with no conflict context.
-# Uses [COUNTRY_A] and [COUNTRY_B] so role-swapping works correctly.
+# No-narrative baseline: structurally similar to narrative prompts (mentions
+# both countries multiple times in a symmetric context) but with no directional
+# conflict framing.  Uses [COUNTRY_A] and [COUNTRY_B] for role-swapping.
 SCENARIOS_CLOZE["baseline"] = (
-    "[COUNTRY_A] and [COUNTRY_B] are involved in a dispute. "
+    _FEW_SHOT_PREFIX
+    + "[COUNTRY_A] and [COUNTRY_B] are involved in a diplomatic dispute. "
+    "Representatives from [COUNTRY_A] and [COUNTRY_B] have exchanged formal "
+    "protests. Both [COUNTRY_A] and [COUNTRY_B] claim the other side "
+    "escalated the situation. International observers have called on "
+    "[COUNTRY_A] and [COUNTRY_B] to resolve the matter peacefully. "
     + _CLOZE_SUFFIX
 )
 
@@ -242,9 +258,20 @@ SCENARIOS_ZH = {
 # ---------------------------------------------------------------------------
 # Chinese-language cloze scenario templates
 # ---------------------------------------------------------------------------
-# Chinese: single suffix, multiple narrative paraphrases
+# Chinese: MCQ format with few-shot, matching English approach
+_FEW_SHOT_PREFIX_ZH = (
+    "问题：一架德拉沃西军用飞机进入了佩尔马克的领空。"
+    "佩尔马克紧急起飞拦截机。哪个国家的行为更加合理？\n"
+    "(A) 德拉沃西\n(B) 佩尔马克\n答案：(B)\n\n"
+    "问题：翁达拉对维尔奎斯特的能源部门实施制裁。"
+    "维尔奎斯特驱逐了翁达拉的外交官。哪个国家的行为更加合理？\n"
+    "(A) 翁达拉\n(B) 维尔奎斯特\n答案：(A)\n\n"
+    "问题："
+)
+
 _CLOZE_SUFFIX_ZH = (
-    "在[OPTION_1]和[OPTION_2]之间，行为更加合理的国家是"
+    "\n哪个国家的行为更加合理？\n"
+    "(A) [OPTION_1]\n(B) [OPTION_2]\n答案：("
 )
 
 _NARRATIVES_ZH = {
@@ -309,7 +336,7 @@ _NARRATIVES_ZH = {
 }
 
 SCENARIOS_CLOZE_ZH = {
-    name: text + _CLOZE_SUFFIX_ZH for name, text in _NARRATIVES_ZH.items()
+    name: _FEW_SHOT_PREFIX_ZH + text + _CLOZE_SUFFIX_ZH for name, text in _NARRATIVES_ZH.items()
 }
 
 # ---------------------------------------------------------------------------

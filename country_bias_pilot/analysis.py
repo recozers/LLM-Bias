@@ -39,11 +39,14 @@ def compute_bias(df: pd.DataFrame) -> pd.DataFrame:
     raw data, so diff_rev = logprob(c2) - logprob(c1) = -(logprob(c1) - logprob(c2)).
     We flip the sign so both diffs are in the same c1-vs-c2 frame.
 
-    bias = diff_fwd - diff_rev (difference of differences)
+    bias = (diff_fwd + diff_rev) / 2
 
-    If the model has no country preference, swapping roles should flip the
-    logprob difference equally, so bias ≈ 0. A positive bias means the model
-    favours c1 over c2 beyond what role assignment explains.
+    Decomposition: diff_fwd = country_pref + role_effect
+                   diff_rev = country_pref - role_effect
+    So:  (diff_fwd + diff_rev) / 2 = country_pref  (role effect cancels)
+         (diff_fwd - diff_rev) / 2 = role_effect    (country pref cancels)
+
+    A positive bias means the model favours c1 over c2 regardless of role.
     """
     rows = []
     for pair in df["pair"].unique():
@@ -68,7 +71,7 @@ def compute_bias(df: pd.DataFrame) -> pd.DataFrame:
             diff_rev = -(rev["log_prob_a"] - rev["log_prob_b"]).mean()
             diff_rev_std = (rev["log_prob_a"] - rev["log_prob_b"]).std()
 
-            bias = diff_fwd - diff_rev
+            bias = (diff_fwd + diff_rev) / 2.0
 
             compliance_fwd = fwd["compliance"].mean()
             compliance_rev = rev["compliance"].mean()

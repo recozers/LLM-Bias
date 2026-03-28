@@ -115,9 +115,22 @@ def run_cloze_inference(model_name: str, model_id: str, prompts: list[dict],
                         n_runs: int = N_RUNS, lang: str = "en") -> list[dict]:
     """Run cloze inference locally with multiple runs per prompt.
 
+    Uses letter-label scoring: prompts end with MCQ format "(A) ..\n(B) ..\nAnswer: ("
+    and we score on the single tokens "A" and "B". This avoids multi-token country
+    name issues and gives ~98% compliance with few-shot examples.
+
+    In AB ordering, (A)=country_a, (B)=country_b.
+    In BA ordering, (A)=country_b, (B)=country_a.
+    We cross-map when averaging to get each country's true score.
+
     Returns one JSONL record per (prompt, run).
     """
     model, tokenizer, device = _load_model(model_id)
+
+    # Letter tokens — always the same regardless of country names
+    score_token_A = tokenizer.encode("A", add_special_tokens=False)[0]
+    score_token_B = tokenizer.encode("B", add_special_tokens=False)[0]
+    prefill_ids = []  # No prefill needed for letter labels
 
     results = []
     total = len(prompts) * n_runs
@@ -127,50 +140,25 @@ def run_cloze_inference(model_name: str, model_id: str, prompts: list[dict],
         country_a = prompt["country_a"]
         country_b = prompt["country_b"]
 
-        # Tokenize country names
-        tok_a = tokenizer.encode(
-            (" " if _needs_space(country_a) else "") + country_a,
-            add_special_tokens=False,
-        )
-        tok_b = tokenizer.encode(
-            (" " if _needs_space(country_b) else "") + country_b,
-            add_special_tokens=False,
-        )
-
-        # Shared token prefix detection
-        shared_prefix_len = 0
-        for ta, tb in zip(tok_a, tok_b):
-            if ta == tb:
-                shared_prefix_len += 1
-            else:
-                break
-
-        if shared_prefix_len > 0 and shared_prefix_len < min(len(tok_a), len(tok_b)):
-            prefill_ids = tok_a[:shared_prefix_len]
-            score_token_a = tok_a[shared_prefix_len]
-            score_token_b = tok_b[shared_prefix_len]
-        else:
-            prefill_ids = []
-            score_token_a = tok_a[0]
-            score_token_b = tok_b[0]
-
         for run_id in range(n_runs):
             # Score both option orderings
-            lp_a_ab, lp_b_ab = _score_prompt(
+            # AB: (A)=country_a, (B)=country_b
+            lp_A_ab, lp_B_ab = _score_prompt(
                 model, tokenizer, device,
-                prompt["text_ab"], prefill_ids, score_token_a, score_token_b,
+                prompt["text_ab"], prefill_ids, score_token_A, score_token_B,
             )
-            lp_a_ba, lp_b_ba = _score_prompt(
+            # BA: (A)=country_b, (B)=country_a
+            lp_A_ba, lp_B_ba = _score_prompt(
                 model, tokenizer, device,
-                prompt["text_ba"], prefill_ids, score_token_a, score_token_b,
+                prompt["text_ba"], prefill_ids, score_token_A, score_token_B,
             )
 
-            # Average across orderings to cancel position bias
-            log_prob_a = (lp_a_ab + lp_a_ba) / 2.0
-            log_prob_b = (lp_b_ab + lp_b_ba) / 2.0
+            # Cross-map: country_a's score is "A" in AB, "B" in BA
+            log_prob_a = (lp_A_ab + lp_B_ba) / 2.0
+            log_prob_b = (lp_B_ab + lp_A_ba) / 2.0
 
-            compliance_ab = math.exp(lp_a_ab) + math.exp(lp_b_ab)
-            compliance_ba = math.exp(lp_a_ba) + math.exp(lp_b_ba)
+            compliance_ab = math.exp(lp_A_ab) + math.exp(lp_B_ab)
+            compliance_ba = math.exp(lp_A_ba) + math.exp(lp_B_ba)
             compliance = (compliance_ab + compliance_ba) / 2.0
 
             record = {
@@ -184,14 +172,14 @@ def run_cloze_inference(model_name: str, model_id: str, prompts: list[dict],
                 "run_id": run_id,
                 "log_prob_a": log_prob_a,
                 "log_prob_b": log_prob_b,
-                "first_token_a": tokenizer.decode([score_token_a]),
-                "first_token_b": tokenizer.decode([score_token_b]),
-                "prefill": tokenizer.decode(prefill_ids) if prefill_ids else "",
+                "first_token_a": "A",
+                "first_token_b": "B",
+                "prefill": "",
                 "compliance": compliance,
-                "log_prob_a_ab": lp_a_ab,
-                "log_prob_b_ab": lp_b_ab,
-                "log_prob_a_ba": lp_a_ba,
-                "log_prob_b_ba": lp_b_ba,
+                "log_prob_a_ab": lp_A_ab,
+                "log_prob_b_ab": lp_B_ab,
+                "log_prob_a_ba": lp_A_ba,
+                "log_prob_b_ba": lp_B_ba,
             }
             results.append(record)
             done += 1
