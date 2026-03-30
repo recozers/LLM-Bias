@@ -45,9 +45,8 @@ COUNTRIES = [
 
 MODELS = {
     # (model_id, is_instruct)
-    "gpt2": ("openai-community/gpt2", False),
-    "qwen2.5-0.5b": ("Qwen/Qwen2.5-0.5B", False),
-    "qwen2.5-0.5b-instruct": ("Qwen/Qwen2.5-0.5B-Instruct", True),
+    # Dropped: gpt2 (no instruct variant), qwen2.5-0.5b (coherence +0.93,
+    # doesn't distinguish justified vs wrong at 0.5B params)
     "qwen2.5-1.5b": ("Qwen/Qwen2.5-1.5B", False),
     "qwen2.5-1.5b-instruct": ("Qwen/Qwen2.5-1.5B-Instruct", True),
     "smollm2-1.7b": ("HuggingFaceTB/SmolLM2-1.7B", False),
