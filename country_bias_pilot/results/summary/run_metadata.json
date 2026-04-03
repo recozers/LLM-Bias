@@ -1,0 +1,21 @@
+{
+  "timestamp": "20260327_231749",
+  "models": [
+    "gpt2",
+    "gpt2-medium",
+    "qwen2.5-0.5b",
+    "qwen2.5-1.5b"
+  ],
+  "model_ids": {
+    "gpt2": "openai-community/gpt2",
+    "gpt2-medium": "openai-community/gpt2-medium",
+    "qwen2.5-0.5b": "Qwen/Qwen2.5-0.5B",
+    "qwen2.5-1.5b": "Qwen/Qwen2.5-1.5B"
+  },
+  "n_runs": 2,
+  "languages": [
+    "en"
+  ],
+  "test_mode": false,
+  "analysis_only": true
+}
