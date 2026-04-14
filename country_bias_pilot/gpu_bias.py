@@ -53,6 +53,11 @@ COUNTRIES = [
     "Venezuela", "Canada", "Australia", "Indonesia",
 ]
 
+FICTIONAL_COUNTRIES = [
+    "Terluna", "Voskara", "Drethia", "Melvoni",       # neutral
+    "Bretherland", "Zhaodong", "Al-Nuriyah", "Korvachev",  # phonetically suggestive
+]
+
 # (model_id, is_instruct)
 MODELS = {
     # ── Base models ──
@@ -488,6 +493,8 @@ def main():
                         help="Smoke test: 2 pairs, 2 scenarios, 1 model.")
     parser.add_argument("--pairs-with", type=str, default=None,
                         help="Only run pairs involving this country.")
+    parser.add_argument("--fictional", action="store_true",
+                        help="Use fictional country names instead of real ones.")
     parser.add_argument("--list-models", action="store_true",
                         help="Print available models and exit.")
     args = parser.parse_args()
@@ -505,6 +512,14 @@ def main():
         if mk not in MODELS:
             print(f"Unknown model: {mk}. Use --list-models to see options.")
             sys.exit(1)
+
+    # Swap to fictional countries if requested
+    global PAIRS, RESULTS_DIR
+    if args.fictional:
+        PAIRS = list(combinations(FICTIONAL_COUNTRIES, 2))
+        RESULTS_DIR = Path(__file__).resolve().parent / "results" / "gpu_bias_fictional"
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        print(f"=== FICTIONAL MODE: {len(FICTIONAL_COUNTRIES)} countries, {len(PAIRS)} pairs ===")
 
     # Smoke test subset
     if args.test:
