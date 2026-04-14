@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 # ── Config ────────────────────────────────────────────────────────────────
 
 COUNTRIES = [
-    "America", "France", "China", "Japan",
+    "USA", "France", "China", "Japan",
     "Venezuela", "Canada", "Australia", "Indonesia",
 ]
 
@@ -486,6 +486,8 @@ def main():
                         help="Quick run: 1 variant per scenario type, 6 pairs.")
     parser.add_argument("--test", action="store_true",
                         help="Smoke test: 2 pairs, 2 scenarios, 1 model.")
+    parser.add_argument("--pairs-with", type=str, default=None,
+                        help="Only run pairs involving this country.")
     parser.add_argument("--list-models", action="store_true",
                         help="Print available models and exit.")
     args = parser.parse_args()
@@ -508,7 +510,7 @@ def main():
     if args.test:
         if not args.models:
             model_keys = [list(MODELS.keys())[0]]
-        pairs = [("America", "China"), ("France", "Japan")]
+        pairs = [("USA", "China"), ("France", "Japan")]
         scenarios = dict(list(SCENARIOS.items())[:2])
         print("=== SMOKE TEST ===")
     elif args.quick:
@@ -520,8 +522,8 @@ def main():
                 seen_types[stype] = (k, v)
         scenarios = dict(seen_types.values())
         pairs = [
-            ("America", "China"),    # strong bias expected
-            ("America", "France"),   # Western vs Western
+            ("USA", "China"),         # strong bias expected
+            ("USA", "France"),        # Western vs Western
             ("China", "Japan"),      # Asian vs Asian
             ("Canada", "Australia"), # low-salience pair
             ("Venezuela", "Indonesia"),  # Global South pair
@@ -531,6 +533,12 @@ def main():
     else:
         pairs = None
         scenarios = None
+
+    # Filter pairs to only those involving a specific country
+    if args.pairs_with:
+        all_pairs = pairs or PAIRS
+        pairs = [(c1, c2) for c1, c2 in all_pairs if args.pairs_with in (c1, c2)]
+        print(f"Filtering to {len(pairs)} pairs involving {args.pairs_with}")
 
     use_fewshot = not args.no_fewshot
 

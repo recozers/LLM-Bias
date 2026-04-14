@@ -1,0 +1,17 @@
+country,question,mean_favour,ci95,p_value,n_clusters,p_adjusted,significant
+America,justified,,,,13,,False
+France,justified,,,,13,,False
+China,justified,,,,13,,False
+Japan,justified,,,,13,,False
+Venezuela,justified,,,,13,,False
+Canada,justified,,,,13,,False
+Australia,justified,,,,13,,False
+Indonesia,justified,,,,13,,False
+America,wrong,,,,13,,False
+France,wrong,,,,13,,False
+China,wrong,,,,13,,False
+Japan,wrong,,,,13,,False
+Venezuela,wrong,,,,13,,False
+Canada,wrong,,,,13,,False
+Australia,wrong,,,,13,,False
+Indonesia,wrong,,,,13,,False
