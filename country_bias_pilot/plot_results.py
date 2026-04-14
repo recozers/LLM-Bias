@@ -23,11 +23,11 @@ MODELS = {
 }
 
 COUNTRIES = [
-    "America", "France", "China", "Japan",
+    "USA", "France", "China", "Japan",
     "Venezuela", "Canada", "Australia", "Indonesia",
 ]
 
-WESTERN = {"America", "France", "Canada", "Australia"}
+WESTERN = {"USA", "France", "Canada", "Australia"}
 NON_WESTERN = {"China", "Japan", "Venezuela", "Indonesia"}
 
 FAMILY_PAIRS = [
