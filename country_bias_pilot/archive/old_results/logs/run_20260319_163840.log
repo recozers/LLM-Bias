@@ -1,0 +1,321 @@
+2026-03-19 16:38:40,074  INFO      __main__  Logging to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/run_20260319_163840.log
+2026-03-19 16:38:42,769  INFO      __main__  Generated 1344 cloze prompts × 2 runs = 2688 total passes
+2026-03-19 16:38:42,769  INFO      __main__  
+============================================================
+  Running: gpt2  (openai-community/gpt2)
+============================================================
+2026-03-19 16:38:42,782  INFO      local_inference  Loading openai-community/gpt2 on mps in float32
+2026-03-19 16:38:42,952  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:38:42,976  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/config.json "HTTP/1.1 200 OK"
+2026-03-19 16:38:43,028  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:38:43,053  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-03-19 16:38:43,105  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-03-19 16:38:43,171  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-03-19 16:38:43,330  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:38:43,331  WARNING   huggingface_hub.utils._http  Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-19 16:38:43,353  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/config.json "HTTP/1.1 200 OK"
+2026-03-19 16:38:43,648  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:38:43,671  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/generation_config.json "HTTP/1.1 200 OK"
+2026-03-19 16:38:43,725  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/custom_generate/generate.py "HTTP/1.1 404 Not Found"
+2026-03-19 16:38:45,238  INFO      local_inference  [gpt2] 50/2688 done
+2026-03-19 16:38:46,614  INFO      local_inference  [gpt2] 100/2688 done
+2026-03-19 16:38:47,730  INFO      local_inference  [gpt2] 150/2688 done
+2026-03-19 16:38:48,839  INFO      local_inference  [gpt2] 200/2688 done
+2026-03-19 16:38:49,932  INFO      local_inference  [gpt2] 250/2688 done
+2026-03-19 16:38:51,045  INFO      local_inference  [gpt2] 300/2688 done
+2026-03-19 16:38:52,194  INFO      local_inference  [gpt2] 350/2688 done
+2026-03-19 16:38:53,313  INFO      local_inference  [gpt2] 400/2688 done
+2026-03-19 16:38:54,427  INFO      local_inference  [gpt2] 450/2688 done
+2026-03-19 16:38:55,525  INFO      local_inference  [gpt2] 500/2688 done
+2026-03-19 16:38:56,777  INFO      local_inference  [gpt2] 550/2688 done
+2026-03-19 16:38:57,909  INFO      local_inference  [gpt2] 600/2688 done
+2026-03-19 16:38:59,045  INFO      local_inference  [gpt2] 650/2688 done
+2026-03-19 16:39:00,225  INFO      local_inference  [gpt2] 700/2688 done
+2026-03-19 16:39:01,368  INFO      local_inference  [gpt2] 750/2688 done
+2026-03-19 16:39:02,496  INFO      local_inference  [gpt2] 800/2688 done
+2026-03-19 16:39:03,631  INFO      local_inference  [gpt2] 850/2688 done
+2026-03-19 16:39:04,746  INFO      local_inference  [gpt2] 900/2688 done
+2026-03-19 16:39:05,931  INFO      local_inference  [gpt2] 950/2688 done
+2026-03-19 16:39:07,053  INFO      local_inference  [gpt2] 1000/2688 done
+2026-03-19 16:39:08,183  INFO      local_inference  [gpt2] 1050/2688 done
+2026-03-19 16:39:09,299  INFO      local_inference  [gpt2] 1100/2688 done
+2026-03-19 16:39:10,405  INFO      local_inference  [gpt2] 1150/2688 done
+2026-03-19 16:39:11,555  INFO      local_inference  [gpt2] 1200/2688 done
+2026-03-19 16:39:12,658  INFO      local_inference  [gpt2] 1250/2688 done
+2026-03-19 16:39:13,778  INFO      local_inference  [gpt2] 1300/2688 done
+2026-03-19 16:39:14,920  INFO      local_inference  [gpt2] 1350/2688 done
+2026-03-19 16:39:16,228  INFO      local_inference  [gpt2] 1400/2688 done
+2026-03-19 16:39:17,316  INFO      local_inference  [gpt2] 1450/2688 done
+2026-03-19 16:39:18,389  INFO      local_inference  [gpt2] 1500/2688 done
+2026-03-19 16:39:19,459  INFO      local_inference  [gpt2] 1550/2688 done
+2026-03-19 16:39:20,542  INFO      local_inference  [gpt2] 1600/2688 done
+2026-03-19 16:39:21,633  INFO      local_inference  [gpt2] 1650/2688 done
+2026-03-19 16:39:22,726  INFO      local_inference  [gpt2] 1700/2688 done
+2026-03-19 16:39:23,812  INFO      local_inference  [gpt2] 1750/2688 done
+2026-03-19 16:39:24,895  INFO      local_inference  [gpt2] 1800/2688 done
+2026-03-19 16:39:25,979  INFO      local_inference  [gpt2] 1850/2688 done
+2026-03-19 16:39:27,048  INFO      local_inference  [gpt2] 1900/2688 done
+2026-03-19 16:39:28,146  INFO      local_inference  [gpt2] 1950/2688 done
+2026-03-19 16:39:29,253  INFO      local_inference  [gpt2] 2000/2688 done
+2026-03-19 16:39:30,355  INFO      local_inference  [gpt2] 2050/2688 done
+2026-03-19 16:39:31,444  INFO      local_inference  [gpt2] 2100/2688 done
+2026-03-19 16:39:32,518  INFO      local_inference  [gpt2] 2150/2688 done
+2026-03-19 16:39:33,592  INFO      local_inference  [gpt2] 2200/2688 done
+2026-03-19 16:39:34,674  INFO      local_inference  [gpt2] 2250/2688 done
+2026-03-19 16:39:35,738  INFO      local_inference  [gpt2] 2300/2688 done
+2026-03-19 16:39:36,840  INFO      local_inference  [gpt2] 2350/2688 done
+2026-03-19 16:39:37,929  INFO      local_inference  [gpt2] 2400/2688 done
+2026-03-19 16:39:39,020  INFO      local_inference  [gpt2] 2450/2688 done
+2026-03-19 16:39:40,127  INFO      local_inference  [gpt2] 2500/2688 done
+2026-03-19 16:39:41,199  INFO      local_inference  [gpt2] 2550/2688 done
+2026-03-19 16:39:42,283  INFO      local_inference  [gpt2] 2600/2688 done
+2026-03-19 16:39:43,354  INFO      local_inference  [gpt2] 2650/2688 done
+2026-03-19 16:39:44,164  INFO      local_inference  [gpt2] Completed 2688 records (1344 prompts × 2 runs)
+2026-03-19 16:39:44,190  INFO      local_inference  Saved to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/raw/cloze/gpt2_cloze.jsonl
+2026-03-19 16:39:44,196  INFO      __main__  
+============================================================
+  Running: gpt2-medium  (openai-community/gpt2-medium)
+============================================================
+2026-03-19 16:39:44,196  INFO      local_inference  Loading openai-community/gpt2-medium on mps in float32
+2026-03-19 16:39:44,398  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2-medium/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:39:44,423  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2-medium/6dcaa7a952f72f9298047fd5137cd6e4f05f41da/config.json "HTTP/1.1 200 OK"
+2026-03-19 16:39:44,478  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2-medium/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:39:44,511  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2-medium/6dcaa7a952f72f9298047fd5137cd6e4f05f41da/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-03-19 16:39:44,573  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2-medium/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-03-19 16:39:44,631  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2-medium/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-03-19 16:39:44,856  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2-medium/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:39:44,882  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2-medium/6dcaa7a952f72f9298047fd5137cd6e4f05f41da/config.json "HTTP/1.1 200 OK"
+2026-03-19 16:39:45,027  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2-medium/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:39:45,062  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2-medium/6dcaa7a952f72f9298047fd5137cd6e4f05f41da/generation_config.json "HTTP/1.1 200 OK"
+2026-03-19 16:39:45,115  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2-medium/resolve/main/custom_generate/generate.py "HTTP/1.1 404 Not Found"
+2026-03-19 16:39:48,568  INFO      local_inference  [gpt2-medium] 50/2688 done
+2026-03-19 16:39:50,976  INFO      local_inference  [gpt2-medium] 100/2688 done
+2026-03-19 16:39:53,364  INFO      local_inference  [gpt2-medium] 150/2688 done
+2026-03-19 16:39:55,713  INFO      local_inference  [gpt2-medium] 200/2688 done
+2026-03-19 16:39:58,047  INFO      local_inference  [gpt2-medium] 250/2688 done
+2026-03-19 16:40:00,443  INFO      local_inference  [gpt2-medium] 300/2688 done
+2026-03-19 16:40:02,778  INFO      local_inference  [gpt2-medium] 350/2688 done
+2026-03-19 16:40:05,147  INFO      local_inference  [gpt2-medium] 400/2688 done
+2026-03-19 16:40:07,527  INFO      local_inference  [gpt2-medium] 450/2688 done
+2026-03-19 16:40:09,869  INFO      local_inference  [gpt2-medium] 500/2688 done
+2026-03-19 16:40:12,448  INFO      local_inference  [gpt2-medium] 550/2688 done
+2026-03-19 16:40:14,863  INFO      local_inference  [gpt2-medium] 600/2688 done
+2026-03-19 16:40:17,287  INFO      local_inference  [gpt2-medium] 650/2688 done
+2026-03-19 16:40:19,789  INFO      local_inference  [gpt2-medium] 700/2688 done
+2026-03-19 16:40:22,184  INFO      local_inference  [gpt2-medium] 750/2688 done
+2026-03-19 16:40:24,597  INFO      local_inference  [gpt2-medium] 800/2688 done
+2026-03-19 16:40:26,983  INFO      local_inference  [gpt2-medium] 850/2688 done
+2026-03-19 16:40:29,347  INFO      local_inference  [gpt2-medium] 900/2688 done
+2026-03-19 16:40:31,866  INFO      local_inference  [gpt2-medium] 950/2688 done
+2026-03-19 16:40:34,273  INFO      local_inference  [gpt2-medium] 1000/2688 done
+2026-03-19 16:40:36,699  INFO      local_inference  [gpt2-medium] 1050/2688 done
+2026-03-19 16:40:39,086  INFO      local_inference  [gpt2-medium] 1100/2688 done
+2026-03-19 16:40:41,446  INFO      local_inference  [gpt2-medium] 1150/2688 done
+2026-03-19 16:40:43,890  INFO      local_inference  [gpt2-medium] 1200/2688 done
+2026-03-19 16:40:46,228  INFO      local_inference  [gpt2-medium] 1250/2688 done
+2026-03-19 16:40:48,597  INFO      local_inference  [gpt2-medium] 1300/2688 done
+2026-03-19 16:40:50,962  INFO      local_inference  [gpt2-medium] 1350/2688 done
+2026-03-19 16:40:53,296  INFO      local_inference  [gpt2-medium] 1400/2688 done
+2026-03-19 16:40:55,626  INFO      local_inference  [gpt2-medium] 1450/2688 done
+2026-03-19 16:40:57,920  INFO      local_inference  [gpt2-medium] 1500/2688 done
+2026-03-19 16:41:00,219  INFO      local_inference  [gpt2-medium] 1550/2688 done
+2026-03-19 16:41:02,535  INFO      local_inference  [gpt2-medium] 1600/2688 done
+2026-03-19 16:41:04,841  INFO      local_inference  [gpt2-medium] 1650/2688 done
+2026-03-19 16:41:07,175  INFO      local_inference  [gpt2-medium] 1700/2688 done
+2026-03-19 16:41:09,496  INFO      local_inference  [gpt2-medium] 1750/2688 done
+2026-03-19 16:41:11,812  INFO      local_inference  [gpt2-medium] 1800/2688 done
+2026-03-19 16:41:14,134  INFO      local_inference  [gpt2-medium] 1850/2688 done
+2026-03-19 16:41:16,424  INFO      local_inference  [gpt2-medium] 1900/2688 done
+2026-03-19 16:41:18,767  INFO      local_inference  [gpt2-medium] 1950/2688 done
+2026-03-19 16:41:21,123  INFO      local_inference  [gpt2-medium] 2000/2688 done
+2026-03-19 16:41:23,453  INFO      local_inference  [gpt2-medium] 2050/2688 done
+2026-03-19 16:41:25,770  INFO      local_inference  [gpt2-medium] 2100/2688 done
+2026-03-19 16:41:28,081  INFO      local_inference  [gpt2-medium] 2150/2688 done
+2026-03-19 16:41:30,381  INFO      local_inference  [gpt2-medium] 2200/2688 done
+2026-03-19 16:41:32,708  INFO      local_inference  [gpt2-medium] 2250/2688 done
+2026-03-19 16:41:35,002  INFO      local_inference  [gpt2-medium] 2300/2688 done
+2026-03-19 16:41:37,333  INFO      local_inference  [gpt2-medium] 2350/2688 done
+2026-03-19 16:41:39,651  INFO      local_inference  [gpt2-medium] 2400/2688 done
+2026-03-19 16:41:42,030  INFO      local_inference  [gpt2-medium] 2450/2688 done
+2026-03-19 16:41:44,343  INFO      local_inference  [gpt2-medium] 2500/2688 done
+2026-03-19 16:41:46,626  INFO      local_inference  [gpt2-medium] 2550/2688 done
+2026-03-19 16:41:48,959  INFO      local_inference  [gpt2-medium] 2600/2688 done
+2026-03-19 16:41:51,247  INFO      local_inference  [gpt2-medium] 2650/2688 done
+2026-03-19 16:41:52,982  INFO      local_inference  [gpt2-medium] Completed 2688 records (1344 prompts × 2 runs)
+2026-03-19 16:41:53,016  INFO      local_inference  Saved to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/raw/cloze/gpt2-medium_cloze.jsonl
+2026-03-19 16:41:53,020  INFO      __main__  
+============================================================
+  Running: qwen2.5-0.5b  (Qwen/Qwen2.5-0.5B)
+============================================================
+2026-03-19 16:41:53,020  INFO      local_inference  Loading Qwen/Qwen2.5-0.5B on mps in float32
+2026-03-19 16:41:53,138  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:41:53,162  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B/060db6499f32faf8b98477b0a26969ef7d8b9987/config.json "HTTP/1.1 200 OK"
+2026-03-19 16:41:53,269  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:41:53,298  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B/060db6499f32faf8b98477b0a26969ef7d8b9987/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-03-19 16:41:53,360  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-03-19 16:41:53,414  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-03-19 16:41:53,788  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-0.5B "HTTP/1.1 200 OK"
+2026-03-19 16:41:53,883  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:41:53,908  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B/060db6499f32faf8b98477b0a26969ef7d8b9987/config.json "HTTP/1.1 200 OK"
+2026-03-19 16:41:54,563  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:41:54,599  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-0.5B/060db6499f32faf8b98477b0a26969ef7d8b9987/generation_config.json "HTTP/1.1 200 OK"
+2026-03-19 16:41:54,658  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-0.5B/resolve/main/custom_generate/generate.py "HTTP/1.1 404 Not Found"
+2026-03-19 16:41:59,658  INFO      local_inference  [qwen2.5-0.5b] 50/2688 done
+2026-03-19 16:42:03,621  INFO      local_inference  [qwen2.5-0.5b] 100/2688 done
+2026-03-19 16:42:07,525  INFO      local_inference  [qwen2.5-0.5b] 150/2688 done
+2026-03-19 16:42:11,418  INFO      local_inference  [qwen2.5-0.5b] 200/2688 done
+2026-03-19 16:42:15,262  INFO      local_inference  [qwen2.5-0.5b] 250/2688 done
+2026-03-19 16:42:19,680  INFO      local_inference  [qwen2.5-0.5b] 300/2688 done
+2026-03-19 16:42:23,810  INFO      local_inference  [qwen2.5-0.5b] 350/2688 done
+2026-03-19 16:42:27,846  INFO      local_inference  [qwen2.5-0.5b] 400/2688 done
+2026-03-19 16:42:31,731  INFO      local_inference  [qwen2.5-0.5b] 450/2688 done
+2026-03-19 16:42:35,660  INFO      local_inference  [qwen2.5-0.5b] 500/2688 done
+2026-03-19 16:42:39,862  INFO      local_inference  [qwen2.5-0.5b] 550/2688 done
+2026-03-19 16:42:43,870  INFO      local_inference  [qwen2.5-0.5b] 600/2688 done
+2026-03-19 16:42:47,841  INFO      local_inference  [qwen2.5-0.5b] 650/2688 done
+2026-03-19 16:42:51,838  INFO      local_inference  [qwen2.5-0.5b] 700/2688 done
+2026-03-19 16:42:55,714  INFO      local_inference  [qwen2.5-0.5b] 750/2688 done
+2026-03-19 16:42:59,884  INFO      local_inference  [qwen2.5-0.5b] 800/2688 done
+2026-03-19 16:43:03,956  INFO      local_inference  [qwen2.5-0.5b] 850/2688 done
+2026-03-19 16:43:07,921  INFO      local_inference  [qwen2.5-0.5b] 900/2688 done
+2026-03-19 16:43:12,161  INFO      local_inference  [qwen2.5-0.5b] 950/2688 done
+2026-03-19 16:43:16,111  INFO      local_inference  [qwen2.5-0.5b] 1000/2688 done
+2026-03-19 16:43:20,097  INFO      local_inference  [qwen2.5-0.5b] 1050/2688 done
+2026-03-19 16:43:24,002  INFO      local_inference  [qwen2.5-0.5b] 1100/2688 done
+2026-03-19 16:43:27,764  INFO      local_inference  [qwen2.5-0.5b] 1150/2688 done
+2026-03-19 16:43:31,797  INFO      local_inference  [qwen2.5-0.5b] 1200/2688 done
+2026-03-19 16:43:35,583  INFO      local_inference  [qwen2.5-0.5b] 1250/2688 done
+2026-03-19 16:43:39,409  INFO      local_inference  [qwen2.5-0.5b] 1300/2688 done
+2026-03-19 16:43:43,145  INFO      local_inference  [qwen2.5-0.5b] 1350/2688 done
+2026-03-19 16:43:47,017  INFO      local_inference  [qwen2.5-0.5b] 1400/2688 done
+2026-03-19 16:43:50,668  INFO      local_inference  [qwen2.5-0.5b] 1450/2688 done
+2026-03-19 16:43:54,338  INFO      local_inference  [qwen2.5-0.5b] 1500/2688 done
+2026-03-19 16:43:58,335  INFO      local_inference  [qwen2.5-0.5b] 1550/2688 done
+2026-03-19 16:44:02,351  INFO      local_inference  [qwen2.5-0.5b] 1600/2688 done
+2026-03-19 16:44:06,142  INFO      local_inference  [qwen2.5-0.5b] 1650/2688 done
+2026-03-19 16:44:09,974  INFO      local_inference  [qwen2.5-0.5b] 1700/2688 done
+2026-03-19 16:44:13,834  INFO      local_inference  [qwen2.5-0.5b] 1750/2688 done
+2026-03-19 16:44:17,910  INFO      local_inference  [qwen2.5-0.5b] 1800/2688 done
+2026-03-19 16:44:21,740  INFO      local_inference  [qwen2.5-0.5b] 1850/2688 done
+2026-03-19 16:44:25,540  INFO      local_inference  [qwen2.5-0.5b] 1900/2688 done
+2026-03-19 16:44:29,461  INFO      local_inference  [qwen2.5-0.5b] 1950/2688 done
+2026-03-19 16:44:33,345  INFO      local_inference  [qwen2.5-0.5b] 2000/2688 done
+2026-03-19 16:44:37,180  INFO      local_inference  [qwen2.5-0.5b] 2050/2688 done
+2026-03-19 16:44:41,022  INFO      local_inference  [qwen2.5-0.5b] 2100/2688 done
+2026-03-19 16:44:44,821  INFO      local_inference  [qwen2.5-0.5b] 2150/2688 done
+2026-03-19 16:44:48,612  INFO      local_inference  [qwen2.5-0.5b] 2200/2688 done
+2026-03-19 16:44:52,461  INFO      local_inference  [qwen2.5-0.5b] 2250/2688 done
+2026-03-19 16:44:56,246  INFO      local_inference  [qwen2.5-0.5b] 2300/2688 done
+2026-03-19 16:45:00,147  INFO      local_inference  [qwen2.5-0.5b] 2350/2688 done
+2026-03-19 16:45:04,422  INFO      local_inference  [qwen2.5-0.5b] 2400/2688 done
+2026-03-19 16:45:08,356  INFO      local_inference  [qwen2.5-0.5b] 2450/2688 done
+2026-03-19 16:45:12,197  INFO      local_inference  [qwen2.5-0.5b] 2500/2688 done
+2026-03-19 16:45:16,013  INFO      local_inference  [qwen2.5-0.5b] 2550/2688 done
+2026-03-19 16:45:19,865  INFO      local_inference  [qwen2.5-0.5b] 2600/2688 done
+2026-03-19 16:45:23,702  INFO      local_inference  [qwen2.5-0.5b] 2650/2688 done
+2026-03-19 16:45:26,568  INFO      local_inference  [qwen2.5-0.5b] Completed 2688 records (1344 prompts × 2 runs)
+2026-03-19 16:45:26,604  INFO      local_inference  Saved to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/raw/cloze/qwen2.5-0.5b_cloze.jsonl
+2026-03-19 16:45:26,638  INFO      __main__  
+============================================================
+  Running: qwen2.5-1.5b  (Qwen/Qwen2.5-1.5B)
+============================================================
+2026-03-19 16:45:26,638  INFO      local_inference  Loading Qwen/Qwen2.5-1.5B on mps in float32
+2026-03-19 16:45:26,760  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:45:26,785  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B/8faed761d45a263340a0528343f099c05c9a4323/config.json "HTTP/1.1 200 OK"
+2026-03-19 16:45:26,836  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:45:26,937  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B/8faed761d45a263340a0528343f099c05c9a4323/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-03-19 16:45:26,995  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-03-19 16:45:27,050  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-03-19 16:45:27,516  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen2.5-1.5B "HTTP/1.1 200 OK"
+2026-03-19 16:45:27,573  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:45:27,604  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B/8faed761d45a263340a0528343f099c05c9a4323/config.json "HTTP/1.1 200 OK"
+2026-03-19 16:45:32,177  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-19 16:45:32,586  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen2.5-1.5B/8faed761d45a263340a0528343f099c05c9a4323/generation_config.json "HTTP/1.1 200 OK"
+2026-03-19 16:45:32,702  INFO      httpx  HTTP Request: HEAD https://huggingface.co/Qwen/Qwen2.5-1.5B/resolve/main/custom_generate/generate.py "HTTP/1.1 404 Not Found"
+2026-03-19 16:46:04,965  INFO      local_inference  [qwen2.5-1.5b] 50/2688 done
+2026-03-19 16:46:13,820  INFO      local_inference  [qwen2.5-1.5b] 100/2688 done
+2026-03-19 16:46:22,844  INFO      local_inference  [qwen2.5-1.5b] 150/2688 done
+2026-03-19 16:46:31,546  INFO      local_inference  [qwen2.5-1.5b] 200/2688 done
+2026-03-19 16:46:40,153  INFO      local_inference  [qwen2.5-1.5b] 250/2688 done
+2026-03-19 16:46:51,042  INFO      local_inference  [qwen2.5-1.5b] 300/2688 done
+2026-03-19 16:47:00,906  INFO      local_inference  [qwen2.5-1.5b] 350/2688 done
+2026-03-19 16:47:10,556  INFO      local_inference  [qwen2.5-1.5b] 400/2688 done
+2026-03-19 16:47:19,273  INFO      local_inference  [qwen2.5-1.5b] 450/2688 done
+2026-03-19 16:47:27,957  INFO      local_inference  [qwen2.5-1.5b] 500/2688 done
+2026-03-19 16:47:38,304  INFO      local_inference  [qwen2.5-1.5b] 550/2688 done
+2026-03-19 16:47:47,786  INFO      local_inference  [qwen2.5-1.5b] 600/2688 done
+2026-03-19 16:47:57,165  INFO      local_inference  [qwen2.5-1.5b] 650/2688 done
+2026-03-19 16:48:06,766  INFO      local_inference  [qwen2.5-1.5b] 700/2688 done
+2026-03-19 16:48:15,501  INFO      local_inference  [qwen2.5-1.5b] 750/2688 done
+2026-03-19 16:48:24,885  INFO      local_inference  [qwen2.5-1.5b] 800/2688 done
+2026-03-19 16:48:33,966  INFO      local_inference  [qwen2.5-1.5b] 850/2688 done
+2026-03-19 16:48:42,794  INFO      local_inference  [qwen2.5-1.5b] 900/2688 done
+2026-03-19 16:48:53,380  INFO      local_inference  [qwen2.5-1.5b] 950/2688 done
+2026-03-19 16:49:02,760  INFO      local_inference  [qwen2.5-1.5b] 1000/2688 done
+2026-03-19 16:49:12,150  INFO      local_inference  [qwen2.5-1.5b] 1050/2688 done
+2026-03-19 16:49:21,202  INFO      local_inference  [qwen2.5-1.5b] 1100/2688 done
+2026-03-19 16:49:30,528  INFO      local_inference  [qwen2.5-1.5b] 1150/2688 done
+2026-03-19 16:49:40,570  INFO      local_inference  [qwen2.5-1.5b] 1200/2688 done
+2026-03-19 16:49:49,272  INFO      local_inference  [qwen2.5-1.5b] 1250/2688 done
+2026-03-19 16:49:58,070  INFO      local_inference  [qwen2.5-1.5b] 1300/2688 done
+2026-03-19 16:50:06,591  INFO      local_inference  [qwen2.5-1.5b] 1350/2688 done
+2026-03-19 16:50:15,318  INFO      local_inference  [qwen2.5-1.5b] 1400/2688 done
+2026-03-19 16:50:23,822  INFO      local_inference  [qwen2.5-1.5b] 1450/2688 done
+2026-03-19 16:50:32,291  INFO      local_inference  [qwen2.5-1.5b] 1500/2688 done
+2026-03-19 16:50:41,338  INFO      local_inference  [qwen2.5-1.5b] 1550/2688 done
+2026-03-19 16:50:51,172  INFO      local_inference  [qwen2.5-1.5b] 1600/2688 done
+2026-03-19 16:51:00,331  INFO      local_inference  [qwen2.5-1.5b] 1650/2688 done
+2026-03-19 16:51:09,672  INFO      local_inference  [qwen2.5-1.5b] 1700/2688 done
+2026-03-19 16:51:18,831  INFO      local_inference  [qwen2.5-1.5b] 1750/2688 done
+2026-03-19 16:51:28,144  INFO      local_inference  [qwen2.5-1.5b] 1800/2688 done
+2026-03-19 16:51:37,817  INFO      local_inference  [qwen2.5-1.5b] 1850/2688 done
+2026-03-19 16:51:47,596  INFO      local_inference  [qwen2.5-1.5b] 1900/2688 done
+2026-03-19 16:51:57,389  INFO      local_inference  [qwen2.5-1.5b] 1950/2688 done
+2026-03-19 16:52:07,200  INFO      local_inference  [qwen2.5-1.5b] 2000/2688 done
+2026-03-19 16:52:16,835  INFO      local_inference  [qwen2.5-1.5b] 2050/2688 done
+2026-03-19 16:52:26,382  INFO      local_inference  [qwen2.5-1.5b] 2100/2688 done
+2026-03-19 16:52:36,145  INFO      local_inference  [qwen2.5-1.5b] 2150/2688 done
+2026-03-19 16:52:45,239  INFO      local_inference  [qwen2.5-1.5b] 2200/2688 done
+2026-03-19 16:52:53,951  INFO      local_inference  [qwen2.5-1.5b] 2250/2688 done
+2026-03-19 16:53:02,671  INFO      local_inference  [qwen2.5-1.5b] 2300/2688 done
+2026-03-19 16:53:11,566  INFO      local_inference  [qwen2.5-1.5b] 2350/2688 done
+2026-03-19 16:53:20,170  INFO      local_inference  [qwen2.5-1.5b] 2400/2688 done
+2026-03-19 16:53:28,897  INFO      local_inference  [qwen2.5-1.5b] 2450/2688 done
+2026-03-19 16:53:37,497  INFO      local_inference  [qwen2.5-1.5b] 2500/2688 done
+2026-03-19 16:53:46,007  INFO      local_inference  [qwen2.5-1.5b] 2550/2688 done
+2026-03-19 16:53:54,543  INFO      local_inference  [qwen2.5-1.5b] 2600/2688 done
+2026-03-19 16:54:03,074  INFO      local_inference  [qwen2.5-1.5b] 2650/2688 done
+2026-03-19 16:54:09,482  INFO      local_inference  [qwen2.5-1.5b] Completed 2688 records (1344 prompts × 2 runs)
+2026-03-19 16:54:09,526  INFO      local_inference  Saved to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/raw/cloze/qwen2.5-1.5b_cloze.jsonl
+2026-03-19 16:54:09,797  INFO      __main__  
+============================================================
+  Analyzing: gpt2
+============================================================
+2026-03-19 16:54:10,545  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/gpt2_cloze_bias.csv
+2026-03-19 16:54:10,560  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/gpt2_summary.csv
+2026-03-19 16:54:10,560  INFO      __main__  
+============================================================
+  Analyzing: gpt2-medium
+============================================================
+2026-03-19 16:54:10,994  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/gpt2-medium_cloze_bias.csv
+2026-03-19 16:54:10,996  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/gpt2-medium_summary.csv
+2026-03-19 16:54:10,997  INFO      __main__  
+============================================================
+  Analyzing: qwen2.5-0.5b
+============================================================
+2026-03-19 16:54:11,373  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/qwen2.5-0.5b_cloze_bias.csv
+2026-03-19 16:54:11,376  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/qwen2.5-0.5b_summary.csv
+2026-03-19 16:54:11,377  INFO      __main__  
+============================================================
+  Analyzing: qwen2.5-1.5b
+============================================================
+2026-03-19 16:54:11,759  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/qwen2.5-1.5b_cloze_bias.csv
+2026-03-19 16:54:11,762  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/qwen2.5-1.5b_summary.csv
+2026-03-19 16:54:13,305  INFO      analysis  Saved cross-model summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/cross_model_comparison.csv
+2026-03-19 16:54:13,306  INFO      __main__  
+============================================================
+  Generating plots
+============================================================
+2026-03-19 16:54:14,470  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/bias_heatmap.png
+2026-03-19 16:54:14,601  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/bias_bars.png
+2026-03-19 16:54:14,899  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/fwd_vs_rev.png

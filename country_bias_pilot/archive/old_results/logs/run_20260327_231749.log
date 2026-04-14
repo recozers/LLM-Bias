@@ -1,0 +1,36 @@
+2026-03-27 23:17:49,389  INFO      __main__  Logging to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/run_20260327_231749.log
+2026-03-27 23:17:53,252  INFO      __main__  
+############################################################
+  LANGUAGE: EN
+############################################################
+2026-03-27 23:17:53,252  INFO      __main__  
+============================================================
+  [en] Analyzing: gpt2
+============================================================
+2026-03-27 23:17:54,223  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/gpt2_cloze_bias.csv
+2026-03-27 23:17:54,230  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/gpt2_summary.csv
+2026-03-27 23:17:54,231  INFO      __main__  
+============================================================
+  [en] Analyzing: gpt2-medium
+============================================================
+2026-03-27 23:17:55,200  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/gpt2-medium_cloze_bias.csv
+2026-03-27 23:17:55,205  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/gpt2-medium_summary.csv
+2026-03-27 23:17:55,207  INFO      __main__  
+============================================================
+  [en] Analyzing: qwen2.5-0.5b
+============================================================
+2026-03-27 23:17:56,212  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/qwen2.5-0.5b_cloze_bias.csv
+2026-03-27 23:17:56,217  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/qwen2.5-0.5b_summary.csv
+2026-03-27 23:17:56,218  INFO      __main__  
+============================================================
+  [en] Analyzing: qwen2.5-1.5b
+============================================================
+2026-03-27 23:17:57,242  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/qwen2.5-1.5b_cloze_bias.csv
+2026-03-27 23:17:57,248  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/qwen2.5-1.5b_summary.csv
+2026-03-27 23:17:57,250  INFO      __main__  
+============================================================
+  Generating plots (en)
+============================================================
+2026-03-27 23:17:57,424  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/bias_heatmap.png
+2026-03-27 23:17:57,602  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/bias_bars.png
+2026-03-27 23:17:57,935  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/fwd_vs_rev.png

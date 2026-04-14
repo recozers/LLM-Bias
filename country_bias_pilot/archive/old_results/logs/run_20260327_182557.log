@@ -1,0 +1,106 @@
+2026-03-27 18:25:57,433  INFO      __main__  Logging to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/run_20260327_182557.log
+2026-03-27 18:26:00,493  INFO      __main__  === SMOKE TEST MODE ===
+2026-03-27 18:26:00,493  INFO      __main__  
+############################################################
+  LANGUAGE: EN
+############################################################
+2026-03-27 18:26:00,503  INFO      __main__  [en] Generated 3360 cloze prompts × 1 runs = 3360 total passes
+2026-03-27 18:26:00,503  INFO      __main__  
+============================================================
+  [en] Running: gpt2  (openai-community/gpt2)
+============================================================
+2026-03-27 18:26:00,515  INFO      local_inference  Loading openai-community/gpt2 on mps in float32
+2026-03-27 18:26:00,607  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-27 18:26:00,625  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/config.json "HTTP/1.1 200 OK"
+2026-03-27 18:26:00,740  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-27 18:26:00,762  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-03-27 18:26:00,806  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-03-27 18:26:00,852  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-03-27 18:26:01,009  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-27 18:26:01,025  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/config.json "HTTP/1.1 200 OK"
+2026-03-27 18:26:01,330  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-27 18:26:01,360  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/generation_config.json "HTTP/1.1 200 OK"
+2026-03-27 18:26:01,392  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/custom_generate/generate.py "HTTP/1.1 404 Not Found"
+2026-03-27 18:26:01,392  WARNING   huggingface_hub.utils._http  Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-27 18:26:04,087  INFO      local_inference  [gpt2] 50/3360 done
+2026-03-27 18:26:06,169  INFO      local_inference  [gpt2] 100/3360 done
+2026-03-27 18:26:08,188  INFO      local_inference  [gpt2] 150/3360 done
+2026-03-27 18:26:10,248  INFO      local_inference  [gpt2] 200/3360 done
+2026-03-27 18:26:12,259  INFO      local_inference  [gpt2] 250/3360 done
+2026-03-27 18:26:14,221  INFO      local_inference  [gpt2] 300/3360 done
+2026-03-27 18:26:16,240  INFO      local_inference  [gpt2] 350/3360 done
+2026-03-27 18:26:18,212  INFO      local_inference  [gpt2] 400/3360 done
+2026-03-27 18:26:20,175  INFO      local_inference  [gpt2] 450/3360 done
+2026-03-27 18:26:22,160  INFO      local_inference  [gpt2] 500/3360 done
+2026-03-27 18:26:24,129  INFO      local_inference  [gpt2] 550/3360 done
+2026-03-27 18:26:26,102  INFO      local_inference  [gpt2] 600/3360 done
+2026-03-27 18:26:28,181  INFO      local_inference  [gpt2] 650/3360 done
+2026-03-27 18:26:30,251  INFO      local_inference  [gpt2] 700/3360 done
+2026-03-27 18:26:32,323  INFO      local_inference  [gpt2] 750/3360 done
+2026-03-27 18:26:34,373  INFO      local_inference  [gpt2] 800/3360 done
+2026-03-27 18:26:36,441  INFO      local_inference  [gpt2] 850/3360 done
+2026-03-27 18:26:38,477  INFO      local_inference  [gpt2] 900/3360 done
+2026-03-27 18:26:40,499  INFO      local_inference  [gpt2] 950/3360 done
+2026-03-27 18:26:42,655  INFO      local_inference  [gpt2] 1000/3360 done
+2026-03-27 18:26:44,639  INFO      local_inference  [gpt2] 1050/3360 done
+2026-03-27 18:26:46,660  INFO      local_inference  [gpt2] 1100/3360 done
+2026-03-27 18:26:48,738  INFO      local_inference  [gpt2] 1150/3360 done
+2026-03-27 18:26:50,775  INFO      local_inference  [gpt2] 1200/3360 done
+2026-03-27 18:26:52,797  INFO      local_inference  [gpt2] 1250/3360 done
+2026-03-27 18:26:54,849  INFO      local_inference  [gpt2] 1300/3360 done
+2026-03-27 18:26:56,845  INFO      local_inference  [gpt2] 1350/3360 done
+2026-03-27 18:26:58,867  INFO      local_inference  [gpt2] 1400/3360 done
+2026-03-27 18:27:00,896  INFO      local_inference  [gpt2] 1450/3360 done
+2026-03-27 18:27:02,895  INFO      local_inference  [gpt2] 1500/3360 done
+2026-03-27 18:27:04,939  INFO      local_inference  [gpt2] 1550/3360 done
+2026-03-27 18:27:06,982  INFO      local_inference  [gpt2] 1600/3360 done
+2026-03-27 18:27:08,926  INFO      local_inference  [gpt2] 1650/3360 done
+2026-03-27 18:27:10,927  INFO      local_inference  [gpt2] 1700/3360 done
+2026-03-27 18:27:12,862  INFO      local_inference  [gpt2] 1750/3360 done
+2026-03-27 18:27:14,832  INFO      local_inference  [gpt2] 1800/3360 done
+2026-03-27 18:27:16,744  INFO      local_inference  [gpt2] 1850/3360 done
+2026-03-27 18:27:18,664  INFO      local_inference  [gpt2] 1900/3360 done
+2026-03-27 18:27:20,605  INFO      local_inference  [gpt2] 1950/3360 done
+2026-03-27 18:27:22,518  INFO      local_inference  [gpt2] 2000/3360 done
+2026-03-27 18:27:24,434  INFO      local_inference  [gpt2] 2050/3360 done
+2026-03-27 18:27:26,400  INFO      local_inference  [gpt2] 2100/3360 done
+2026-03-27 18:27:28,331  INFO      local_inference  [gpt2] 2150/3360 done
+2026-03-27 18:27:30,302  INFO      local_inference  [gpt2] 2200/3360 done
+2026-03-27 18:27:32,311  INFO      local_inference  [gpt2] 2250/3360 done
+2026-03-27 18:27:34,237  INFO      local_inference  [gpt2] 2300/3360 done
+2026-03-27 18:27:36,158  INFO      local_inference  [gpt2] 2350/3360 done
+2026-03-27 18:27:38,061  INFO      local_inference  [gpt2] 2400/3360 done
+2026-03-27 18:27:40,074  INFO      local_inference  [gpt2] 2450/3360 done
+2026-03-27 18:27:42,051  INFO      local_inference  [gpt2] 2500/3360 done
+2026-03-27 18:27:44,009  INFO      local_inference  [gpt2] 2550/3360 done
+2026-03-27 18:27:45,954  INFO      local_inference  [gpt2] 2600/3360 done
+2026-03-27 18:27:47,863  INFO      local_inference  [gpt2] 2650/3360 done
+2026-03-27 18:27:49,778  INFO      local_inference  [gpt2] 2700/3360 done
+2026-03-27 18:27:51,738  INFO      local_inference  [gpt2] 2750/3360 done
+2026-03-27 18:27:53,649  INFO      local_inference  [gpt2] 2800/3360 done
+2026-03-27 18:27:55,571  INFO      local_inference  [gpt2] 2850/3360 done
+2026-03-27 18:27:57,539  INFO      local_inference  [gpt2] 2900/3360 done
+2026-03-27 18:27:59,477  INFO      local_inference  [gpt2] 2950/3360 done
+2026-03-27 18:28:01,440  INFO      local_inference  [gpt2] 3000/3360 done
+2026-03-27 18:28:03,385  INFO      local_inference  [gpt2] 3050/3360 done
+2026-03-27 18:28:05,305  INFO      local_inference  [gpt2] 3100/3360 done
+2026-03-27 18:28:07,235  INFO      local_inference  [gpt2] 3150/3360 done
+2026-03-27 18:28:09,146  INFO      local_inference  [gpt2] 3200/3360 done
+2026-03-27 18:28:11,097  INFO      local_inference  [gpt2] 3250/3360 done
+2026-03-27 18:28:13,041  INFO      local_inference  [gpt2] 3300/3360 done
+2026-03-27 18:28:14,956  INFO      local_inference  [gpt2] 3350/3360 done
+2026-03-27 18:28:15,331  INFO      local_inference  [gpt2] Completed 3360 records (3360 prompts × 1 runs)
+2026-03-27 18:28:15,357  INFO      local_inference  Saved to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/raw/cloze/gpt2_cloze.jsonl
+2026-03-27 18:28:15,362  INFO      __main__  
+============================================================
+  [en] Analyzing: gpt2
+============================================================
+2026-03-27 18:28:16,272  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/gpt2_cloze_bias.csv
+2026-03-27 18:28:16,277  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/gpt2_summary.csv
+2026-03-27 18:28:16,278  INFO      __main__  
+============================================================
+  Generating plots (en)
+============================================================
+2026-03-27 18:28:16,397  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/bias_heatmap.png
+2026-03-27 18:28:16,488  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/bias_bars.png
+2026-03-27 18:28:16,574  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/fwd_vs_rev.png

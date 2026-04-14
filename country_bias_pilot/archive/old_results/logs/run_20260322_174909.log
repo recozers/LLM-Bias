@@ -1,0 +1,49 @@
+2026-03-22 17:49:09,625  INFO      __main__  Logging to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/run_20260322_174909.log
+2026-03-22 17:49:13,320  INFO      __main__  === SMOKE TEST MODE ===
+2026-03-22 17:49:13,320  INFO      __main__  
+############################################################
+  LANGUAGE: EN
+############################################################
+2026-03-22 17:49:13,321  INFO      __main__  [en] Generated 546 cloze prompts × 1 runs = 546 total passes
+2026-03-22 17:49:13,321  INFO      __main__  
+============================================================
+  [en] Running: gpt2  (openai-community/gpt2)
+============================================================
+2026-03-22 17:49:13,336  INFO      local_inference  Loading openai-community/gpt2 on mps in float32
+2026-03-22 17:49:13,446  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 17:49:13,447  WARNING   huggingface_hub.utils._http  Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-22 17:49:13,469  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/config.json "HTTP/1.1 200 OK"
+2026-03-22 17:49:13,501  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 17:49:13,527  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-03-22 17:49:13,559  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-03-22 17:49:13,598  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-03-22 17:49:13,786  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 17:49:13,804  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/config.json "HTTP/1.1 200 OK"
+2026-03-22 17:49:14,197  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 17:49:14,291  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/generation_config.json "HTTP/1.1 200 OK"
+2026-03-22 17:49:14,328  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/custom_generate/generate.py "HTTP/1.1 404 Not Found"
+2026-03-22 17:49:16,898  INFO      local_inference  [gpt2] 50/546 done
+2026-03-22 17:49:18,158  INFO      local_inference  [gpt2] 100/546 done
+2026-03-22 17:49:20,043  INFO      local_inference  [gpt2] 150/546 done
+2026-03-22 17:49:21,670  INFO      local_inference  [gpt2] 200/546 done
+2026-03-22 17:49:23,253  INFO      local_inference  [gpt2] 250/546 done
+2026-03-22 17:49:24,600  INFO      local_inference  [gpt2] 300/546 done
+2026-03-22 17:49:25,972  INFO      local_inference  [gpt2] 350/546 done
+2026-03-22 17:49:27,698  INFO      local_inference  [gpt2] 400/546 done
+2026-03-22 17:49:29,616  INFO      local_inference  [gpt2] 450/546 done
+2026-03-22 17:49:30,827  INFO      local_inference  [gpt2] 500/546 done
+2026-03-22 17:49:31,894  INFO      local_inference  [gpt2] Completed 546 records (546 prompts × 1 runs)
+2026-03-22 17:49:31,900  INFO      local_inference  Saved to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/raw/cloze/gpt2_cloze.jsonl
+2026-03-22 17:49:31,906  INFO      __main__  
+============================================================
+  [en] Analyzing: gpt2
+============================================================
+2026-03-22 17:49:32,073  INFO      analysis  Saved bias matrix to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/asymmetry/gpt2_cloze_bias.csv
+2026-03-22 17:49:32,080  INFO      analysis  Saved summary to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/summary/gpt2_summary.csv
+2026-03-22 17:49:32,080  INFO      __main__  
+============================================================
+  Generating plots (en)
+============================================================
+2026-03-22 17:49:33,749  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/bias_heatmap.png
+2026-03-22 17:49:35,139  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/bias_bars.png
+2026-03-22 17:49:35,236  INFO      visualize  Saved /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/plots/fwd_vs_rev.png

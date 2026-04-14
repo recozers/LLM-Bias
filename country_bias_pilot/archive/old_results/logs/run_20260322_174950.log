@@ -1,0 +1,40 @@
+2026-03-22 17:49:50,011  INFO      __main__  Logging to /Users/stuartbladon/Documents/Duke2026/LLM-Bias/country_bias_pilot/results/run_20260322_174950.log
+2026-03-22 17:49:53,109  INFO      __main__  
+############################################################
+  LANGUAGE: EN
+############################################################
+2026-03-22 17:49:53,110  INFO      __main__  [en] Generated 546 cloze prompts × 2 runs = 1092 total passes
+2026-03-22 17:49:53,111  INFO      __main__  
+============================================================
+  [en] Running: gpt2  (openai-community/gpt2)
+============================================================
+2026-03-22 17:49:53,121  INFO      local_inference  Loading openai-community/gpt2 on mps in float32
+2026-03-22 17:49:53,260  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 17:49:53,282  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/config.json "HTTP/1.1 200 OK"
+2026-03-22 17:49:53,319  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 17:49:53,320  WARNING   huggingface_hub.utils._http  Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-22 17:49:53,342  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-03-22 17:49:53,384  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-03-22 17:49:53,416  INFO      httpx  HTTP Request: GET https://huggingface.co/api/models/openai-community/gpt2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-03-22 17:49:53,568  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 17:49:53,587  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/config.json "HTTP/1.1 200 OK"
+2026-03-22 17:49:53,940  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-22 17:49:53,957  INFO      httpx  HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai-community/gpt2/607a30d783dfa663caf39e06633721c8d4cfcd7e/generation_config.json "HTTP/1.1 200 OK"
+2026-03-22 17:49:53,988  INFO      httpx  HTTP Request: HEAD https://huggingface.co/openai-community/gpt2/resolve/main/custom_generate/generate.py "HTTP/1.1 404 Not Found"
+2026-03-22 17:49:55,702  INFO      local_inference  [gpt2] 50/1092 done
+2026-03-22 17:49:56,879  INFO      local_inference  [gpt2] 100/1092 done
+2026-03-22 17:49:58,070  INFO      local_inference  [gpt2] 150/1092 done
+2026-03-22 17:49:59,272  INFO      local_inference  [gpt2] 200/1092 done
+2026-03-22 17:50:00,639  INFO      local_inference  [gpt2] 250/1092 done
+2026-03-22 17:50:01,981  INFO      local_inference  [gpt2] 300/1092 done
+2026-03-22 17:50:03,288  INFO      local_inference  [gpt2] 350/1092 done
+2026-03-22 17:50:04,531  INFO      local_inference  [gpt2] 400/1092 done
+2026-03-22 17:50:05,779  INFO      local_inference  [gpt2] 450/1092 done
+2026-03-22 17:50:06,985  INFO      local_inference  [gpt2] 500/1092 done
+2026-03-22 17:50:08,231  INFO      local_inference  [gpt2] 550/1092 done
+2026-03-22 17:50:09,396  INFO      local_inference  [gpt2] 600/1092 done
+2026-03-22 17:50:10,550  INFO      local_inference  [gpt2] 650/1092 done
+2026-03-22 17:50:11,774  INFO      local_inference  [gpt2] 700/1092 done
+2026-03-22 17:50:12,989  INFO      local_inference  [gpt2] 750/1092 done
+2026-03-22 17:50:14,207  INFO      local_inference  [gpt2] 800/1092 done
+2026-03-22 17:50:15,418  INFO      local_inference  [gpt2] 850/1092 done
