@@ -27,6 +27,9 @@ COUNTRIES = [
     "Venezuela", "Canada", "Australia", "Indonesia",
 ]
 
+WESTERN = {"America", "France", "Canada", "Australia"}
+NON_WESTERN = {"China", "Japan", "Venezuela", "Indonesia"}
+
 FAMILY_PAIRS = [
     ("mistral-7b", "mistral-7b-inst"),
     ("llama3-8b", "llama3-8b-inst"),
@@ -254,6 +257,143 @@ def main():
     plot_heatmap(all_favour, all_meta)
     plot_base_vs_instruct(all_favour, all_meta)
     plot_coherence(all_data)
+    plot_western_vs_nonwestern(all_favour)
+    plot_instruct_bias(all_favour)
+
+
+def plot_western_vs_nonwestern(all_favour):
+    """Grouped bar: mean Western vs non-Western favour per model, base vs instruct."""
+    base_keys = [k for k, (_, t) in MODELS.items() if t == "base"]
+    inst_keys = [k for k, (_, t) in MODELS.items() if t == "instruct"]
+    all_keys = base_keys + inst_keys
+    labels = [MODELS[k][0] for k in all_keys]
+
+    west_means = []
+    nonwest_means = []
+    west_countries_per_model = []
+    nonwest_countries_per_model = []
+
+    for mk in all_keys:
+        fav = all_favour[mk]
+        w_vals = [fav[c] for c in WESTERN if c in fav]
+        nw_vals = [fav[c] for c in NON_WESTERN if c in fav]
+        west_means.append(np.mean(w_vals) if w_vals else 0)
+        nonwest_means.append(np.mean(nw_vals) if nw_vals else 0)
+        west_countries_per_model.append(w_vals)
+        nonwest_countries_per_model.append(nw_vals)
+
+    x = np.arange(len(all_keys))
+    w = 0.35
+
+    fig, axes = plt.subplots(2, 1, figsize=(12, 9), gridspec_kw={"height_ratios": [2, 1]})
+
+    # Top: grouped bars
+    ax = axes[0]
+    bars1 = ax.bar(x - w/2, west_means, w, label="Western (USA, France, Canada, Australia)",
+                   color="#4C72B0", alpha=0.85)
+    bars2 = ax.bar(x + w/2, nonwest_means, w, label="Non-Western (China, Japan, Venezuela, Indonesia)",
+                   color="#DD8452", alpha=0.85)
+
+    # Individual country dots
+    for i, mk in enumerate(all_keys):
+        fav = all_favour[mk]
+        for c in WESTERN:
+            if c in fav:
+                ax.scatter(i - w/2, fav[c], color="#2C5282", s=20, zorder=5, alpha=0.7)
+        for c in NON_WESTERN:
+            if c in fav:
+                ax.scatter(i + w/2, fav[c], color="#9C4221", s=20, zorder=5, alpha=0.7)
+
+    ax.axhline(0, color="black", linewidth=0.5)
+    ax.axvline(len(base_keys) - 0.5, color="black", linewidth=1.5, linestyle="--", alpha=0.5)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=35, ha="right", fontsize=10)
+    ax.set_ylabel("Mean logprob favour (justified)", fontsize=11)
+    ax.legend(fontsize=9, loc="upper left")
+    ax.set_title("Western vs Non-Western Country Bias", fontsize=14, fontweight="bold")
+
+    # Annotations
+    ax.text(len(base_keys) / 2 - 0.5, ax.get_ylim()[1] * 0.95, "BASE",
+            ha="center", fontsize=10, fontstyle="italic", alpha=0.5)
+    ax.text(len(base_keys) + len(inst_keys) / 2 - 0.5, ax.get_ylim()[1] * 0.95, "INSTRUCT",
+            ha="center", fontsize=10, fontstyle="italic", alpha=0.5)
+
+    # Bottom: gap (Western - NonWestern)
+    ax2 = axes[1]
+    gaps = [wm - nwm for wm, nwm in zip(west_means, nonwest_means)]
+    colors = ["#4C72B0" if g > 0 else "#DD8452" for g in gaps]
+    ax2.bar(x, gaps, 0.6, color=colors, alpha=0.85)
+    ax2.axhline(0, color="black", linewidth=0.5)
+    ax2.axvline(len(base_keys) - 0.5, color="black", linewidth=1.5, linestyle="--", alpha=0.5)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(labels, rotation=35, ha="right", fontsize=10)
+    ax2.set_ylabel("Gap (W - NW)", fontsize=11)
+    ax2.set_title("Pro-Western gap: positive = model favours Western countries", fontsize=10)
+
+    # Label the Qwen models
+    for i, mk in enumerate(all_keys):
+        if "qwen" in mk:
+            ax2.annotate("Chinese-made", xy=(i, gaps[i]),
+                         xytext=(i, gaps[i] + (0.3 if gaps[i] < 0 else -0.3)),
+                         ha="center", fontsize=8, color="red", fontstyle="italic",
+                         arrowprops=dict(arrowstyle="->", color="red", lw=0.8))
+
+    plt.tight_layout()
+    plt.savefig(RESULTS_DIR / "western_vs_nonwestern.png", dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"Saved western_vs_nonwestern.png")
+
+
+def plot_instruct_bias(all_favour):
+    """Horizontal bar chart: instruct models, country preference % (human-readable)."""
+    inst_keys = [k for k, (_, t) in MODELS.items() if t == "instruct"]
+
+    fig, axes = plt.subplots(1, len(inst_keys), figsize=(16, 5), sharey=True)
+
+    for idx, mk in enumerate(inst_keys):
+        ax = axes[idx]
+        fav = all_favour[mk]
+
+        # Convert logprob to preference %: sigmoid(bias) * 100
+        # Fixed country order across all panels
+        countries_sorted = COUNTRIES
+        pref_pcts = [100.0 / (1.0 + np.exp(-fav[c])) for c in countries_sorted]
+
+        colors = ["#4C72B0" if p >= 50 else "#C44E52" for p in pref_pcts]
+
+        bars = ax.barh(range(len(countries_sorted)), [p - 50 for p in pref_pcts],
+                       left=50, color=colors, alpha=0.85, height=0.7)
+
+        # Value labels
+        for i, (c, p) in enumerate(zip(countries_sorted, pref_pcts)):
+            offset = 1.5 if p >= 50 else -1.5
+            ha = "left" if p >= 50 else "right"
+            ax.text(p + offset, i, f"{p:.0f}%", va="center", ha=ha, fontsize=9, fontweight="bold")
+
+        ax.set_yticks(range(len(countries_sorted)))
+        ax.set_yticklabels(countries_sorted, fontsize=10)
+        ax.axvline(50, color="black", linewidth=1)
+        ax.set_xlim(0, 100)
+        ax.set_xlabel("Preference %", fontsize=10)
+        ax.set_title(MODELS[mk][0], fontsize=12, fontweight="bold")
+
+        # Shade the "disfavoured" zone
+        ax.axvspan(0, 50, color="#FFEEEE", alpha=0.3, zorder=0)
+        ax.axvspan(50, 100, color="#EEEEFF", alpha=0.3, zorder=0)
+
+        if idx == 0:
+            ax.text(25, len(countries_sorted) - 0.2, "Disfavoured", ha="center", fontsize=8, color="#C44E52", fontstyle="italic")
+            ax.text(75, len(countries_sorted) - 0.2, "Favoured", ha="center", fontsize=8, color="#4C72B0", fontstyle="italic")
+
+    fig.suptitle(
+        "Country Bias in Instruct Models\n"
+        "\"If the model had to judge which country acted more justifiably, how often would it side with each?\"",
+        fontsize=13, fontweight="bold", y=1.02,
+    )
+    plt.tight_layout()
+    plt.savefig(RESULTS_DIR / "instruct_bias_pct.png", dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"Saved instruct_bias_pct.png")
 
 
 if __name__ == "__main__":
