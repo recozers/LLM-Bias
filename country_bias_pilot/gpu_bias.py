@@ -513,14 +513,6 @@ def main():
             print(f"Unknown model: {mk}. Use --list-models to see options.")
             sys.exit(1)
 
-    # Swap to fictional countries if requested
-    global PAIRS, RESULTS_DIR
-    if args.fictional:
-        PAIRS = list(combinations(FICTIONAL_COUNTRIES, 2))
-        RESULTS_DIR = Path(__file__).resolve().parent / "results" / "gpu_bias_fictional"
-        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        print(f"=== FICTIONAL MODE: {len(FICTIONAL_COUNTRIES)} countries, {len(PAIRS)} pairs ===")
-
     # Smoke test subset
     if args.test:
         if not args.models:
@@ -549,6 +541,13 @@ def main():
         pairs = None
         scenarios = None
 
+    # Swap to fictional countries if requested
+    if args.fictional:
+        pairs = list(combinations(FICTIONAL_COUNTRIES, 2))
+        RESULTS_DIR = Path(__file__).resolve().parent / "results" / "gpu_bias_fictional"
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        print(f"=== FICTIONAL MODE: {len(FICTIONAL_COUNTRIES)} countries, {len(pairs)} pairs ===")
+
     # Filter pairs to only those involving a specific country
     if args.pairs_with:
         all_pairs = pairs or PAIRS
@@ -567,7 +566,8 @@ def main():
         # OS between models — avoids fragmentation / meta-device offload.
         p = multiprocessing.Process(
             target=_run_single_model,
-            args=(mk, model_id, is_instruct, use_fewshot, pairs, scenarios),
+            args=(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
+                  str(RESULTS_DIR)),
         )
         p.start()
         p.join()
@@ -575,8 +575,13 @@ def main():
             logger.error(f"[{mk}] subprocess exited with code {p.exitcode}")
 
 
-def _run_single_model(mk, model_id, is_instruct, use_fewshot, pairs, scenarios):
+def _run_single_model(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
+                      results_dir=None):
     """Run inference + analysis for one model (called in a subprocess)."""
+    if results_dir:
+        global RESULTS_DIR
+        RESULTS_DIR = Path(results_dir)
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     df = run_inference(mk, model_id, is_instruct,
                        use_fewshot=use_fewshot,
                        pairs=pairs, scenarios=scenarios)
