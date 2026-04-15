@@ -2,24 +2,28 @@
 
 ## Experiments Still Needed
 
-### 1. Multilingual replication (Chinese + French)
-- [ ] Translate scenarios to Chinese and French
-- [ ] Translate MCQ prompts (justified/unjustified) to Chinese and French
-- [ ] Run all 8 models with Chinese prompts
-- [ ] Run all 8 models with French prompts
-- [ ] Compare bias rankings across languages — do models behave differently in the language of a country they're evaluating?
-- [ ] Key question: does Qwen's pro-China bias strengthen in Chinese? Does Mistral's bias shift in French?
+### 1. Multilingual replication (Chinese + French) -- DONE
+- [x] Translate MCQ prompts (justified/unjustified) to Chinese and French
+- [x] Run all 8 models with Chinese prompts → results/gpu_bias_zh/
+- [x] Run all 8 models with French prompts → results/gpu_bias_fr/
+- [x] Key findings:
+  - Models become more favourable toward the country whose language they're prompted in
+  - Mistral-inst: France 22%→42% in French; China 8%→29% in Chinese
+  - Qwen-inst: pro-China bias rock-solid across all languages (93/89/94%)
+  - RLHF alignment is partially language-dependent
 
-### 2. Fictional country baselines
-- [ ] Design 8 fictional country names: mix of phonetically neutral (e.g. "Terluna", "Voskara") and phonetically suggestive (Slavic-sounding, Arabic-sounding, Anglo-sounding, East Asian-sounding)
-- [ ] Run full pipeline on fictional countries — single run, ~3 hours
-- [ ] Residual bias in neutral names = methodology artifact (position/format bias)
-- [ ] Bias in phonetically suggestive names = phonetic/cultural association bias
+### 2. Fictional country baselines -- DONE
+- [x] Designed 8 fictional names: 4 neutral + 4 phonetically suggestive → results/gpu_bias_fictional/
+- [x] Key findings:
+  - Phonetic bias mirrors real-country bias (Zhaodong treated like China, Bretherland like Anglo countries)
+  - Qwen-inst: Zhaodong 71%, Bretherland 26% — same pattern as China vs USA
+  - Mistral-inst: Bretherland 69%, Zhaodong 40% — same mirror
+  - "Neutral" names not fully neutral (Voskara disfavoured, Drethia favoured) — phonetic associations unavoidable
+  - RLHF amplifies phonetic bias just like real-country bias
 
-### 3. Merge USA results
-- [ ] Pull USA-pair results from GPU box (running now)
-- [ ] Replace "America" rows with "USA" rows in merged dataset
-- [ ] Regenerate all plots
+### 3. Merge USA results -- DONE
+- [x] Replaced "America" with "USA" across all 8 models
+- [x] Mistral-inst dropped 17pp (USA more disfavoured than America)
 
 ## Analysis & Write-Up
 
