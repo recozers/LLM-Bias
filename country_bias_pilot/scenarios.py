@@ -656,17 +656,53 @@ DEF_SCENARIOS = {
 }
 
 
-def build_scenario_dict():
+# ---------------------------------------------------------------------------
+# Localized country names used for prompt substitution.
+# Keys are the canonical English names (used throughout analysis); values are
+# the forms that replace [COUNTRY_A]/[COUNTRY_B] in each language.
+# ---------------------------------------------------------------------------
+COUNTRIES_BY_LANG = {
+    "en": {
+        "USA": "USA", "China": "China", "Japan": "Japan", "France": "France",
+        "Venezuela": "Venezuela", "Canada": "Canada",
+        "Australia": "Australia", "Indonesia": "Indonesia",
+    },
+    "zh": {
+        "USA": "美国", "China": "中国", "Japan": "日本", "France": "法国",
+        "Venezuela": "委内瑞拉", "Canada": "加拿大",
+        "Australia": "澳大利亚", "Indonesia": "印度尼西亚",
+    },
+    "fr": {
+        "USA": "USA", "China": "Chine", "Japan": "Japon", "France": "France",
+        "Venezuela": "Venezuela", "Canada": "Canada",
+        "Australia": "Australie", "Indonesia": "Indonésie",
+    },
+}
+
+
+def build_scenario_dict(lang: str = "en"):
     """Build flat scenario dict: {name: narrative_text} for all scenarios.
 
     Returns 79 scenarios (13 types × agg + 13 types × def).
     Names encode type and role: 'airspace_v1' (aggressor), 'airspace_def_v1' (defender).
+
+    For lang != 'en', loads translations from scenarios_<lang>.py which must
+    export AGG_SCENARIOS and DEF_SCENARIOS with matching keys.
     """
+    if lang == "en":
+        agg, defn = AGG_SCENARIOS, DEF_SCENARIOS
+    elif lang == "zh":
+        from scenarios_zh import AGG_SCENARIOS as agg, DEF_SCENARIOS as defn
+    elif lang == "fr":
+        from scenarios_fr import AGG_SCENARIOS as agg, DEF_SCENARIOS as defn
+    else:
+        raise ValueError(f"Unknown lang: {lang!r}. Expected one of: en, zh, fr.")
+
     scenarios = {}
-    for type_name, paraphrases in AGG_SCENARIOS.items():
+    for type_name, paraphrases in agg.items():
         for i, text in enumerate(paraphrases, 1):
             scenarios[f"{type_name}_v{i}"] = text
-    for type_name, paraphrases in DEF_SCENARIOS.items():
+    for type_name, paraphrases in defn.items():
         for i, text in enumerate(paraphrases, 1):
             scenarios[f"{type_name}_def_v{i}"] = text
     return scenarios

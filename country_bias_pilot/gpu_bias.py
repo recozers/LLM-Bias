@@ -41,7 +41,7 @@ import torch
 from scipy import stats
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from scenarios import build_scenario_dict
+from scenarios import build_scenario_dict, COUNTRIES_BY_LANG
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s", stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -313,14 +313,20 @@ def _score_ab(model, device, prompt_ids: list[int],
 
 
 def run_inference(model_name: str, model_id: str, is_instruct: bool,
-                  use_fewshot: bool = True, pairs=None, scenarios=None):
+                  use_fewshot: bool = True, pairs=None, scenarios=None,
+                  lang: str = "en"):
     """Letter-label MCQ scoring with dual questions.
 
     Scores on tokens "A" and "B". Cross-maps across option orderings
     so that bias is always in the c1-vs-c2 frame.
+
+    Country names are localized for the prompt via COUNTRIES_BY_LANG[lang];
+    the results CSV keeps the canonical English names as c1/c2 for analysis.
+    Fictional country names (not in the map) pass through unchanged.
     """
     pairs = pairs or PAIRS
     scenarios = scenarios or SCENARIOS
+    country_loc = COUNTRIES_BY_LANG.get(lang, COUNTRIES_BY_LANG["en"])
 
     model, tokenizer, device = _load_model(model_id)
     use_chat = is_instruct and _has_chat_template(tokenizer)
@@ -342,9 +348,11 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool,
     t0 = time.time()
 
     for c1, c2 in pairs:
+        c1_loc = country_loc.get(c1, c1)
+        c2_loc = country_loc.get(c2, c2)
         for scen_name, scen_text in scenarios.items():
-            narr_c1agg = scen_text.replace("[COUNTRY_A]", c1).replace("[COUNTRY_B]", c2)
-            narr_c2agg = scen_text.replace("[COUNTRY_A]", c2).replace("[COUNTRY_B]", c1)
+            narr_c1agg = scen_text.replace("[COUNTRY_A]", c1_loc).replace("[COUNTRY_B]", c2_loc)
+            narr_c2agg = scen_text.replace("[COUNTRY_A]", c2_loc).replace("[COUNTRY_B]", c1_loc)
 
             for q_name, q_cfg in QUESTIONS.items():
                 mcq = q_cfg["instruct"] if use_chat else q_cfg["base"]
@@ -359,11 +367,11 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool,
                     fewshot = ""
 
                 # ── Forward: c1 as aggressor (4 forward passes → 2) ──
-                fwd_ab_text = fewshot + narr_c1agg + mcq.format(o1=c1, o2=c2)
+                fwd_ab_text = fewshot + narr_c1agg + mcq.format(o1=c1_loc, o2=c2_loc)
                 ids = _build_prompt_ids(tokenizer, fwd_ab_text, use_chat)
                 lp_A_fwd_ab, lp_B_fwd_ab = _score_ab(model, device, ids, tok_A, tok_B)
 
-                fwd_ba_text = fewshot + narr_c1agg + mcq.format(o1=c2, o2=c1)
+                fwd_ba_text = fewshot + narr_c1agg + mcq.format(o1=c2_loc, o2=c1_loc)
                 ids = _build_prompt_ids(tokenizer, fwd_ba_text, use_chat)
                 lp_A_fwd_ba, lp_B_fwd_ba = _score_ab(model, device, ids, tok_A, tok_B)
 
@@ -372,11 +380,11 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool,
                             (lp_B_fwd_ba - lp_A_fwd_ba)) / 2.0
 
                 # ── Reverse: c2 as aggressor ──
-                rev_ab_text = fewshot + narr_c2agg + mcq.format(o1=c1, o2=c2)
+                rev_ab_text = fewshot + narr_c2agg + mcq.format(o1=c1_loc, o2=c2_loc)
                 ids = _build_prompt_ids(tokenizer, rev_ab_text, use_chat)
                 lp_A_rev_ab, lp_B_rev_ab = _score_ab(model, device, ids, tok_A, tok_B)
 
-                rev_ba_text = fewshot + narr_c2agg + mcq.format(o1=c2, o2=c1)
+                rev_ba_text = fewshot + narr_c2agg + mcq.format(o1=c2_loc, o2=c1_loc)
                 ids = _build_prompt_ids(tokenizer, rev_ba_text, use_chat)
                 lp_A_rev_ba, lp_B_rev_ba = _score_ab(model, device, ids, tok_A, tok_B)
 
@@ -633,7 +641,7 @@ def main():
         pairs = None
         scenarios = None
 
-    # Set language for MCQ prompts
+    # Set language for MCQ prompts and swap in the translated scenario bank
     if args.lang != "en":
         global QUESTIONS
         lang_cfg = QUESTIONS_BY_LANG[args.lang]
@@ -647,6 +655,12 @@ def main():
             for q_name, q_cfg in lang_cfg.items()
             if q_name != "hedge"
         }
+        translated = build_scenario_dict(args.lang)
+        if scenarios is None:
+            scenarios = translated
+        else:
+            # Quick-mode subset: remap keys to the translated bank.
+            scenarios = {k: translated[k] for k in scenarios.keys() if k in translated}
         RESULTS_DIR = Path(__file__).resolve().parent / "results" / f"gpu_bias_{args.lang}"
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
         print(f"=== LANGUAGE: {args.lang} ===")
@@ -705,9 +719,11 @@ def _run_single_model(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
             for q_name, q_cfg in lang_cfg.items()
             if q_name != "hedge"
         }
+        if scenarios is None:
+            scenarios = build_scenario_dict(lang)
     df = run_inference(mk, model_id, is_instruct,
                        use_fewshot=use_fewshot,
-                       pairs=pairs, scenarios=scenarios)
+                       pairs=pairs, scenarios=scenarios, lang=lang)
     pair_df, country_df = analyse(df)
     print_results(mk, pair_df, country_df, df)
     save_results(mk, pair_df, country_df, df)
