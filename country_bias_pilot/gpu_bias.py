@@ -584,6 +584,7 @@ def save_results(model_name: str, pair_df: pd.DataFrame,
 # ── Main ──────────────────────────────────────────────────────────────────
 
 def main():
+    global RESULTS_DIR
     parser = argparse.ArgumentParser(
         description="Measure country bias on a local GPU (RTX 3090)."
     )
