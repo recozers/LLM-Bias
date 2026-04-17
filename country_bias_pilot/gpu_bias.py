@@ -65,11 +65,17 @@ MODELS = {
     "llama3-8b":        ("meta-llama/Llama-3.1-8B", False),
     "qwen2.5-7b":       ("Qwen/Qwen2.5-7B", False),
     "gemma4-8b":        ("google/gemma-4-E4B", False),
+    "yi1.5-9b":         ("01-ai/Yi-1.5-9B", False),
+    "internlm2.5-7b":   ("internlm/internlm2_5-7b", False),
+    "glm4-9b":          ("THUDM/glm-4-9b-hf", False),
     # ── Instruct models ──
     "mistral-7b-inst":  ("mistralai/Mistral-7B-Instruct-v0.3", True),
     "llama3-8b-inst":   ("meta-llama/Llama-3.1-8B-Instruct", True),
     "qwen2.5-7b-inst":  ("Qwen/Qwen2.5-7B-Instruct", True),
     "gemma4-8b-it":     ("google/gemma-4-E4B-it", True),
+    "yi1.5-9b-chat":    ("01-ai/Yi-1.5-9B-Chat", True),
+    "internlm2.5-7b-chat": ("internlm/internlm2_5-7b-chat", True),
+    "glm4-9b-chat":     ("THUDM/glm-4-9b-chat-hf", True),
 }
 
 # MCQ questions — two valences for coherence check.
