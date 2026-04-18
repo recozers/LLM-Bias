@@ -675,7 +675,8 @@ def main():
     # Swap to fictional countries if requested
     if args.fictional:
         pairs = list(combinations(FICTIONAL_COUNTRIES, 2))
-        RESULTS_DIR = Path(__file__).resolve().parent / "results" / "gpu_bias_fictional"
+        lang_suffix = f"_{args.lang}" if args.lang != "en" else ""
+        RESULTS_DIR = Path(__file__).resolve().parent / "results" / f"gpu_bias_fictional{lang_suffix}"
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
         print(f"=== FICTIONAL MODE: {len(FICTIONAL_COUNTRIES)} countries, {len(pairs)} pairs ===")
 
