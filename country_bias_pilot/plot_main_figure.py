@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Main paper figure: post-training amplifies geopolitical bias."""
+"""Main paper figure: post-training amplifies geopolitical bias, maker-aligned and
+language-triggered.
+
+Uses the 34-scenario strict-coherence subset (justified/unjustified flip sign in
+≥70% of model × language combinations) as the primary analysis base.
+"""
 
 from pathlib import Path
 
@@ -12,25 +17,16 @@ RESULTS = Path(__file__).resolve().parent / "results"
 
 COUNTRIES = ["USA", "France", "China", "Japan", "Venezuela", "Canada", "Australia", "Indonesia"]
 
-FICTIONAL = ["Terluna", "Voskara", "Drethia", "Melvoni",
-             "Bretherland", "Zhaodong", "Al-Nuriyah", "Korvachev"]
-FIC_TAG = {
-    "Terluna": "Neutral", "Voskara": "Neutral", "Drethia": "Neutral", "Melvoni": "Neutral",
-    "Bretherland": "Anglo", "Zhaodong": "Chinese", "Al-Nuriyah": "Arabic", "Korvachev": "Slavic",
-}
-TAG_ORDER = ["Neutral", "Anglo", "Chinese", "Arabic", "Slavic"]
-TAG_COLOR = {
-    "Neutral": "#9aa0a6", "Anglo": "#1f77b4", "Chinese": "#d62728",
-    "Arabic": "#2ca02c", "Slavic": "#9467bd",
-}
-
 FAMILIES = [
-    ("Mistral 7B",  "mistral-7b",  "mistral-7b-inst",  "Western"),
-    ("LLaMA 3 8B",  "llama3-8b",   "llama3-8b-inst",   "Western"),
-    ("Gemma 4 8B",  "gemma4-8b",   "gemma4-8b-it",     "Western"),
-    ("Qwen 2.5 7B", "qwen2.5-7b",  "qwen2.5-7b-inst",  "Chinese"),
+    ("Mistral 7B",  "mistral-7b",  "mistral-7b-inst",  "FR"),
+    ("LLaMA 3 8B",  "llama3-8b",   "llama3-8b-inst",   "US"),
+    ("Gemma 4 8B",  "gemma4-8b",   "gemma4-8b-it",     "US"),
+    ("Qwen 2.5 7B", "qwen2.5-7b",  "qwen2.5-7b-inst",  "CN"),
+    ("Yi 1.5 9B",   "yi1.5-9b",    "yi1.5-9b-chat",    "CN"),
+    ("GLM 4 9B",    "glm4-9b",     "glm4-9b-chat",     "CN"),
 ]
 
+MAKER_BLOC = {"US": "Western", "FR": "Western", "CN": "Chinese"}
 MAKER_COLOR = {"Western": "#4C72B0", "Chinese": "#DD8452"}
 
 COUNTRY_COLORS = {
@@ -38,15 +34,55 @@ COUNTRY_COLORS = {
     "China": "#d62728", "Japan": "#ff9896", "Venezuela": "#ff7f0e", "Indonesia": "#ffbb78",
 }
 
+LANG_DIRS = {"EN": "gpu_bias", "FR": "gpu_bias_fr", "ZH": "gpu_bias_zh"}
 
-def favour(csv_path, names):
-    """Mean signed bias per name from the 'justified' suffix."""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Coherence filter: scenarios where justified and unjustified flip sign in
+# ≥70% of (model × language) combinations. Used as the primary analysis subset.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _china_signed(df):
+    df = df.copy()
+    df["china_bias"] = df.apply(
+        lambda r: r["bias"] if r["country_1"] == "China"
+                  else (-r["bias"] if r["country_2"] == "China" else None),
+        axis=1,
+    )
+    return df.dropna(subset=["china_bias"])
+
+
+def compute_coherent_scenarios(threshold=0.7):
+    records = []
+    all_models = [m for _, base, inst, _ in FAMILIES for m in (base, inst)]
+    for m in all_models:
+        for lang, d in LANG_DIRS.items():
+            f = RESULTS / d / f"{m}_raw.csv"
+            if not f.exists():
+                continue
+            raw = _china_signed(pd.read_csv(f))
+            for scen, g in raw.groupby("scenario"):
+                j = g[g["question"] == "justified"]["china_bias"].mean()
+                u = g[g["question"] == "unjustified"]["china_bias"].mean()
+                if pd.notna(j) and pd.notna(u):
+                    records.append({"scenario": scen, "coherent": (j * u < 0)})
+    coh = pd.DataFrame(records).groupby("scenario")["coherent"].mean()
+    return set(coh[coh >= threshold].index)
+
+
+COHERENT_SCENARIOS = compute_coherent_scenarios(0.7)
+
+
+def favour(csv_path, names, scens=None):
+    """Mean signed 'justified' bias per name, optionally restricted to `scens`."""
     df = pd.read_csv(csv_path)
-    jdf = df[df.question == "justified"]
+    df = df[df.question == "justified"]
+    if scens is not None:
+        df = df[df.scenario.isin(scens)] if "scenario" in df.columns else df
     out = {}
     for n in names:
         vals = []
-        for (c1, c2), grp in jdf.groupby(["country_1", "country_2"]):
+        for (c1, c2), grp in df.groupby(["country_1", "country_2"]):
             if n not in (c1, c2):
                 continue
             sign = 1.0 if n == c1 else -1.0
@@ -55,15 +91,30 @@ def favour(csv_path, names):
     return out
 
 
+def china_favour(model, lang, scens=COHERENT_SCENARIOS):
+    """Mean China-signed 'justified' bias across coherent scenarios."""
+    f = RESULTS / LANG_DIRS[lang] / f"{model}_raw.csv"
+    if not f.exists():
+        return np.nan
+    raw = _china_signed(pd.read_csv(f))
+    raw = raw[(raw["question"] == "justified") & (raw["scenario"].isin(scens))]
+    return raw["china_bias"].mean() if len(raw) else np.nan
+
+
 def to_pref(logprob):
     return 100.0 / (1.0 + np.exp(-logprob))
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Panel A — base → post-trained connected dot plot, EN real countries
+# ─────────────────────────────────────────────────────────────────────────────
+
 def panel_a(ax):
-    """Base → post-trained connected dot plot."""
     for fam_idx, (fam_name, base_key, inst_key, maker) in enumerate(FAMILIES):
-        base_fav = favour(RESULTS / "gpu_bias" / f"{base_key}_raw.csv", COUNTRIES)
-        inst_fav = favour(RESULTS / "gpu_bias" / f"{inst_key}_raw.csv", COUNTRIES)
+        base_fav = favour(RESULTS / "gpu_bias" / f"{base_key}_raw.csv",
+                          COUNTRIES, COHERENT_SCENARIOS)
+        inst_fav = favour(RESULTS / "gpu_bias" / f"{inst_key}_raw.csv",
+                          COUNTRIES, COHERENT_SCENARIOS)
 
         x_base = fam_idx * 3
         x_inst = fam_idx * 3 + 1.2
@@ -79,11 +130,11 @@ def panel_a(ax):
             ip = to_pref(inst_fav[country])
             color = COUNTRY_COLORS[country]
             ax.plot([x_base, x_inst], [bp, ip], color=color, alpha=0.45, linewidth=1.5)
-            ax.scatter(x_base, bp, color=color, s=45, zorder=5,
+            ax.scatter(x_base, bp, color=color, s=38, zorder=5,
                        edgecolors="white", linewidth=0.6)
-            ax.scatter(x_inst, ip, color=color, s=90, zorder=6,
+            ax.scatter(x_inst, ip, color=color, s=75, zorder=6,
                        edgecolors="white", linewidth=0.8)
-            if ip > 70 or ip < 30:
+            if ip > 68 or ip < 32:
                 to_label.append((ip, country, color))
 
         min_gap = 4.5
@@ -96,21 +147,22 @@ def panel_a(ax):
                 if last_y is not None and abs(y - last_y) < min_gap:
                     y = last_y - sign * min_gap
                 ax.annotate(country, xy=(x_inst, ip),
-                            xytext=(x_inst + 0.25, y),
-                            fontsize=8, color=color, fontweight="bold",
+                            xytext=(x_inst + 0.22, y),
+                            fontsize=7, color=color, fontweight="bold",
                             va="center", ha="left")
                 last_y = y
 
-        ax.text(fam_idx * 3 + 0.6, 104, fam_name, ha="center",
-                fontsize=11, fontweight="bold", clip_on=False)
+        maker_tag = f"[{maker}]"
+        ax.text(fam_idx * 3 + 0.6, 104, f"{fam_name}  {maker_tag}",
+                ha="center", fontsize=10, fontweight="bold", clip_on=False)
         ax.text(fam_idx * 3 + 0.6, 99.5,
                 f"spread  {spread_base:.1f}  →  {spread_inst:.1f}",
-                ha="center", fontsize=8, color="#555", style="italic")
+                ha="center", fontsize=7.5, color="#555", style="italic")
         if fam_idx < len(FAMILIES) - 1:
             ax.axvline(fam_idx * 3 + 2.1, color="gray", linewidth=0.5, alpha=0.25)
 
     ax.axhline(50, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
-    ax.text(-0.3, 50, "neutral", fontsize=8, color="gray",
+    ax.text(-0.3, 50, "neutral", fontsize=7.5, color="gray",
             va="center", ha="right", style="italic")
 
     xticks, xlabels = [], []
@@ -118,7 +170,7 @@ def panel_a(ax):
         xticks.extend([i * 3, i * 3 + 1.2])
         xlabels.extend(["Base", "Post-trained"])
     ax.set_xticks(xticks)
-    ax.set_xticklabels(xlabels, fontsize=9)
+    ax.set_xticklabels(xlabels, fontsize=8)
     ax.set_ylabel("Preference  (%)", fontsize=11)
     ax.set_ylim(0, 100)
     ax.set_xlim(-0.8, (len(FAMILIES) - 1) * 3 + 2.2)
@@ -127,112 +179,116 @@ def panel_a(ax):
 
     for country in COUNTRIES:
         ax.scatter([], [], color=COUNTRY_COLORS[country], s=55, label=country)
-    ax.legend(ncol=8, loc="upper center", bbox_to_anchor=(0.5, -0.15),
-              fontsize=9, frameon=False, handletextpad=0.3, columnspacing=1.2)
+    ax.legend(ncol=8, loc="upper center", bbox_to_anchor=(0.5, -0.12),
+              fontsize=8, frameon=False, handletextpad=0.3, columnspacing=1.2)
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Panel B — China favorability by maker bloc, post-trained models
+# ─────────────────────────────────────────────────────────────────────────────
 
 def panel_b(ax):
-    """Per-country preference across 4 post-trained models, sorted by Western average."""
-    prefs = {}
-    for fam_name, _, inst_key, maker in FAMILIES:
-        fav = favour(RESULTS / "gpu_bias" / f"{inst_key}_raw.csv", COUNTRIES)
-        prefs[fam_name] = {c: to_pref(fav[c]) for c in COUNTRIES}
+    data = []
+    for fam_name, base, inst, maker in FAMILIES:
+        cb_base = china_favour(base, "EN")
+        cb_inst = china_favour(inst, "EN")
+        data.append({"family": fam_name, "maker": maker, "bloc": MAKER_BLOC[maker],
+                     "base": cb_base, "inst": cb_inst, "delta": cb_inst - cb_base})
 
-    western = [f for f, *_ in FAMILIES if f != "Qwen 2.5 7B"]
-    western_mean = {c: np.mean([prefs[f][c] for f in western]) for c in COUNTRIES}
-    order = sorted(COUNTRIES, key=lambda c: western_mean[c], reverse=True)
+    df = pd.DataFrame(data).sort_values("delta")
+    y = np.arange(len(df))
 
-    y = np.arange(len(order))
-    h = 0.19
-    offsets = {fam: (i - 1.5) * h for i, (fam, *_) in enumerate(FAMILIES)}
+    for i, row in df.reset_index(drop=True).iterrows():
+        color = MAKER_COLOR[row["bloc"]]
+        ax.barh(i, row["delta"], 0.65, color=color, alpha=0.9,
+                edgecolor="black", linewidth=0.6)
+        # annotate maker country
+        ax.text(row["delta"] + (0.15 if row["delta"] >= 0 else -0.15),
+                i, f"[{row['maker']}]",
+                va="center", ha="left" if row["delta"] >= 0 else "right",
+                fontsize=8, color="#444")
 
-    for fam_name, _, _, maker in FAMILIES:
-        color = MAKER_COLOR[maker]
-        alpha = 1.0 if maker == "Chinese" else 0.55
-        lw = 1.2 if maker == "Chinese" else 0.4
-        vals = [prefs[fam_name][c] - 50 for c in order]
-        ax.barh(y + offsets[fam_name], vals, h, left=50,
-                color=color, alpha=alpha,
-                edgecolor="black" if maker == "Chinese" else "white",
-                linewidth=lw, label=fam_name)
-
-    ax.axvline(50, color="black", linewidth=0.8)
+    ax.axvline(0, color="black", linewidth=0.8)
     ax.set_yticks(y)
-    ax.set_yticklabels(order, fontsize=10)
+    ax.set_yticklabels(df["family"].values, fontsize=10)
     ax.invert_yaxis()
-    ax.set_xlim(5, 95)
-    ax.set_xlabel("Preference  (%)", fontsize=10)
-    ax.set_title("B  ·  Direction of amplification follows the model's maker",
+
+    xmax = max(abs(df["delta"].min()), abs(df["delta"].max())) * 1.35
+    ax.set_xlim(-xmax, xmax)
+    ax.set_xlabel("Post-training Δ in China favorability  (log-odds)", fontsize=10)
+    ax.set_title("B  ·  Direction of amplification follows the maker",
                  fontsize=12, fontweight="bold", loc="left", pad=10)
 
-    western_patch = plt.Rectangle((0, 0), 1, 1, facecolor=MAKER_COLOR["Western"],
-                                   alpha=0.55, edgecolor="white")
-    qwen_patch = plt.Rectangle((0, 0), 1, 1, facecolor=MAKER_COLOR["Chinese"],
-                               alpha=1.0, edgecolor="black", linewidth=1.2)
-    ax.legend([western_patch, qwen_patch],
-              ["Western-made  (Mistral, LLaMA, Gemma)", "Chinese-made  (Qwen)"],
-              fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.12),
+    western = plt.Rectangle((0, 0), 1, 1, facecolor=MAKER_COLOR["Western"],
+                            alpha=0.9, edgecolor="black", linewidth=0.6)
+    chinese = plt.Rectangle((0, 0), 1, 1, facecolor=MAKER_COLOR["Chinese"],
+                            alpha=0.9, edgecolor="black", linewidth=0.6)
+    ax.legend([western, chinese],
+              ["Western-made (3 models)", "Chinese-made (3 models)"],
+              fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.15),
               frameon=False, ncol=2)
 
+    ax.text(-xmax * 0.96, -0.8, "← anti-China after post-training",
+            fontsize=8, color="#444", style="italic")
+    ax.text(xmax * 0.96, -0.8, "pro-China after post-training →",
+            fontsize=8, color="#444", style="italic", ha="right")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Panel C — language trigger: EN → ZH shift on post-trained models
+# ─────────────────────────────────────────────────────────────────────────────
 
 def panel_c(ax):
-    """Fictional-name bias across 4 post-trained models, grouped by phonetic tag."""
-    model_labels = [("Mistral",  "mistral-7b-inst",  "Western"),
-                    ("LLaMA",    "llama3-8b-inst",   "Western"),
-                    ("Gemma 4",  "gemma4-8b-it",     "Western"),
-                    ("Qwen",     "qwen2.5-7b-inst",  "Chinese")]
+    rows = []
+    for fam_name, _, inst, maker in FAMILIES:
+        rows.append({
+            "family": fam_name, "maker": maker, "bloc": MAKER_BLOC[maker],
+            "EN": china_favour(inst, "EN"),
+            "ZH": china_favour(inst, "ZH"),
+        })
+    df = pd.DataFrame(rows)
+    df["shift"] = df["ZH"] - df["EN"]
+    df = df.sort_values("shift")
+    y = np.arange(len(df))
 
-    prefs = {}
-    for label, key, _ in model_labels:
-        fav = favour(RESULTS / "gpu_bias_fictional" / f"{key}_raw.csv", FICTIONAL)
-        prefs[label] = {n: to_pref(fav[n]) for n in FICTIONAL}
+    for i, row in df.reset_index(drop=True).iterrows():
+        color = MAKER_COLOR[row["bloc"]]
+        ax.plot([row["EN"], row["ZH"]], [i, i],
+                color=color, linewidth=2.5, alpha=0.65, zorder=2)
+        ax.scatter(row["EN"], i, color="white", s=95, zorder=4,
+                   edgecolors=color, linewidths=1.5)
+        ax.text(row["EN"], i, "EN", ha="center", va="center",
+                fontsize=6.5, color=color, fontweight="bold", zorder=5)
+        ax.scatter(row["ZH"], i, color=color, s=130, zorder=4,
+                   edgecolors="black", linewidths=0.8)
+        ax.text(row["ZH"], i, "ZH", ha="center", va="center",
+                fontsize=6.5, color="white", fontweight="bold", zorder=5)
+        sign = "+" if row["shift"] >= 0 else ""
+        ax.text(max(row["EN"], row["ZH"]) + 0.15, i,
+                f"Δ = {sign}{row['shift']:.2f}",
+                va="center", fontsize=8, color="#333")
 
-    x = np.arange(len(model_labels))
-    group_width = 0.82
-    slots = []
-    for tag in TAG_ORDER:
-        slots.extend([n for n in FICTIONAL if FIC_TAG[n] == tag])
-    n_slots = len(slots)
-    slot_w = group_width / n_slots
+    ax.axvline(0, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
+    ax.text(0, len(df) - 0.3, "neutral", fontsize=7.5, color="gray",
+            ha="center", va="top", style="italic")
 
-    qwen_idx = next(i for i, (_, _, m) in enumerate(model_labels) if m == "Chinese")
-    ax.axvspan(qwen_idx - 0.5, qwen_idx + 0.5, color="#fff4ea", zorder=0)
-
-    for slot_i, name in enumerate(slots):
-        tag = FIC_TAG[name]
-        color = TAG_COLOR[tag]
-        vals = [prefs[lab][name] for lab, *_ in model_labels]
-        ax.bar(x + (slot_i - (n_slots - 1) / 2) * slot_w,
-               [v - 50 for v in vals], slot_w * 0.9, bottom=50,
-               color=color, alpha=0.9,
-               edgecolor="white", linewidth=0.4, zorder=2)
-
-    ax.axhline(50, color="black", linewidth=0.8, zorder=3)
-    ax.set_xticks(x)
-    ax.set_xticklabels([lab for lab, *_ in model_labels], fontsize=10)
-    ax.set_ylabel("Preference  (%)", fontsize=10)
-    ax.set_ylim(15, 88)
-    ax.set_xlim(-0.5, len(model_labels) - 0.5)
-    ax.set_title("C  ·  Bias is triggered by linguistic identity, not real-country knowledge",
+    ax.set_yticks(y)
+    ax.set_yticklabels([f"{r['family']}  [{r['maker']}]" for _, r in df.iterrows()],
+                       fontsize=9)
+    ax.invert_yaxis()
+    xmax = max(abs(df[["EN", "ZH"]].values.min()),
+               abs(df[["EN", "ZH"]].values.max())) * 1.25
+    ax.set_xlim(-xmax, xmax)
+    ax.set_xlabel("China favorability  (log-odds)", fontsize=10)
+    ax.set_title("C  ·  Prompting in Chinese shifts post-trained models pro-China",
                  fontsize=12, fontweight="bold", loc="left", pad=10)
 
-    for tag in TAG_ORDER:
-        members = [n for n in FICTIONAL if FIC_TAG[n] == tag]
-        lbl = f"{tag}  (n={len(members)})" if tag == "Neutral" \
-              else f"{tag}  ({members[0]})"
-        ax.bar([], [], color=TAG_COLOR[tag], label=lbl)
-    ax.legend(fontsize=8, loc="upper left", ncol=1, frameon=False,
-              handlelength=1.2, handletextpad=0.5, title="Phonetic tag",
-              title_fontsize=8)
 
-    ax.text(qwen_idx, 86, "Anglo ↓   Chinese ↑   (maker flip)",
-            ha="center", fontsize=9, fontweight="bold",
-            color="#b9570f", style="italic")
-
+# ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    fig = plt.figure(figsize=(17, 13))
-    gs = gridspec.GridSpec(2, 2, hspace=0.45, wspace=0.28,
+    fig = plt.figure(figsize=(18, 14))
+    gs = gridspec.GridSpec(2, 2, hspace=0.45, wspace=0.32,
                             height_ratios=[1.05, 1.0])
 
     ax_a = fig.add_subplot(gs[0, :])
@@ -247,13 +303,22 @@ def main():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    fig.suptitle("Aligned to whom?  Post-training amplifies geopolitical bias in LLMs",
-                 fontsize=16, fontweight="bold", y=0.995)
+    fig.suptitle(
+        "Aligned to whom?  Post-training implants a maker-aligned bias, triggered by linguistic identity",
+        fontsize=15, fontweight="bold", y=0.995,
+    )
+
+    fig.text(0.5, 0.002,
+             f"n = {len(COHERENT_SCENARIOS)} scenarios (justified/unjustified sign-flip ≥70% across 12 models × 3 languages)  ·  "
+             f"6 model families: Western-made [FR/US] and Chinese-made [CN]",
+             ha="center", fontsize=9, color="#555", style="italic")
 
     out = RESULTS / "plots" / "main_figure.png"
+    out.parent.mkdir(exist_ok=True)
     plt.savefig(out, dpi=200, bbox_inches="tight")
     plt.close()
     print(f"Saved {out}")
+    print(f"Coherent scenarios: {len(COHERENT_SCENARIOS)}")
 
 
 if __name__ == "__main__":
