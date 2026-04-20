@@ -68,6 +68,7 @@ MODELS = {
     "yi1.5-9b":         ("01-ai/Yi-1.5-9B", False),
     "internlm2.5-7b":   ("internlm/internlm2_5-7b", False),
     "glm4-9b":          ("THUDM/glm-4-9b-hf", False),
+    "baichuan2-7b":     ("baichuan-inc/Baichuan2-7B-Base", False),
     # ── Instruct models ──
     "mistral-7b-inst":  ("mistralai/Mistral-7B-Instruct-v0.3", True),
     "llama3-8b-inst":   ("meta-llama/Llama-3.1-8B-Instruct", True),
@@ -76,6 +77,7 @@ MODELS = {
     "yi1.5-9b-chat":    ("01-ai/Yi-1.5-9B-Chat", True),
     "internlm2.5-7b-chat": ("internlm/internlm2_5-7b-chat", True),
     "glm4-9b-chat":     ("THUDM/glm-4-9b-chat-hf", True),
+    "baichuan2-7b-chat": ("baichuan-inc/Baichuan2-7B-Chat", True),
 }
 
 # MCQ questions — two valences for coherence check.
@@ -272,7 +274,13 @@ def _load_model(model_id: str):
         dtype = torch.float32
 
     logger.info(f"Loading {model_id} on {device} ({dtype})")
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    except (ValueError, TypeError, Exception) as e:
+        logger.info(f"Fast tokenizer failed ({type(e).__name__}); retrying use_fast=False")
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_id, trust_remote_code=True, use_fast=False
+        )
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         torch_dtype=dtype,
