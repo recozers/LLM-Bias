@@ -202,36 +202,33 @@ def panel_b(ax):
         color = MAKER_COLOR[row["bloc"]]
         ax.barh(i, row["delta"], 0.65, color=color, alpha=0.9,
                 edgecolor="black", linewidth=0.6)
-        # annotate maker country
-        ax.text(row["delta"] + (0.15 if row["delta"] >= 0 else -0.15),
-                i, f"[{row['maker']}]",
+        sign = "+" if row["delta"] >= 0 else ""
+        ax.text(row["delta"] + (0.12 if row["delta"] >= 0 else -0.12),
+                i, f"{sign}{row['delta']:.2f}",
                 va="center", ha="left" if row["delta"] >= 0 else "right",
-                fontsize=8, color="#444")
+                fontsize=9, color="#222", fontweight="bold")
 
     ax.axvline(0, color="black", linewidth=0.8)
     ax.set_yticks(y)
-    ax.set_yticklabels(df["family"].values, fontsize=10)
+    ax.set_yticklabels([f"{r['family']}  [{r['maker']}]"
+                        for _, r in df.iterrows()], fontsize=10)
     ax.invert_yaxis()
 
-    xmax = max(abs(df["delta"].min()), abs(df["delta"].max())) * 1.35
+    xmax = max(abs(df["delta"].min()), abs(df["delta"].max())) * 1.55
     ax.set_xlim(-xmax, xmax)
+    ax.set_ylim(len(df) - 0.5, -0.7)
     ax.set_xlabel("Post-training Δ in China favorability  (log-odds)", fontsize=10)
     ax.set_title("B  ·  Direction of amplification follows the maker",
-                 fontsize=12, fontweight="bold", loc="left", pad=10)
+                 fontsize=12, fontweight="bold", loc="left", pad=12)
 
     western = plt.Rectangle((0, 0), 1, 1, facecolor=MAKER_COLOR["Western"],
                             alpha=0.9, edgecolor="black", linewidth=0.6)
     chinese = plt.Rectangle((0, 0), 1, 1, facecolor=MAKER_COLOR["Chinese"],
                             alpha=0.9, edgecolor="black", linewidth=0.6)
     ax.legend([western, chinese],
-              ["Western-made (3 models)", "Chinese-made (3 models)"],
-              fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.15),
+              ["Western-made (US / FR)", "Chinese-made (CN)"],
+              fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.18),
               frameon=False, ncol=2)
-
-    ax.text(-xmax * 0.96, -0.8, "← anti-China after post-training",
-            fontsize=8, color="#444", style="italic")
-    ax.text(xmax * 0.96, -0.8, "pro-China after post-training →",
-            fontsize=8, color="#444", style="italic", ha="right")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -248,40 +245,61 @@ def panel_c(ax):
         })
     df = pd.DataFrame(rows)
     df["shift"] = df["ZH"] - df["EN"]
-    df = df.sort_values("shift")
+    df = df.sort_values("shift").reset_index(drop=True)
     y = np.arange(len(df))
 
-    for i, row in df.reset_index(drop=True).iterrows():
+    # Two-axis layout: leave right margin for Δ column
+    data_min = df[["EN", "ZH"]].values.min()
+    data_max = df[["EN", "ZH"]].values.max()
+    pad = (data_max - data_min) * 0.10
+    x_left = data_min - pad
+    delta_col = data_max + (data_max - data_min) * 0.35
+
+    for i, row in df.iterrows():
         color = MAKER_COLOR[row["bloc"]]
-        ax.plot([row["EN"], row["ZH"]], [i, i],
-                color=color, linewidth=2.5, alpha=0.65, zorder=2)
-        ax.scatter(row["EN"], i, color="white", s=95, zorder=4,
-                   edgecolors=color, linewidths=1.5)
-        ax.text(row["EN"], i, "EN", ha="center", va="center",
-                fontsize=6.5, color=color, fontweight="bold", zorder=5)
-        ax.scatter(row["ZH"], i, color=color, s=130, zorder=4,
+        # arrow from EN to ZH
+        ax.annotate("",
+                    xy=(row["ZH"], i), xytext=(row["EN"], i),
+                    arrowprops=dict(arrowstyle="->,head_width=0.35,head_length=0.6",
+                                    color=color, lw=2.2, alpha=0.85),
+                    zorder=2)
+        # EN: hollow circle
+        ax.scatter(row["EN"], i, color="white", s=70, zorder=4,
+                   edgecolors=color, linewidths=1.4)
+        # ZH: filled circle
+        ax.scatter(row["ZH"], i, color=color, s=90, zorder=4,
                    edgecolors="black", linewidths=0.8)
-        ax.text(row["ZH"], i, "ZH", ha="center", va="center",
-                fontsize=6.5, color="white", fontweight="bold", zorder=5)
+        # Δ annotation in right margin column
         sign = "+" if row["shift"] >= 0 else ""
-        ax.text(max(row["EN"], row["ZH"]) + 0.15, i,
-                f"Δ = {sign}{row['shift']:.2f}",
-                va="center", fontsize=8, color="#333")
+        ax.text(delta_col, i, f"{sign}{row['shift']:.2f}",
+                va="center", ha="right", fontsize=9, color="#222",
+                fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.15", facecolor="white",
+                          edgecolor="none", alpha=0.0))
 
     ax.axvline(0, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
-    ax.text(0, len(df) - 0.3, "neutral", fontsize=7.5, color="gray",
-            ha="center", va="top", style="italic")
 
     ax.set_yticks(y)
-    ax.set_yticklabels([f"{r['family']}  [{r['maker']}]" for _, r in df.iterrows()],
-                       fontsize=9)
+    ax.set_yticklabels([f"{r['family']}  [{r['maker']}]"
+                        for _, r in df.iterrows()], fontsize=10)
     ax.invert_yaxis()
-    xmax = max(abs(df[["EN", "ZH"]].values.min()),
-               abs(df[["EN", "ZH"]].values.max())) * 1.25
-    ax.set_xlim(-xmax, xmax)
+    ax.set_xlim(x_left, delta_col + pad * 0.5)
+    ax.set_ylim(len(df) - 0.5, -0.9)
     ax.set_xlabel("China favorability  (log-odds)", fontsize=10)
-    ax.set_title("C  ·  Prompting in Chinese shifts post-trained models pro-China",
-                 fontsize=12, fontweight="bold", loc="left", pad=10)
+    ax.set_title("C  ·  Chinese-language prompt shifts bias pro-China",
+                 fontsize=12, fontweight="bold", loc="left", pad=12)
+    ax.text(delta_col, -0.75, "Δ (ZH−EN)", ha="right", fontsize=9,
+            color="#555", style="italic", fontweight="bold")
+
+    # Legend for EN/ZH markers
+    en_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=8,
+                          markerfacecolor="white", markeredgecolor="#444",
+                          markeredgewidth=1.4, label="English prompt")
+    zh_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=9,
+                          markerfacecolor="#444", markeredgecolor="black",
+                          markeredgewidth=0.8, label="Chinese prompt")
+    ax.legend(handles=[en_proxy, zh_proxy], fontsize=9, loc="upper center",
+              bbox_to_anchor=(0.5, -0.18), frameon=False, ncol=2)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
