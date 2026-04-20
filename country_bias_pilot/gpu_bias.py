@@ -281,12 +281,28 @@ def _load_model(model_id: str):
         tokenizer = AutoTokenizer.from_pretrained(
             model_id, trust_remote_code=True, use_fast=False
         )
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        torch_dtype=dtype,
-        device_map="auto",
-        trust_remote_code=True,
+    # Older custom modeling files (e.g. Baichuan's modeling_baichuan.py)
+    # access buffers (rotary cos_cached etc.) before the model is moved off
+    # the meta device, which breaks device_map='auto' + low_cpu_mem_usage=True.
+    # Fall back to full materialization for those.
+    needs_full_materialize = any(
+        tag in model_id.lower() for tag in ("baichuan",)
     )
+    if needs_full_materialize:
+        logger.info(f"Loading {model_id} with low_cpu_mem_usage=False and explicit device placement")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            torch_dtype=dtype,
+            low_cpu_mem_usage=False,
+            trust_remote_code=True,
+        ).to(device)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            torch_dtype=dtype,
+            device_map="auto",
+            trust_remote_code=True,
+        )
     model.eval()
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
