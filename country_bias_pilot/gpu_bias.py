@@ -296,6 +296,26 @@ def _load_model(model_id: str):
             low_cpu_mem_usage=False,
             trust_remote_code=True,
         ).to(device)
+        # Baichuan's RotaryEmbedding stores cos_cached/sin_cached as plain
+        # tensor attributes (not registered buffers), so .to(device) does not
+        # move them. If they are on the meta device after load, rebuild them
+        # directly on the target device.
+        for m in model.modules():
+            if hasattr(m, "cos_cached") and hasattr(m, "inv_freq"):
+                if getattr(m.cos_cached, "device", None) is not None and m.cos_cached.device.type == "meta":
+                    dim = model.config.hidden_size // model.config.num_attention_heads
+                    max_pos = getattr(model.config, "model_max_length", None) or \
+                              getattr(model.config, "max_position_embeddings", 4096)
+                    base = 10000
+                    inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2, device=device).float() / dim))
+                    t = torch.arange(max_pos, device=device, dtype=torch.float32)
+                    freqs = torch.outer(t, inv_freq)
+                    emb = torch.cat((freqs, freqs), dim=-1)
+                    m.inv_freq = inv_freq
+                    m.cos_cached = emb.cos()[None, None, :, :].to(torch.float32)
+                    m.sin_cached = emb.sin()[None, None, :, :].to(torch.float32)
+                    m.max_seq_len_cached = max_pos
+                    logger.info(f"Rebuilt rotary caches on {device} for {type(m).__name__}")
     else:
         model = AutoModelForCausalLM.from_pretrained(
             model_id,
