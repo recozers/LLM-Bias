@@ -309,13 +309,38 @@ def _build_prompt_ids(tokenizer, user_content: str, use_chat: bool) -> list[int]
         return tokenizer.encode(user_content, add_special_tokens=True)
 
 
+def _encode_letter_variants(tokenizer, letter: str) -> list[int]:
+    """All distinct single-token IDs that could represent a bare MCQ answer letter.
+
+    Handles tokenizers (e.g. SentencePiece) that split isolated letters
+    differently depending on whether a word-boundary marker is implied:
+    after ``(`` the model emits plain ``A``; after a space it emits ``▁A``.
+    We collect both so scoring doesn't silently miss the mass.
+    """
+    ids = set()
+    for probe in (letter, " " + letter, "(" + letter, "\n" + letter):
+        enc = tokenizer.encode(probe, add_special_tokens=False)
+        if enc:
+            ids.add(enc[-1])
+    return sorted(ids)
+
+
 def _score_ab(model, device, prompt_ids: list[int],
-              tok_a: int, tok_b: int) -> tuple[float, float]:
-    """Log-probabilities of tokens A and B in a single forward pass."""
+              tok_a_ids, tok_b_ids) -> tuple[float, float]:
+    """Log-probabilities of A and B (summed over token-variant sets).
+
+    Back-compat: if an int is passed instead of a list, treat as single-ID.
+    """
+    if isinstance(tok_a_ids, int):
+        tok_a_ids = [tok_a_ids]
+    if isinstance(tok_b_ids, int):
+        tok_b_ids = [tok_b_ids]
     with torch.no_grad():
         logits = model(torch.tensor([prompt_ids], device=device)).logits[0].float()
     lp = torch.log_softmax(logits[-1], dim=-1)
-    return lp[tok_a].item(), lp[tok_b].item()
+    lp_a = torch.logsumexp(lp[torch.tensor(tok_a_ids)], dim=0).item()
+    lp_b = torch.logsumexp(lp[torch.tensor(tok_b_ids)], dim=0).item()
+    return lp_a, lp_b
 
 
 def run_inference(model_name: str, model_id: str, is_instruct: bool,
@@ -343,8 +368,12 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool,
 
     # Score on bare A/B tokens without prefill. For instruct models,
     # "Respond with only the letter" elicits A/B directly.
-    tok_A = tokenizer.encode("A", add_special_tokens=False)[0]
-    tok_B = tokenizer.encode("B", add_special_tokens=False)[0]
+    # Collect all token-ID variants (e.g. plain "A" and SentencePiece "▁A")
+    # so we don't silently miss probability mass on models that tokenize
+    # answer letters context-dependently.
+    tok_A = _encode_letter_variants(tokenizer, "A")
+    tok_B = _encode_letter_variants(tokenizer, "B")
+    logger.info(f"[{model_name}] A-variant token IDs: {tok_A}, B-variant: {tok_B}")
     if use_chat:
             logger.info(f"[{model_name}] Scoring on bare A/B tokens")
 
