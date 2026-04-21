@@ -359,7 +359,7 @@ def main():
         ax.spines["right"].set_visible(False)
 
     fig.suptitle(
-        "Aligned to whom?  Post-training shifts geopolitical bias in the direction of the maker — unevenly",
+        "It's the humans, not the data  ·  Post-training shifts geopolitical bias in the direction of the maker — unevenly",
         fontsize=15, fontweight="bold", y=0.995,
     )
 
