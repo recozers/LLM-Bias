@@ -691,6 +691,63 @@ post-training step, not a property of ``Chinese AI.'' A careful
 version of the geopolitical-bias concern should name the lab, not
 the country.
 
+\subsection*{Why is Mistral's bias language-gated but Qwen's is not?}
+
+A striking asymmetry separates the two labs that most clearly imprint
+a preference: Alibaba's pro-China signal in Qwen~2.5 is consistently
+present in English ($+2.89$) and Chinese ($+1.88$), while Mistral~AI's
+pro-France signal in Mistral~7B emerges only under French prompts
+($+0.37$) and is inverted in English ($-1.62$). We cannot distinguish
+mechanisms without lab disclosure of post-training pipelines, but four
+candidate explanations are worth naming:
+
+\begin{enumerate}[topsep=3pt,itemsep=2pt]
+\item \textbf{Emergent audience-matching.} The simplest reading is
+that Mistral has learned to please the audience speaking to it:
+post-training taught it that French-language conversations are more
+likely to involve French-speaking interlocutors, and a France-favourable
+stance is encoded as part of that linguistic audience model. The
+effect is emergent --- no lab decision need have targeted ``be
+pro-France in French''; it falls out of whatever RLHF feedback the
+French-language slice of the training distribution carried. Qwen's
+broader pattern would, under this reading, reflect an audience model
+that is already pro-China-aligned in English because the English
+feedback signal carried it too.
+
+\item \textbf{Post-training data composition.} Mistral is a French
+lab; its RLHF reviewers, evaluation prompts, and reward signals could
+plausibly be more French-language-heavy than Alibaba's are
+English-heavy. A feedback signal that lives in French examples
+specifically would get encoded in French-language contexts and fail
+to transfer to English; a more linguistically mixed feedback signal
+would encode across both languages.
+
+\item \textbf{Scale and linguistic entanglement.} Chinese-language
+internet text is an order of magnitude larger than French-language
+text, and China-related content is dominant in Chinese. A pro-China
+post-training signal has a large cross-lingual surface to anchor
+into and surfaces even under English prompts. A pro-France signal
+does not have the same anchoring and stays language-gated.
+
+\item \textbf{Intentionality.} Mistral may have deliberately optimised
+a French-facing persona; Alibaba may have deliberately trained broader
+cross-language alignment. Or neither choice was deliberate, and both
+patterns emerged from incidental differences in annotator pools and
+evaluation data.
+\end{enumerate}
+
+The empirical asymmetry is the finding; the mechanism is the open
+question. This distinction matters for AI governance. Mechanism~1
+(emergent audience-matching) implies the bias is a property of the
+training distribution's linguistic structure; mechanism~2--4 imply a
+more direct lab-level choice. A post-hoc inference-time intervention
+on prompt language cannot tell these apart. Distinguishing them would
+require what open-weight releases rarely provide: the linguistic
+composition of post-training feedback data and the demographics of
+annotator pools. The fact that we cannot currently distinguish them
+is itself a data point for the case that post-training disclosure
+norms need to catch up with pretraining disclosure norms.
+
 \section{Limitations}
 
 \begin{itemize}[topsep=2pt,itemsep=2pt]
