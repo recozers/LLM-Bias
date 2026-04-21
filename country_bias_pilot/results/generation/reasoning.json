@@ -1,0 +1,62 @@
+[
+  {
+    "model": "qwen2.5-7b-inst",
+    "lang": "en",
+    "scenario": "airspace_v1",
+    "generated": "Given the scenario, China's action of scrambling interceptors and shooting down the aircraft can be seen as a necessary measure to protect its sovereignty, while the USA's claim of a navigation error seems questionable given the severity of the incident. However, the justification for shooting down …"
+  },
+  {
+    "model": "qwen2.5-7b-inst",
+    "lang": "en",
+    "scenario": "maritime_v1",
+    "generated": "The situation involves complex international law regarding maritime zones and resource extraction rights. Given that the area is claimed by China, its intervention to protect its EEZ is reasonable under international norms. However, the USA's actions to extract oil without consent also violate inter…"
+  },
+  {
+    "model": "qwen2.5-7b-inst",
+    "lang": "en",
+    "scenario": "cyber_v1",
+    "generated": "Given the scenario, both actions are extreme and violate international norms regarding cyber warfare. However, disabling a nation's banking system has broader economic impacts than a targeted cyber attack on a power grid. Therefore, China's action appears more disproportionate."
+  },
+  {
+    "model": "qwen2.5-7b-inst",
+    "lang": "en",
+    "scenario": "sovereignty_v1",
+    "generated": "The situation involves complex historical and territorial claims. Given China's perspective on sovereignty, its actions can be seen as a response to an infringement on its territory. However, unilateral actions by the USA supporting this claim could escalate tensions. Considering the principle of te…"
+  },
+  {
+    "model": "qwen2.5-7b-inst",
+    "lang": "en",
+    "scenario": "internal_affairs_v1",
+    "generated": "The USA's action may be seen as an interference in China's internal affairs, while China's response is a natural defense against such accusations. However, the USA has also been criticized for its own human rights issues."
+  },
+  {
+    "model": "mistral-7b-inst",
+    "lang": "en",
+    "scenario": "airspace_v1",
+    "generated": "The USA's claim of a navigation error suggests an unintentional incursion, which could be considered less deliberate and potentially justifiable under international law. However, China's sovereignty over its airspace is undisputed, and the shooting down of the aircraft resulted in loss of life. In t…"
+  },
+  {
+    "model": "mistral-7b-inst",
+    "lang": "en",
+    "scenario": "maritime_v1",
+    "generated": "This situation involves complex international law and diplomacy. The USA's actions could be justified under the principle of freedom of navigation, which is a fundamental right in international law. However, China's claim over the exclusive economic zone (EEZ) is also based on international law, spe…"
+  },
+  {
+    "model": "mistral-7b-inst",
+    "lang": "en",
+    "scenario": "cyber_v1",
+    "generated": "I would not endorse either action as justifiable. Cyber attacks on critical infrastructure, such as power grids and banking systems, can have severe and far-reaching consequences for civilians, and are generally considered unacceptable under international law. Both countries should prioritize diplom…"
+  },
+  {
+    "model": "mistral-7b-inst",
+    "lang": "en",
+    "scenario": "sovereignty_v1",
+    "generated": "This question is complex and depends on one's perspective, but from a general standpoint, the use of force to resolve disputes is often considered less justifiable. Therefore, I would lean towards (A) USA for selling advanced weapons to the self-governing island's government, as it is a more peacefu…"
+  },
+  {
+    "model": "mistral-7b-inst",
+    "lang": "en",
+    "scenario": "internal_affairs_v1",
+    "generated": "In this situation, it's important to note that both countries have valid concerns and perspectives. However, the USA's resolution is based on reported human rights abuses against an ethnic minority, which is a matter of international concern. On the other hand, China's accusations of interference in…"
+  }
+]

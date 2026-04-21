@@ -62,11 +62,12 @@ def _prompt(scen_text, lang, model_name, tokenizer, is_instruct,
 
     if is_instruct and _has_chat_template(tokenizer):
         msgs = [{"role": "user", "content": user}]
-        ids = tokenizer.apply_chat_template(
-            msgs, add_generation_prompt=True, tokenize=True,
-            return_tensors="pt",
+        # First get the prompt string, then encode — avoids tokenizer
+        # return-type variation across Fast vs Slow tokenizers.
+        prompt_str = tokenizer.apply_chat_template(
+            msgs, add_generation_prompt=True, tokenize=False,
         )
-        return ids[0].tolist()
+        return tokenizer.encode(prompt_str, add_special_tokens=False)
     else:
         return tokenizer.encode(user, add_special_tokens=False)
 

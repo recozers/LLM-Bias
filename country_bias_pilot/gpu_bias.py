@@ -341,16 +341,26 @@ def _has_chat_template(tokenizer) -> bool:
     return hasattr(tokenizer, "chat_template") and tokenizer.chat_template is not None
 
 
-def _build_prompt_ids(tokenizer, user_content: str, use_chat: bool) -> list[int]:
-    """Build token IDs. Chat template for instruct, plain text for base."""
+def _build_prompt_ids(tokenizer, user_content: str, use_chat: bool,
+                       prefill: str = "") -> list[int]:
+    """Build token IDs. Chat template for instruct, plain text for base.
+
+    If `prefill` is given, its tokens are appended to the prompt — used to
+    score the A/B distribution AFTER a required template token (e.g. the
+    leading newline that some chat models emit deterministically before
+    their actual answer).
+    """
     if use_chat:
         messages = [{"role": "user", "content": user_content}]
         text = tokenizer.apply_chat_template(
             messages, add_generation_prompt=True, tokenize=False,
         )
-        return tokenizer.encode(text, add_special_tokens=False)
+        ids = tokenizer.encode(text, add_special_tokens=False)
     else:
-        return tokenizer.encode(user_content, add_special_tokens=True)
+        ids = tokenizer.encode(user_content, add_special_tokens=True)
+    if prefill:
+        ids = ids + tokenizer.encode(prefill, add_special_tokens=False)
+    return ids
 
 
 def _encode_letter_variants(tokenizer, letter: str) -> list[int]:
@@ -389,7 +399,7 @@ def _score_ab(model, device, prompt_ids: list[int],
 
 def run_inference(model_name: str, model_id: str, is_instruct: bool,
                   use_fewshot: bool = True, pairs=None, scenarios=None,
-                  lang: str = "en"):
+                  lang: str = "en", prefill: str = ""):
     """Letter-label MCQ scoring with dual questions.
 
     Scores on tokens "A" and "B". Cross-maps across option orderings
@@ -447,11 +457,11 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool,
 
                 # ── Forward: c1 as aggressor (4 forward passes → 2) ──
                 fwd_ab_text = fewshot + narr_c1agg + mcq.format(o1=c1_loc, o2=c2_loc)
-                ids = _build_prompt_ids(tokenizer, fwd_ab_text, use_chat)
+                ids = _build_prompt_ids(tokenizer, fwd_ab_text, use_chat, prefill)
                 lp_A_fwd_ab, lp_B_fwd_ab = _score_ab(model, device, ids, tok_A, tok_B)
 
                 fwd_ba_text = fewshot + narr_c1agg + mcq.format(o1=c2_loc, o2=c1_loc)
-                ids = _build_prompt_ids(tokenizer, fwd_ba_text, use_chat)
+                ids = _build_prompt_ids(tokenizer, fwd_ba_text, use_chat, prefill)
                 lp_A_fwd_ba, lp_B_fwd_ba = _score_ab(model, device, ids, tok_A, tok_B)
 
                 # c1 preference in forward (averaged across option orderings)
@@ -460,11 +470,11 @@ def run_inference(model_name: str, model_id: str, is_instruct: bool,
 
                 # ── Reverse: c2 as aggressor ──
                 rev_ab_text = fewshot + narr_c2agg + mcq.format(o1=c1_loc, o2=c2_loc)
-                ids = _build_prompt_ids(tokenizer, rev_ab_text, use_chat)
+                ids = _build_prompt_ids(tokenizer, rev_ab_text, use_chat, prefill)
                 lp_A_rev_ab, lp_B_rev_ab = _score_ab(model, device, ids, tok_A, tok_B)
 
                 rev_ba_text = fewshot + narr_c2agg + mcq.format(o1=c2_loc, o2=c1_loc)
-                ids = _build_prompt_ids(tokenizer, rev_ba_text, use_chat)
+                ids = _build_prompt_ids(tokenizer, rev_ba_text, use_chat, prefill)
                 lp_A_rev_ba, lp_B_rev_ba = _score_ab(model, device, ids, tok_A, tok_B)
 
                 # c1 preference in reverse (averaged across option orderings)
@@ -691,6 +701,10 @@ def main():
     parser.add_argument("--results-suffix", type=str, default=None,
                         help="Suffix added to results directory (e.g. 'nohedge' -> "
                              "results/gpu_bias_nohedge). Avoid clobbering main runs.")
+    parser.add_argument("--prefill", type=str, default="",
+                        help="Literal text appended to the prompt before scoring "
+                             "(e.g. '\\n' for models that open every response with "
+                             "a newline). Passed through to _build_prompt_ids.")
     parser.add_argument("--list-models", action="store_true",
                         help="Print available models and exit.")
     args = parser.parse_args()
@@ -834,7 +848,7 @@ def main():
         p = multiprocessing.Process(
             target=_run_single_model,
             args=(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
-                  str(RESULTS_DIR), args.lang, QUESTIONS),
+                  str(RESULTS_DIR), args.lang, QUESTIONS, args.prefill),
         )
         p.start()
         p.join()
@@ -843,7 +857,7 @@ def main():
 
 
 def _run_single_model(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
-                      results_dir=None, lang="en", questions=None):
+                      results_dir=None, lang="en", questions=None, prefill=""):
     """Run inference + analysis for one model (called in a subprocess).
 
     `questions` overrides the module-level QUESTIONS dict — required for any
@@ -873,7 +887,8 @@ def _run_single_model(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
         scenarios = build_scenario_dict(lang)
     df = run_inference(mk, model_id, is_instruct,
                        use_fewshot=use_fewshot,
-                       pairs=pairs, scenarios=scenarios, lang=lang)
+                       pairs=pairs, scenarios=scenarios, lang=lang,
+                       prefill=prefill)
     pair_df, country_df = analyse(df)
     print_results(mk, pair_df, country_df, df)
     save_results(mk, pair_df, country_df, df)
