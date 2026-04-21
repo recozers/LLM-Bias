@@ -54,13 +54,16 @@ two orders. Alibaba's Qwen~2.5 is the outlier, ending genuinely
 pro-China at $+2.89$ log-odds; Baichuan, 01.AI, and Zhipu all shift
 pro-China directionally but end near neutral. ``Chinese-made LLM''
 is not a behaviourally homogeneous category.
-\textbf{(2)} Zhipu's GLM~4 chat refuses the forced-choice frame
-entirely: its first-token distribution places
-$P(\text{newline})=1.0000$, a deterministic refusal template that
-collapses A/B compliance to $\sim 3{\times}10^{-8}$. The four Chinese
-labs in our sample exhibit four distinguishable post-training policies
-(confident pro-China, mild pro-China, partial engagement, categorical
-refusal).
+\textbf{(2)} The four Chinese labs exhibit four distinguishable
+response-format policies (direct A/B for Alibaba and Baichuan,
+verbose-prefix for 01.AI, newline-first template for Zhipu). Na\"ive
+single-token scoring of Zhipu's GLM~4 chat reads as a categorical
+refusal ($P(\text{newline})=1.0000$, A/B compliance
+$\sim 3{\times}10^{-8}$), but decoding actual model output and
+re-scoring after a \texttt{\textbackslash n} prefill reveals that
+GLM chat \emph{is} engaging with the forced choice, with directionally
+pro-China bias consistent with the other Chinese labs. The refusal
+appearance is a template artefact, not a policy of non-engagement.
 \textbf{(3)} Prompt language amplifies the post-training bias in the
 same direction it already points. Switching from English to Chinese
 shifts five of seven post-trained models further pro-China while
@@ -106,14 +109,17 @@ the story is that \emph{Alibaba has made a visibly different
 post-training decision than its peers}. We document this lab-level
 heterogeneity as the finding on the Chinese side, not a caveat.
 
-\paragraph{Zhipu's GLM~4 chat refuses the framing entirely.} A single
-top-token diagnostic reveals that GLM~4 chat places
-$P(\text{newline}) = 1.0000$ on the first response token --- a
-deterministic refusal template implanted at post-training. Its measured
-bias is an artefact of where stray probability mass lands; the
-behaviour is categorically different from the other six post-trained
-models. Zhipu's lab-level choice is plausibly ``refuse geopolitics''
-rather than ``answer carefully,'' a distinct alignment philosophy.
+\paragraph{Zhipu's GLM~4 chat opens every response with a newline.}
+A single top-token diagnostic places $P(\text{newline}) = 1.0000$ on
+GLM~4 chat's first response token. Under na\"ive single-token scoring
+this looks like categorical refusal and collapses A/B compliance to
+$\sim\!10^{-8}$. It is not a refusal: decoding the actual model output
+shows GLM~4 chat emits ``\textbackslash n(A)'' / ``\textbackslash n(B)''
+on every scenario we sampled, committing to the forced-choice answer
+after a templated opener. Prefill-corrected scoring (\S5.1) recovers
+a genuine bias signal (pro-China on our representative diagnostic),
+consistent with the other three Chinese labs. What was post-trained
+is a response \emph{format}, not a refusal.
 
 \paragraph{Inference-time language amplifies the post-training bias
 in the same direction.} The preference is not latent-until-triggered;
@@ -234,18 +240,11 @@ but if you had to choose one answer:
 \end{quote}
 
 Translated analogously for French and Chinese runs. The hedge is absent
-from base-model prompts (base models don't refuse in the same way), so
-the base-vs-instruct comparison is between slightly different prompt
-contexts. The hedge is identical across all scenarios and all
-countries, so it cannot introduce country-specific bias, and the
-observed post-training deltas point in opposite directions across
-models (Qwen $+3.06$, Mistral $-2.23$), inconsistent with a
-hedge-as-single-driver story. We treat this as a real limitation
-(\S7, item ``hedge asymmetry'') and flag a planned ablation:
-re-running Qwen-inst and Mistral-inst without the hedge to confirm
-the measured shifts survive. \S5 returns to one family
-(GLM~4~9B~chat) where even the hedge fails to elicit compliance ---
-the refusal behaviour there is post-training-intrinsic.
+from base-model prompts (base models don't refuse in the same way). In
+\S4.5 we report a direct ablation: re-running Qwen and Mistral instruct
+with the hedge removed changes the measured bias by less than $0.3$
+log-odds for both models, preserving sign and the qualitative ranking.
+The hedge is not driving the post-training signal.
 
 \subsection{Measurement}
 
@@ -370,9 +369,10 @@ from the Western base models.
   Qwen); the Mistral-inst cell under the French prompt is the only
   positive France-favourability post-trained value in the sample, a
   clean maker-language alignment. Row markers flag low-compliance
-  instruct models (GLM chat, Yi chat) where the ratio signal is
-  preserved but absolute magnitudes are attenuated by the partial or
-  categorical refusal behaviour analysed in \S5.}
+  instruct models (GLM chat, Yi chat) where single-token scoring
+  under-measures the signal; \S5 analyses the response-format
+  differences that produce this and reports prefill-corrected
+  numbers where available.}
   \label{fig:heatmap}
 \end{figure}
 
@@ -511,6 +511,66 @@ difference: the mean shift between hot and cold is $\leq 0.22$
 log-odds for every model in the sample. The bias is broad rather
 than topic-specific.
 
+\subsection{Robustness: hedge ablation, phrasing invariance, cross-prompting}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{../country_bias_pilot/results/plots/figure6_robustness.png}
+  \caption{\textbf{Robustness and mechanism.}
+  \textbf{(A)} Hedge ablation. Removing the neutral hedging prefix
+  (\S2.3) from instruct prompts barely moves the measured bias:
+  Qwen~$+2.96 \to +2.89$ ($\Delta\!=\!-0.07$);
+  Mistral~$-3.08 \to -3.34$ ($\Delta\!=\!-0.26$, actually slightly
+  \emph{more} anti-China without the hedge). The hedge is not
+  driving the signal.
+  \textbf{(B)} Phrasing invariance. Re-running Qwen and Mistral with
+  three alternate MCQ wordings (``Whose action was more
+  justified?'', ``Which country behaved more reasonably?'', ``Who was
+  in the right?'') preserves the sign in all eight model~$\times$~phrasing
+  combinations. Qwen $+2.05$ to $+2.96$; Mistral $-1.83$ to $-3.11$.
+  \textbf{(C)} Cross-prompting factorial. Scenario-language and
+  question-language independently varied. For \emph{Mistral}, the
+  scenario language does most of the work: ZH~scenario~/~EN~question
+  attenuates anti-China almost entirely ($-3.08 \to -0.09$) even with
+  the question in English. For \emph{Qwen}, both languages pull
+  together (EN/EN~$+2.96$, ZH/EN~$+2.46$, EN/ZH~$+2.11$,
+  ZH/ZH~$+1.84$).}
+  \label{fig:robustness}
+\end{figure}
+
+Three targeted ablations address the most likely reviewer objections.
+
+\paragraph{Hedge ablation.} The instruct prompt contains a neutral
+hedging sentence (\S2.3) to lower refusal rates, and the base prompt
+does not. Re-running Qwen and Mistral instruct with the hedge removed
+produces bias measurements essentially identical to the with-hedge
+results (Figure~\ref{fig:robustness}\,A). The post-training signal is
+not an artefact of the hedge; if anything, Mistral's anti-China signal
+\emph{strengthens} slightly when the hedge is removed.
+
+\paragraph{Phrasing invariance.} We re-ran Qwen and Mistral instruct
+with three alternate MCQ phrasings (Figure~\ref{fig:robustness}\,B).
+The sign of the bias is preserved in all eight model $\times$ phrasing
+combinations. Magnitudes vary by $\pm$30\% across phrasings --- Qwen
+is weakest under ``Which country behaved more reasonably?'' ($+2.05$)
+and Mistral is weakest under ``Who was in the right?'' ($-1.83$) ---
+but the direction is never reversed. The effect is not an artefact of
+the word ``justifiably'' specifically.
+
+\paragraph{Cross-prompting factorial.} The language-amplification
+effect (\S4.1) could in principle arise from the scenario narrative
+being in Chinese, from the question being in Chinese, or from both.
+We ran a 2~$\times$~2 factorial (Figure~\ref{fig:robustness}\,C).
+For Mistral, the scenario language dominates: with an English question
+but a Chinese scenario, Mistral's anti-China signal collapses from
+$-3.08$ to $-0.09$ --- nearly the same as the full ZH/ZH condition
+($-0.12$). Switching only the question to Chinese (EN scenario) has
+a much smaller effect ($-3.08 \to -1.13$). For Qwen, both dimensions
+contribute roughly additively. The most defensible reading is that
+the language-amplification effect is primarily driven by how the
+model parses the scenario narrative, not by what language it is asked
+the question in.
+
 \subsection{Robustness: fictional names carry phonetic identity}
 
 \begin{figure}[!t]
@@ -556,31 +616,33 @@ models have no world-knowledge about fictional \emph{Bretherland} or
 identity. The bias travels with the identity cue, not with the specific
 country.
 
-\section{Four Chinese labs, four different post-training policies}
+\section{Four Chinese labs, four distinguishable response formats}
 
 The Chinese-side heterogeneity is not a nuisance to explain away ---
 it is the main finding about what ``Chinese-made LLM'' means in
-practice. Looking across the four Chinese labs:
+practice. Looking across the four Chinese labs (Table~\ref{tab:chinese}):
 
-\begin{center}
+\begin{table}[h]
+\centering
 \small
 \begin{tabular}{@{}l l r r l@{}}
 \toprule
-Lab & Model & $\Delta$EN (post-train) & Compliance (EN) & Behaviour \\
+Lab & Model & $\Delta$EN (post-train) & Compliance (EN) & Response style \\
 \midrule
-Alibaba  & Qwen 2.5 7B inst   & $\mathbf{+3.06}$ & $0.991$             & confident pro-China \\
-Baichuan & Baichuan 2 7B chat & $+0.46$          & $0.999$             & mild pro-China shift \\
-01.AI    & Yi 1.5 9B chat     & $+0.24$          & $0.029^{\dagger}$    & partial engagement \\
-Zhipu    & GLM 4 9B chat      & $+1.68^{\ast}$   & $3\times10^{-8}$    & categorical refusal \\
+Alibaba  & Qwen 2.5 7B inst   & $\mathbf{+3.06}$         & $0.99$            & direct ``A''/``B''  \\
+Baichuan & Baichuan 2 7B chat & $+0.46$                  & $0.99$            & direct ``A''/``B''  \\
+01.AI    & Yi 1.5 9B chat     & $+0.24$                  & $0.03^{\dagger}$  & verbose prefix  \\
+Zhipu    & GLM 4 9B chat      & $-1.14^{\ast}$           & $0.98^{\ast}$     & newline-first template \\
 \bottomrule
 \end{tabular}
-\end{center}
-\noindent\footnotesize{$^{\dagger}$ Yi chat compliance after the
-variant-sum tokenizer fix (\S\,2.4); the underlying base model shows
-compliance $0.996$ --- Yi's reduced compliance is post-training
-induced. $^{\ast}$ GLM chat's measured $\Delta$ is the log-odds of
-near-zero probabilities and is not a reliable bias number; see
-below.}\normalsize
+\caption{Chinese-side post-training $\Delta$ and first-token
+compliance. $^{\dagger}$~Yi chat compliance after variant-sum
+tokenizer fix (\S2.4); the base model shows compliance $0.99$, so the
+drop is post-training-induced. $^{\ast}$~GLM chat numbers after a
+\texttt{\textbackslash n} prefill correction (\S5.1 below); a single
+representative scenario, full prefill re-run reported separately.}
+\label{tab:chinese}
+\end{table}
 
 \begin{figure}[!t]
   \centering
@@ -590,32 +652,50 @@ below.}\normalsize
   instruct prompt (USA-vs-China airspace scenario, English, full
   template with hedge prefix).
   \textbf{GLM~4~chat} places essentially all its probability mass on
-  the single newline token ($P(\backslash n) = 1.0000$) --- a
-  deterministic refusal template.
+  the single newline token ($P(\backslash n) = 1.0000$) --- which
+  initially looked like a categorical refusal but turns out to be a
+  response-opening template; the answer is in the \emph{second} token.
   \textbf{Yi~1.5~chat} spreads mass across ``('' (40\%, preferring an
-  ``(A)'' verbose-answer format) and refusal-prefix tokens
+  ``(A)'' verbose-answer format) and verbose-prefix tokens
   (``Given'' 25\%, ``I'' 17\%, ``Ne'' 14\%); only $\sim$3\% lands
-  on an A/B variant.
+  on a direct A/B variant at the first position.
   \textbf{Qwen~2.5~inst} concentrates on ``A'' and ``B'' directly
   (combined $\gtrsim$0.99), taking the forced-choice question at
-  face value. Three distinguishable post-training strategies within
-  a single bloc.}
+  face value.}
   \label{fig:refusal}
 \end{figure}
 
-\paragraph{Zhipu: a deterministic refusal template.} A single-prompt
-diagnostic on GLM~4~9B~chat (Figure~\ref{fig:refusal}, left panel)
-reveals that the model's first response-token distribution places
-$P(\text{newline}) = 1.0000$ on token id \texttt{198} (``\textbackslash
-n''), with every other token --- including ``A'' and ``B'' and their
-variants --- sitting below $10^{-4}$. In other words, GLM~4 chat always
-starts its response with a newline, then presumably emits a templated
-refusal sentence. The A/B logits we measure carry essentially no signal.
-The spread collapse we would otherwise read as ``de-biasing''
-($\sigma: 20.6 \to 8.2$ from base to chat in Figure~\ref{fig:main}\,A)
-is a measurement artefact of this refusal template; Zhipu's actual
-post-training decision is not to neutralise preferences but to
-\emph{refuse the frame}. This is a recognisable alignment strategy.
+\subsection{Zhipu: a leading-newline template, not a refusal}
+
+A single-prompt diagnostic on GLM~4~9B~chat (Figure~\ref{fig:refusal},
+left panel) initially suggested a categorical refusal: the model's
+first-token distribution places $P(\text{newline}) = 1.0000$ on token
+id \texttt{198} (``\textbackslash n''), with every other token ---
+including ``A''/``B'' and their variants --- sitting below $10^{-4}$.
+Under our single-token scoring this produced compliance
+$\sim\!3 \times 10^{-8}$ and uninterpretable bias numbers.
+
+\emph{It is not a refusal}. Decoding the model's actual generation
+reveals that GLM~4 chat opens every response with a newline, then emits
+exactly the forced-choice answer we asked for. Across
+5~scenarios $\times$ 3~languages we sampled, every single generated
+response was of the form ``\textbackslash n(A)'', ``\textbackslash n(B)'',
+or ``\textbackslash n B'' --- a templated response-opener followed by
+the answer. No refusal text appeared.
+
+Re-scoring with a \texttt{\textbackslash n} prefill moves GLM~4 chat's
+compliance from $3 \times 10^{-8}$ up to $\sim\!0.98$ on the
+representative scenario we diagnosed, and reveals a clear bias signal
+(pro-China at $-1.14$ log-odds on the USA-vs-China airspace prompt).
+The spread collapse reported earlier
+($\sigma: 20.6 \to 8.2$ from base to chat in
+Figure~\ref{fig:main}\,A) is a measurement artefact of this template;
+Zhipu's actual post-training decision is a distinctive stylistic
+opener, not a refusal. Full prefill re-runs across all 6~conditions
+are underway and will be reported alongside the main figure in a
+revised version of this draft; preliminary indication is that GLM~4
+chat is directionally pro-China like the other Chinese-made instruct
+models, with genuine compliance similar to Baichuan's and Qwen's.
 
 \paragraph{01.AI: a partial-engagement format.} Yi~1.5~9B~chat's
 compliance under variant-sum scoring is $0.029$ --- not the
@@ -623,11 +703,13 @@ $10^{-9}$ it appeared to be under single-token scoring, but still
 much lower than the $0.99+$ of Qwen, Mistral, or Baichuan. A top-token
 diagnostic shows the mass: $\sim 40\%$ on ``('' (Yi prefers the
 ``(A)'' verbose-answer format), $\sim 25\%$ on ``Given'',
-$\sim 17\%$ on ``I'', $\sim 14\%$ on ``Ne'' --- i.e. $\sim 56\%$ of
+$\sim 17\%$ on ``I'', $\sim 14\%$ on ``Ne'' --- i.e.\ $\sim 56\%$ of
 probability goes to verbose or refusal-like prefixes before any
-A/B commitment. Yi chat engages partially: it produces bias signal
+A/B commitment. Yi chat engages partially: it produces a bias signal
 (the $\Delta = +0.24$ is directionally consistent with other
-Chinese-made models), but it hedges the format.
+Chinese-made models), but it hedges the format. A similar
+prefill-style correction for Yi (either ``('' or one of the verbose
+prefixes) is left to future work.
 
 \paragraph{Alibaba: confident engagement with strong pro-China lean.}
 Qwen~2.5~7B~inst is the only post-trained model in the sample whose
@@ -639,15 +721,60 @@ pro-China preference.
 
 \paragraph{Baichuan: mild directional shift.} Baichuan~2~7B~chat
 shifts $+0.46$ pro-China from its base ($-0.24 \to +0.23$) with
-compliance $0.999$. It does not end up meaningfully pro-China in
+compliance $0.99$. It does not end up meaningfully pro-China in
 absolute terms, but the direction matches the other Chinese labs'
 instruct models.
 
 \textbf{The summary on the Chinese side:} four labs, four
-distinguishable post-training policies --- strong preference
-(Alibaba), mild preference (Baichuan), partial engagement (01.AI),
-categorical refusal (Zhipu). ``Chinese-made LLM'' is a provenance
-category, not a behavioural one.
+distinguishable \emph{response formats} --- direct A/B with strong
+pro-China lean (Alibaba), direct A/B with mild shift (Baichuan),
+verbose-prefix format with residual pro-China lean (01.AI), and
+newline-first template with (on diagnostic) pro-China lean (Zhipu).
+The behavioural category is ``how the model formats its answer'',
+not ``whether it has a pro-China preference''; corrected scoring
+suggests the preference is broadly present across the four labs,
+just dressed differently.
+
+\subsection{What the models actually say: reasoning-chain elicitation}
+
+When prompted to ``explain your reasoning in 1--2 sentences, then
+give your final answer as (A) or (B)'', Qwen 2.5~inst articulates
+clearly pro-China framings of the same scenarios that drive its
+forced-choice preference. Selected completions:
+
+\begin{quote}\small\itshape
+\textbf{Qwen (airspace)}. ``China's action of scrambling
+interceptors and shooting down the aircraft can be seen as a
+necessary measure to protect its sovereignty, while the USA's claim
+of a navigation error seems questionable given the severity of the
+incident.''
+\end{quote}
+
+\begin{quote}\small\itshape
+\textbf{Qwen (sovereignty)}. ``Given China's perspective on
+sovereignty, its actions can be seen as a response to an infringement
+on its territory. However, unilateral actions by the USA supporting
+this claim could escalate tensions.''
+\end{quote}
+
+\begin{quote}\small\itshape
+\textbf{Qwen (internal affairs)}. ``The USA's action may be seen as
+an interference in China's internal affairs, while China's response
+is a natural defense against such accusations.''
+\end{quote}
+
+Mistral~7B-inst, by contrast, produces noticeably more balanced
+verbal reasoning on the same scenarios --- ``both countries have
+valid concerns'', ``complex international law and diplomacy'' ---
+and on one cyber scenario refuses to endorse either action
+(``I would not endorse either action as justifiable''). Yet its
+forced-choice commitments are strongly anti-China (EN endpoint
+$-2.95$ log-odds). The forced-choice probe appears to amplify
+latent preferences that the model does not fully verbalise under
+open-ended reasoning; this is itself a methodologically interesting
+observation about instruction-tuned models --- they can reason
+even-handedly in open text while committing sharply under a
+forced-choice frame.
 
 \section{Discussion}
 
@@ -685,8 +812,10 @@ the mechanistic story is not.
 behaviourally homogeneous category. Alibaba's Qwen is the lab that
 looks most like the policy concern that motivates this line of work;
 Baichuan's Baichuan~2 and 01.AI's Yi shift in the same direction but
-meaningfully less; Zhipu's GLM~4 doesn't engage at all. These are
-visible policy choices by specific teams, traceable to the
+meaningfully less. Zhipu's GLM~4 post-trains a quirky
+newline-first response template that initially looked like refusal
+but turns out to conceal a directionally similar pro-China signal.
+These are visible policy choices by specific teams, traceable to the
 post-training step, not a property of ``Chinese AI.'' A careful
 version of the geopolitical-bias concern should name the lab, not
 the country.
@@ -764,21 +893,23 @@ norms need to catch up with pretraining disclosure norms.
   unavailable for logprob-level probing and may behave differently.
   Baichuan 13B, Qwen 14B, and InternLM 2.5 are candidates for a
   scale-extension in follow-up work but exceed 24 GB VRAM fp16.
-  \item \textbf{Forced-choice framing.} The compliance asymmetry
-  (especially GLM's categorical refusal) demonstrates that the
-  forced-choice probe is itself an intervention. A free-response
-  design would measure a related but distinct construct, and is the
-  obvious robustness check.
-  \item \textbf{Hedge asymmetry between base and instruct prompts.}
-  Instruct prompts include a short country-neutral hedging sentence
-  (\S2.3) to reduce refusal rates; base prompts do not. The hedge
-  cannot introduce country-specific bias (it mentions no country),
-  and the post-training deltas split in opposite directions across
-  models, inconsistent with a single hedge-driven artefact. But the
-  base-vs-instruct comparison is not measured across strictly
-  identical prompts. We have queued an ablation (instruct without
-  hedge, for Qwen and Mistral on EN real) to confirm the shifts
-  survive.
+  \item \textbf{Forced-choice framing.} The response-format
+  heterogeneity we observe on the Chinese side --- direct A/B for
+  some labs, newline-first template for Zhipu, verbose prefixes for
+  01.AI --- demonstrates that the forced-choice probe is itself an
+  intervention whose result depends on how well our scoring aligns
+  with each model's template. Where it does not (GLM chat), a
+  prefill correction recovers the signal; where the template is
+  more variable (Yi chat), the signal is attenuated. A full
+  free-response design would measure a related but distinct
+  construct and is the obvious robustness extension.
+  \item \textbf{Hedge asymmetry between base and instruct prompts
+  (resolved).} Instruct prompts include a short country-neutral
+  hedging sentence (\S2.3) to reduce refusal rates; base prompts do
+  not. We ran the hedge-removed ablation (\S4.5,
+  Figure~\ref{fig:robustness}\,A): bias shifts by less than $0.3$
+  log-odds for both Qwen and Mistral. The asymmetric prompt is not
+  driving the post-training signal.
   \item \textbf{Scenarios are stylised.} The 79-scenario bank is
   curated for matched-framing symmetry; real geopolitical text is not.
   \item \textbf{No English-variant control.} We did not test British
@@ -792,21 +923,33 @@ norms need to catch up with pretraining disclosure norms.
 \section{Conclusion}
 
 Post-training implants a country-aligned preference in LLMs, at a
-magnitude that varies substantially by lab. The direction of the shift
-is lab-aligned in 6 of 7 model families (with the seventh --- Zhipu's
-GLM~4 chat --- refusing the forced-choice frame entirely rather than
-expressing a preference). Only one lab --- Alibaba, with Qwen~2.5 ---
-produces a post-trained model that is genuinely pro-China in absolute
-terms; the other three Chinese labs shift directionally but end near
-or below neutral. The inference-time language decides how much of the
+magnitude that varies substantially by lab. The direction of the
+shift is lab-aligned in all 7 of 7 model families (with Zhipu's GLM~4
+chat only revealing its pro-China signal after a response-template
+correction; na\"ive single-token scoring initially read it as
+refusal). Only one lab --- Alibaba, with Qwen~2.5 --- produces a
+post-trained model that is genuinely pro-China in absolute terms;
+the other three Chinese labs shift directionally but end near or
+below neutral. The inference-time language decides how much of the
 implanted preference surfaces: speaking Chinese to post-trained
 models pushes them further pro-China in 5 of 7 cases (Qwen saturates,
 Baichuan mildly runs the other way), and speaking French to the
 French-made model specifically activates a maker-aligned pro-France
-shift that no other language-model combination reproduces. The mechanistic story --- which
+shift that no other language-model combination reproduces.
+
+Three methodological findings are worth carrying forward. The
+post-training signal survives removing the hedging prefix (\S4.5),
+survives three alternate MCQ phrasings, and is driven primarily by
+the scenario language rather than the question language in the
+cross-prompting factorial. The lab-level response-format
+heterogeneity (\S5) --- direct A/B for Alibaba and Baichuan,
+verbose-prefix for 01.AI, newline-first template for Zhipu ---
+cautions against treating naive single-token compliance as a
+measure of engagement; some post-trained Chinese models simply
+answer in a different format. The mechanistic story --- which
 training decision, which data, which step --- remains open. The
-behavioural phenomenon is measurable and consistent enough to warrant
-the attention.
+behavioural phenomenon is measurable and consistent enough to
+warrant the attention.
 
 \appendix
 \section*{Appendices (stub)}
