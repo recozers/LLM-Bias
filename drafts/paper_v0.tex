@@ -45,15 +45,15 @@ current; prose has not yet been tightened for submission.}
 \noindent We probe fourteen open-weight language models (seven families
 from seven labs, each with matched base and post-trained variants) for
 geopolitical bias using a paired-scenario cloze design, measured in
-English, French, and Chinese. Across a 27-scenario
+English, French, and Chinese. Across a 29-scenario
 coherence-validated subset, three findings:
 \textbf{(1)} Post-training shifts the model's China-favourability in a
-maker-aligned direction in 6 of 7 families --- all three Western labs
-anti-China, all four Chinese labs pro-China --- but the magnitude spans
-two orders. Alibaba's Qwen~2.5 is the outlier, ending genuinely
-pro-China at $+2.89$ log-odds; Baichuan, 01.AI, and Zhipu all shift
-pro-China directionally but end near neutral. ``Chinese-made LLM''
-is not a behaviourally homogeneous category.
+maker-aligned direction in all 7 of 7 families --- three Western labs
+anti-China, four Chinese labs pro-China --- but the magnitude spans
+an order of magnitude. Alibaba's Qwen~2.5 is the outlier, ending
+genuinely pro-China at $+2.89$ log-odds; Zhipu, Baichuan, and 01.AI
+all shift pro-China directionally but end near neutral.
+``Chinese-made LLM'' is not a behaviourally homogeneous category.
 \textbf{(2)} The four Chinese labs exhibit four distinguishable
 response-format policies (direct A/B for Alibaba and Baichuan,
 verbose-prefix for 01.AI, newline-first template for Zhipu). Na\"ive
@@ -100,14 +100,16 @@ the magnitude is heterogeneous --- especially on the Chinese side.}
 All three Western labs shift their models anti-China after post-training
 ($\Delta = -0.72$ to $-2.23$ log-odds), uniformly and with compliance
 above 0.99. All four Chinese labs shift in the opposite direction, but
-the magnitude varies by two orders: Alibaba's Qwen shifts strongly and
-lands genuinely pro-China ($\Delta = +3.06$, endpoint $+2.89$).
-Baichuan, Yi, and Zhipu all shift pro-China directionally but
-end near zero or still negative in absolute terms. A naive
-``Chinese-made means pro-China'' summary mischaracterises the data;
-the story is that \emph{Alibaba has made a visibly different
-post-training decision than its peers}. We document this lab-level
-heterogeneity as the finding on the Chinese side, not a caveat.
+the magnitude varies substantially: Alibaba's Qwen shifts strongly and
+lands genuinely pro-China ($\Delta = +3.06$, endpoint $+2.89$); Zhipu's
+GLM shifts by $+1.54$ but from a strongly anti-China base so ends near
+neutral ($-0.14$); Baichuan and 01.AI shift by $+0.46$ and $+0.24$
+respectively, also ending near neutral. A naive ``Chinese-made means
+pro-China'' summary mischaracterises the data; the story is that
+\emph{Alibaba's Qwen is the one model among fourteen that a lab has
+post-trained to express a clearly pro-China preference}. We document
+this lab-level heterogeneity as the finding on the Chinese side, not
+a caveat.
 
 \paragraph{Zhipu's GLM~4 chat opens every response with a newline.}
 A single top-token diagnostic places $P(\text{newline}) = 1.0000$ on
@@ -289,7 +291,7 @@ flip sign in $\geq 70\%$ of the 14 models $\times$ 3 languages
 combinations. Loosening to $\geq 50\%$ recovers 67 of 79 scenarios and
 leaves the main effects directionally unchanged; tightening to
 $\geq 80\%$ recovers 8. All headline numbers below are from the
-27-scenario subset.
+29-scenario subset.
 
 \section{Post-training: direction aligned with the maker, magnitude heterogeneous}
 
@@ -333,11 +335,12 @@ labs shift anti-China; 4/4 Chinese labs shift pro-China.
 \textbf{Magnitudes are heterogeneous, especially on the Chinese side.}
 Alibaba's Qwen shifts $+3.06$ and ends genuinely pro-China at $+2.89$
 log-odds (the only post-trained model that lands meaningfully above
-neutral). Baichuan shifts $+0.46$ and ends near neutral ($+0.23$),
-Yi shifts $+0.24$ and ends slightly negative ($-0.27$), Zhipu's
-nominal $+1.68$ shift is not reliably measurable (\S\,5). The Western
-side is more uniform: Mistral $-2.23$, Gemma $-0.82$, LLaMA $-0.72$
---- all genuinely anti-China.
+neutral). Zhipu's GLM shifts $+1.54$ (after the prefill correction
+described in \S5.1) but ends near neutral ($-0.14$); Baichuan shifts
+$+0.46$ and ends near neutral ($+0.23$); Yi shifts $+0.24$ and ends
+slightly negative ($-0.27$). The Western side is more uniform:
+Mistral $-2.23$, Gemma $-0.82$, LLaMA $-0.72$ --- all genuinely
+anti-China.
 
 Figure~\ref{fig:main}\,C shows Chinese-language prompting shifts
 five of seven post-trained models further pro-China
@@ -577,9 +580,9 @@ the question in.
   \centering
   \includegraphics[width=\linewidth]{../country_bias_pilot/results/plots/figure3_fictional_phonetic.png}
   \caption{\textbf{Fictional-name bias tracks phonetic identity, not
-  real-country knowledge.} For each post-trained model (GLM~4~chat
-  omitted because its refusal template makes the measurement
-  uninformative; see \S5), mean bias for each of eight invented
+  real-country knowledge.} For all seven post-trained models (GLM~4
+  chat included via prefill-corrected scoring, see \S5.1),
+  mean bias for each of eight invented
   country names grouped by phonetic cue: \emph{Neutral}
   (Terluna/Voskara/Drethia/Melvoni), \emph{Anglo} (Bretherland),
   \emph{Chinese} (Zhaodong), \emph{Arabic} (Al-Nuriyah),
@@ -902,12 +905,11 @@ norms need to catch up with pretraining disclosure norms.
 
 \begin{itemize}[topsep=2pt,itemsep=2pt]
   \item \textbf{$n = 7$ model families from 7 labs.} The directional
-  maker-alignment result (6/7 when excluding Zhipu's refusal, or 7/7
-  counting Zhipu's refusal as a non-exception) is striking but the
-  effective sample for the across-maker claim is small. The within-model
-  language effect rests on a larger effective sample (27 coherent
-  scenarios $\times$ 4 post-trained conditions) but does not address
-  the same claim.
+  maker-alignment result (7/7 after the GLM prefill correction of
+  \S5.1) is striking but the effective sample for the across-maker
+  claim is small. The within-model language effect rests on a larger
+  effective sample (29 coherent scenarios $\times$ 4 post-trained
+  conditions) but does not address the same claim.
   \item \textbf{Seven-to-nine-billion-parameter regime.} All models
   are in the 7--9B range, constrained by our single-GPU setup.
   Larger closed models (GPT-4-class, Claude, Gemini Pro) are

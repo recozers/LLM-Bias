@@ -169,12 +169,12 @@ def fictional_favour(model, country, lang="EN"):
 
 
 def plot_fictional_phonetic():
-    # Show instruct models, skip GLM chat (refuses)
-    models = [(fam, inst, bloc, lab) for fam, _, inst, bloc, lab in FAMILIES
-              if inst != "glm4-9b-chat"]
+    # All 7 instruct models (GLM chat included now — prefill-corrected scoring
+    # recovers a genuine bias signal; see §5.1 of the paper)
+    models = [(fam, inst, bloc, lab) for fam, _, inst, bloc, lab in FAMILIES]
 
-    fig, axes = plt.subplots(2, 3, figsize=(15, 8),
-                              gridspec_kw={"hspace": 0.5, "wspace": 0.25})
+    fig, axes = plt.subplots(2, 4, figsize=(18, 8),
+                              gridspec_kw={"hspace": 0.5, "wspace": 0.3})
     axes = axes.flatten()
 
     # Order fictional countries by phonetic tag
