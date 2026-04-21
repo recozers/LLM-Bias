@@ -142,10 +142,19 @@ compliance under-counting.
 
 \paragraph{Models excluded from the primary sample.}
 Several additional models were probed but excluded.
-\emph{DeepSeek~7B} (base and chat), from a fifth Chinese lab,
-produced near-uniform A/B logits on base and inconsistent
-forward/reverse behaviour on chat --- we could not establish a stable
-measurement baseline.
+\emph{DeepSeek-LLM~7B} (base and chat), from a fifth Chinese lab,
+failed the coherence check (\S2.5) categorically: the per-scenario
+Pearson correlation between justified and unjustified bias scores was
+$+0.91$ for the base and $+0.06$ for the chat, where a real country
+preference produces \emph{strongly negative} values (reference: Qwen
+2.5~inst at $-0.62$). Rather than flipping sign between the two
+opposite-polarity framings --- the definition of a real bias signal
+--- DeepSeek's ``bias'' tracked a lexical artefact (base) or was
+indistinguishable from noise (chat). High compliance (above 0.92)
+confirms the model was responding, just not to the country identities.
+We treat this as a validation of the coherence filter: it catches a
+model that looked measurable at the A/B logit level but was not
+actually expressing a country preference.
 \emph{Qwen~2.5~0.5B-Instruct} and other sub-1B-parameter models
 degenerated to near-constant answer selection (outputting the same
 letter $\geq$93\% of trials regardless of scenario or country pair).
@@ -154,8 +163,9 @@ letter $\geq$93\% of trials regardless of scenario or country pair).
 \texttt{transformers}; we judged the patch too invasive for one model.
 The lab-level heterogeneity we report on the Chinese side covers
 Alibaba, Baichuan, 01.AI, and Zhipu ($n=4$ Chinese labs), which is
-enough to show the point; DeepSeek and InternLM would at most add
-further data to that heterogeneity.
+enough to show the point; re-running DeepSeek-LLM under the current
+pipeline or patching InternLM would at most add further points to
+that heterogeneity.
 
 \subsection{Scenario bank}
 
