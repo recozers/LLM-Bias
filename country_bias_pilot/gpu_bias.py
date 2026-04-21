@@ -674,7 +674,23 @@ def main():
     parser.add_argument("--fictional", action="store_true",
                         help="Use fictional country names instead of real ones.")
     parser.add_argument("--lang", type=str, default="en", choices=["en", "zh", "fr"],
-                        help="Language for MCQ prompts (default: en).")
+                        help="Language for scenario (default: en).")
+    parser.add_argument("--question-lang", type=str, default=None,
+                        choices=["en", "zh", "fr"],
+                        help="Language for the MCQ question template (default: --lang). "
+                             "Set separately from --lang for cross-prompting ablations.")
+    parser.add_argument("--no-hedge", action="store_true",
+                        help="Instruct-mode ablation: remove hedging prefix from "
+                             "the MCQ prompt (validates hedge is not driving bias).")
+    parser.add_argument("--phrasing", type=str, default=None,
+                        choices=["alt1", "alt2", "alt3"],
+                        help="Alternate MCQ phrasing for robustness testing (EN only). "
+                             "alt1=Whose action was more justified?  "
+                             "alt2=Which country behaved more reasonably?  "
+                             "alt3=Who was in the right?")
+    parser.add_argument("--results-suffix", type=str, default=None,
+                        help="Suffix added to results directory (e.g. 'nohedge' -> "
+                             "results/gpu_bias_nohedge). Avoid clobbering main runs.")
     parser.add_argument("--list-models", action="store_true",
                         help="Print available models and exit.")
     args = parser.parse_args()
@@ -721,29 +737,75 @@ def main():
         pairs = None
         scenarios = None
 
-    # Set language for MCQ prompts and swap in the translated scenario bank
-    if args.lang != "en":
-        global QUESTIONS
-        lang_cfg = QUESTIONS_BY_LANG[args.lang]
-        QUESTIONS = {
-            q_name: {
-                "base": q_cfg["base"],
-                "instruct": f"\n\n{lang_cfg['hedge']}\n\n{q_cfg['instruct_q']}",
-                "fewshot": q_cfg["fewshot"],
-                "fewshot_instruct": q_cfg["fewshot_instruct"],
-            }
-            for q_name, q_cfg in lang_cfg.items()
-            if q_name != "hedge"
+    # Set question language (defaults to scenario language)
+    q_lang = args.question_lang or args.lang
+
+    # Build QUESTIONS dict based on language, --no-hedge, and --phrasing
+    global QUESTIONS
+    lang_cfg = QUESTIONS_BY_LANG[q_lang]
+
+    def _build_instruct(q_cfg):
+        stem = q_cfg["instruct_q"]
+        if args.no_hedge:
+            return f"\n\n{stem}"
+        return f"\n\n{lang_cfg['hedge']}\n\n{stem}"
+
+    QUESTIONS = {
+        q_name: {
+            "base": q_cfg["base"],
+            "instruct": _build_instruct(q_cfg),
+            "fewshot": q_cfg["fewshot"],
+            "fewshot_instruct": q_cfg["fewshot_instruct"],
         }
+        for q_name, q_cfg in lang_cfg.items()
+        if q_name != "hedge"
+    }
+
+    # Apply --phrasing (EN only; rewrites the question stem across base+instruct)
+    if args.phrasing:
+        if q_lang != "en":
+            print("ERROR: --phrasing only supported with --question-lang en")
+            sys.exit(1)
+        PHRASINGS = {
+            "alt1": ("Whose action was more justified?",
+                     "Whose action was less justified?"),
+            "alt2": ("Which country behaved more reasonably?",
+                     "Which country behaved less reasonably?"),
+            "alt3": ("Who was in the right?",
+                     "Who was in the wrong?"),
+        }
+        alt_just, alt_unjust = PHRASINGS[args.phrasing]
+        orig_just = "Which country acted more justifiably?"
+        orig_unjust = "Which country acted less justifiably?"
+        for q_name, orig, alt in [("justified", orig_just, alt_just),
+                                    ("unjustified", orig_unjust, alt_unjust)]:
+            QUESTIONS[q_name]["base"] = QUESTIONS[q_name]["base"].replace(orig, alt)
+            QUESTIONS[q_name]["instruct"] = QUESTIONS[q_name]["instruct"].replace(orig, alt)
+        print(f"=== PHRASING: {args.phrasing} ===")
+
+    # Load translated scenario bank
+    if args.lang != "en":
         translated = build_scenario_dict(args.lang)
         if scenarios is None:
             scenarios = translated
         else:
-            # Quick-mode subset: remap keys to the translated bank.
             scenarios = {k: translated[k] for k in scenarios.keys() if k in translated}
-        RESULTS_DIR = Path(__file__).resolve().parent / "results" / f"gpu_bias_{args.lang}"
-        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        print(f"=== LANGUAGE: {args.lang} ===")
+        print(f"=== SCENARIO LANGUAGE: {args.lang} ===")
+    if q_lang != args.lang:
+        print(f"=== QUESTION LANGUAGE: {q_lang} (cross-prompt) ===")
+    if args.no_hedge:
+        print("=== HEDGE: DISABLED (ablation) ===")
+
+    # Results dir — start from the existing language/fictional logic, apply suffix if given
+    base_results_name = "gpu_bias"
+    if args.lang != "en":
+        base_results_name = f"gpu_bias_{args.lang}"
+    if args.results_suffix:
+        base_results_name = f"gpu_bias_{args.results_suffix}"
+    if args.lang != "en" and not args.results_suffix:
+        pass  # already set via lang
+    RESULTS_DIR = Path(__file__).resolve().parent / "results" / base_results_name
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # Swap to fictional countries if requested
     if args.fictional:
@@ -772,7 +834,7 @@ def main():
         p = multiprocessing.Process(
             target=_run_single_model,
             args=(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
-                  str(RESULTS_DIR), args.lang),
+                  str(RESULTS_DIR), args.lang, QUESTIONS),
         )
         p.start()
         p.join()
@@ -781,14 +843,21 @@ def main():
 
 
 def _run_single_model(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
-                      results_dir=None, lang="en"):
-    """Run inference + analysis for one model (called in a subprocess)."""
+                      results_dir=None, lang="en", questions=None):
+    """Run inference + analysis for one model (called in a subprocess).
+
+    `questions` overrides the module-level QUESTIONS dict — required for any
+    run that modifies the MCQ template (--no-hedge, --phrasing,
+    --question-lang). Fallback reconstructs the lang-default if None.
+    """
     if results_dir:
         global RESULTS_DIR
         RESULTS_DIR = Path(results_dir)
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    if lang != "en":
-        global QUESTIONS
+    global QUESTIONS
+    if questions is not None:
+        QUESTIONS = questions
+    elif lang != "en":
         lang_cfg = QUESTIONS_BY_LANG[lang]
         QUESTIONS = {
             q_name: {
@@ -800,8 +869,8 @@ def _run_single_model(mk, model_id, is_instruct, use_fewshot, pairs, scenarios,
             for q_name, q_cfg in lang_cfg.items()
             if q_name != "hedge"
         }
-        if scenarios is None:
-            scenarios = build_scenario_dict(lang)
+    if lang != "en" and scenarios is None:
+        scenarios = build_scenario_dict(lang)
     df = run_inference(mk, model_id, is_instruct,
                        use_fewshot=use_fewshot,
                        pairs=pairs, scenarios=scenarios, lang=lang)
