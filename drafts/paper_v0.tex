@@ -29,7 +29,7 @@
 
 \title{\vspace{-3em}\LARGE\bfseries It's the humans, not the data\\[2pt]
 \Large Geopolitical bias in LLMs is a post-training decision,\\
-triggered by the language of the prompt}
+amplified by the language of the prompt}
 
 \author{Stuart Bladon\\\normalsize Duke University}
 
@@ -61,9 +61,11 @@ collapses A/B compliance to $\sim 3{\times}10^{-8}$. The four Chinese
 labs in our sample exhibit four distinguishable post-training policies
 (confident pro-China, mild pro-China, partial engagement, categorical
 refusal).
-\textbf{(3)} The bias is activated by the language of the prompt.
-Switching from English to Chinese shifts five of seven post-trained
-models further pro-China while base models barely move. A parallel
+\textbf{(3)} Prompt language amplifies the post-training bias in the
+same direction it already points. Switching from English to Chinese
+shifts five of seven post-trained models further pro-China while
+base models barely move; Qwen ($+2.89$ in English) saturates and
+regresses, Baichuan mildly runs the other way. A parallel
 maker-aligned effect surfaces in French: the French-made Mistral~7B
 becomes the only post-trained model that is positively pro-France,
 specifically when prompted in French. Post-training implants a
@@ -113,14 +115,16 @@ behaviour is categorically different from the other six post-trained
 models. Zhipu's lab-level choice is plausibly ``refuse geopolitics''
 rather than ``answer carefully,'' a distinct alignment philosophy.
 
-\paragraph{Inference-time language activates the post-training bias.}
-The post-training preference is not always-on. The Chinese-language
-prompt shifts post-trained models further pro-China; base models barely
-move. In French, the French-made Mistral~7B becomes the only
-post-trained model that is positively pro-France. This is not a uniform
-``speak-X $\to$ favour-X'' rule; it is ``the post-training bias surfaces
-when the prompt language implicates a country the model was
-post-trained to favour.''
+\paragraph{Inference-time language amplifies the post-training bias
+in the same direction.} The preference is not latent-until-triggered;
+it is present in English and the prompt language shifts it further
+along whichever axis it already points. The Chinese-language prompt
+pushes post-trained models further pro-China (where they have room
+to move); base models barely move. In French, the French-made
+Mistral~7B becomes the only post-trained model that is positively
+pro-France. The rule is not ``speak-X $\to$ favour-X''; it is
+``the post-training bias is sharpened when the prompt language
+implicates a country the model was post-trained to favour.''
 
 \section{Setup}
 
@@ -353,7 +357,7 @@ step that Alibaba applied on top. Baichuan base is also near neutral
 ($-0.24$), and only a small post-training nudge distinguishes it
 from the Western base models.
 
-\section{Linguistic identity activates maker-aligned bias}
+\section{Linguistic identity amplifies maker-aligned bias}
 
 \begin{figure}[!t]
   \centering
@@ -394,7 +398,7 @@ of any model ($+2.88$), more than its entire English post-training
 delta --- a Western-made model in Chinese ends up approximately
 neutral. Base models show a much smaller, mixed effect (mean
 $\Delta$ZH$-$EN of $+0.26$ for base vs $+0.90$ for post-trained);
-the language-triggered shift is a post-training property, not a
+the language-driven shift is a post-training property, not a
 pretraining one.
 
 \subsection{The French-prompt effect and maker-language alignment}
@@ -431,6 +435,10 @@ a French one.
 
 Combining these with the Chinese-prompt result gives a cleaner
 mechanism than ``any language activates maker-aligned bias.''
+Languages differ in the strength of the amplification they produce,
+and the amplification has the same sign as the model's
+English-baseline preference --- hence the saturation and
+counter-examples.
 The causal story is:
 \begin{enumerate}[topsep=3pt,itemsep=2pt]
 \item \textbf{The Chinese language carries an unusually strong
@@ -646,7 +654,7 @@ category, not a behavioural one.
 \paragraph{What this adds.} Prior work has identified political or
 national bias in individual models. Our contribution is to isolate
 \emph{where} it enters (post-training, not pretraining), \emph{when}
-it activates (triggered by the prompt language), and \emph{how much}
+it surfaces (amplified by the prompt language), and \emph{how much}
 it varies across labs within a single country of origin --- using a
 design that holds the scenario bank, scoring method, and statistical
 pipeline fixed across fourteen models from seven labs. The directional

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Main paper figure: post-training amplifies geopolitical bias, maker-aligned and
-language-triggered.
+language-amplified.
 
 Uses the 34-scenario strict-coherence subset (justified/unjustified flip sign in
 ≥70% of model × language combinations) as the primary analysis base.
