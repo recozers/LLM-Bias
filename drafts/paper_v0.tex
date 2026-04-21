@@ -158,14 +158,18 @@ actually expressing a country preference.
 \emph{Qwen~2.5~0.5B-Instruct} and other sub-1B-parameter models
 degenerated to near-constant answer selection (outputting the same
 letter $\geq$93\% of trials regardless of scenario or country pair).
-\emph{InternLM~2.5~7B} required a
-\texttt{DynamicCache.from\_legacy\_cache} API deprecated in current
-\texttt{transformers}; we judged the patch too invasive for one model.
+\emph{InternLM~2.5~7B} (Shanghai AI Laboratory --- an unrelated
+Chinese lab from DeepSeek AI) is excluded on engineering grounds
+rather than measurement grounds: its custom \texttt{modeling\_internlm2.py}
+calls \texttt{DynamicCache.from\_legacy\_cache}, deprecated in
+\texttt{transformers} $\geq$4.45. A pinned older transformers version
+would run it, but we judged this too invasive for a single model.
+This is not a coherence failure like DeepSeek's.
 The lab-level heterogeneity we report on the Chinese side covers
 Alibaba, Baichuan, 01.AI, and Zhipu ($n=4$ Chinese labs), which is
 enough to show the point; re-running DeepSeek-LLM under the current
-pipeline or patching InternLM would at most add further points to
-that heterogeneity.
+pipeline or patching InternLM would each add an additional lab to
+the heterogeneity story.
 
 \subsection{Scenario bank}
 
