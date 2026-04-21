@@ -33,49 +33,42 @@ activated by the language of the prompt}
 
 \author{Stuart Bladon\\\normalsize Duke University}
 
-\date{Draft v0.2 --- 2026-04-20}
+\date{Draft v0.5 --- 2026-04-20}
 
 \begin{document}
 \maketitle
 
-\draftnote{This is a narrative-flow draft, not a submission. Figures are
-placeholders; language is loose. The aim is to check the shape of the
-argument and where evidence goes.}
+\draftnote{Draft for narrative shape-check. Analysis and figures are
+current; prose has not yet been tightened for submission.}
 
 \begin{abstract}
 \noindent We probe fourteen open-weight language models (seven families
 from seven labs, each with matched base and post-trained variants) for
 geopolitical bias using a paired-scenario cloze design, measured in
 English, French, and Chinese. Across a 27-scenario
-coherence-validated subset, we find:
-\textbf{(1) Post-training shifts the model's geopolitical preferences
-in a maker-aligned direction, but the magnitude varies by lab.} All
-three Western labs (Mistral~AI, Meta, Google) shift their models
-anti-China after post-training ($\Delta$ from $-0.72$ to $-2.23$
-log-odds, compliance ${>}$0.99). All four Chinese labs shift
-their models pro-China in the same sense. The magnitude, however,
-spans two orders: Alibaba's Qwen~2.5 is the outlier ($+3.06$,
-ending genuinely pro-China at $+2.89$); Baichuan ($+0.46$),
-Zhipu ($+1.68$ measured), and 01.AI ($+0.24$) all shift pro-China
-but end near neutral or still negative.
-\textbf{(2) The lab-level heterogeneity on the Chinese side is
-itself the main finding there.} Zhipu's GLM~4 chat has been
-post-trained to refuse the forced-choice framing: its first-token
-distribution places $P(\backslash n)=1.0000$ as the response-opener,
-collapsing A/B compliance to $\sim 3{\times}10^{-8}$ independent of
-our scoring. 01.AI's Yi~1.5 chat partially engages (compliance
-$\approx 0.03$ after a tokenizer-variant-sum fix). ``Chinese-made
-LLM'' is not a behaviorally homogeneous category.
-\textbf{(3) The bias is activated by the language of the prompt.}
+coherence-validated subset, three findings:
+\textbf{(1)} Post-training shifts the model's China-favourability in a
+maker-aligned direction in 6 of 7 families --- all three Western labs
+anti-China, all four Chinese labs pro-China --- but the magnitude spans
+two orders. Alibaba's Qwen~2.5 is the outlier, ending genuinely
+pro-China at $+2.89$ log-odds; Baichuan, 01.AI, and Zhipu all shift
+pro-China directionally but end near neutral. ``Chinese-made LLM''
+is not a behaviourally homogeneous category.
+\textbf{(2)} Zhipu's GLM~4 chat refuses the forced-choice frame
+entirely: its first-token distribution places
+$P(\text{newline})=1.0000$, a deterministic refusal template that
+collapses A/B compliance to $\sim 3{\times}10^{-8}$. The four Chinese
+labs in our sample exhibit four distinguishable post-training policies
+(confident pro-China, mild pro-China, partial engagement, categorical
+refusal).
+\textbf{(3)} The bias is activated by the language of the prompt.
 Switching from English to Chinese shifts five of seven post-trained
-models further pro-China (mean $+1.00$ log-odds) while base models
-barely move; Qwen saturates (regresses toward zero from its
-$+2.89$ English baseline) and Baichuan is a mild counter-example.
-A parallel maker-aligned effect surfaces in French: the
-French-made Mistral~7B becomes decisively more pro-France when
-prompted in French ($+1.96$ log-odds), more than any other model.
-Post-training implants a country-aligned preference; the inference-time
-language then decides how much of it surfaces, and toward whom.
+models further pro-China while base models barely move. A parallel
+maker-aligned effect surfaces in French: the French-made Mistral~7B
+becomes the only post-trained model that is positively pro-France,
+specifically when prompted in French. Post-training implants a
+country-aligned preference; the inference-time language decides how
+much of it surfaces, and toward whom.
 \end{abstract}
 
 \section{Introduction}
@@ -121,17 +114,13 @@ models. Zhipu's lab-level choice is plausibly ``refuse geopolitics''
 rather than ``answer carefully,'' a distinct alignment philosophy.
 
 \paragraph{Inference-time language activates the post-training bias.}
-The Chinese-language prompt shifts five of seven post-trained models
-further pro-China (mean $+1.00$ log-odds); base models barely move. Two
-exceptions confirm the mechanism: Qwen ($+2.89$ in English) saturates
-and regresses in Chinese, and Baichuan --- whose English-language
-pro-China nudge is small --- shifts mildly the other way. A parallel
-maker-aligned effect surfaces in French: the French-made Mistral~7B
-becomes sharply more pro-France when prompted in French
-($+1.96$ log-odds), more than any other model. This is not a uniform
-``speak-X $\to$ favour-X'' rule --- it is ``the post-training bias
-surfaces when the prompt language implicates the maker's country of
-origin.''
+The post-training preference is not always-on. The Chinese-language
+prompt shifts post-trained models further pro-China; base models barely
+move. In French, the French-made Mistral~7B becomes the only
+post-trained model that is positively pro-France. This is not a uniform
+``speak-X $\to$ favour-X'' rule; it is ``the post-training bias surfaces
+when the prompt language implicates a country the model was
+post-trained to favour.''
 
 \section{Setup}
 
@@ -227,13 +216,18 @@ but if you had to choose one answer:
 \end{quote}
 
 Translated analogously for French and Chinese runs. The hedge is absent
-from base-model prompts (base models don't refuse in the same way).
-Importantly the hedge is identical across all scenarios and all
-countries, so it cannot introduce country-specific bias; it only
-changes the overall rate at which the model engages with the
-forced-choice format. Section 5 returns to one model family
-(GLM~4~9B~chat) where even the hedge is insufficient to elicit
-compliance --- the refusal behavior there is post-training-intrinsic.
+from base-model prompts (base models don't refuse in the same way), so
+the base-vs-instruct comparison is between slightly different prompt
+contexts. The hedge is identical across all scenarios and all
+countries, so it cannot introduce country-specific bias, and the
+observed post-training deltas point in opposite directions across
+models (Qwen $+3.06$, Mistral $-2.23$), inconsistent with a
+hedge-as-single-driver story. We treat this as a real limitation
+(\S7, item ``hedge asymmetry'') and flag a planned ablation:
+re-running Qwen-inst and Mistral-inst without the hedge to confirm
+the measured shifts survive. \S5 returns to one family
+(GLM~4~9B~chat) where even the hedge fails to elicit compliance ---
+the refusal behaviour there is post-training-intrinsic.
 
 \subsection{Measurement}
 
@@ -280,7 +274,7 @@ leaves the main effects directionally unchanged; tightening to
 $\geq 80\%$ recovers 8. All headline numbers below are from the
 27-scenario subset.
 
-\section{Post-training shifts direction, not uniformly magnitude}
+\section{Post-training: direction aligned with the maker, magnitude heterogeneous}
 
 \begin{figure}[!t]
   \centering
@@ -357,7 +351,7 @@ from the Western base models.
   uniformly warmer for post-trained models (except the already-saturated
   Qwen); the Mistral-inst cell under the French prompt is the only
   positive France-favourability post-trained value in the sample, a
-  clean maker-language alignment. ``$\triangle$'' marks low-compliance
+  clean maker-language alignment. Row markers flag low-compliance
   instruct models (GLM chat, Yi chat) where the ratio signal is
   preserved but absolute magnitudes are attenuated by the partial or
   categorical refusal behaviour analysed in \S5.}
@@ -513,8 +507,8 @@ than topic-specific.
   Mistral~7B-inst is the mirror image (Anglo +0.78, Chinese
   $-0.42$). LLaMA and Gemma show milder but directionally
   consistent patterns. The effect cannot be ``the model has learned
-  that China is good''; it is learned an association between
-  Chinese-sounding phonology and approving verbs.}
+  that China is good''; what the models have learned is an association
+  between Chinese-sounding phonology and approving verbs.}
   \label{fig:fictional}
 \end{figure}
 
@@ -696,6 +690,16 @@ the country.
   forced-choice probe is itself an intervention. A free-response
   design would measure a related but distinct construct, and is the
   obvious robustness check.
+  \item \textbf{Hedge asymmetry between base and instruct prompts.}
+  Instruct prompts include a short country-neutral hedging sentence
+  (\S2.3) to reduce refusal rates; base prompts do not. The hedge
+  cannot introduce country-specific bias (it mentions no country),
+  and the post-training deltas split in opposite directions across
+  models, inconsistent with a single hedge-driven artefact. But the
+  base-vs-instruct comparison is not measured across strictly
+  identical prompts. We have queued an ablation (instruct without
+  hedge, for Qwen and Mistral on EN real) to confirm the shifts
+  survive.
   \item \textbf{Scenarios are stylised.} The 79-scenario bank is
   curated for matched-framing symmetry; real geopolitical text is not.
   \item \textbf{No English-variant control.} We did not test British
@@ -717,10 +721,10 @@ produces a post-trained model that is genuinely pro-China in absolute
 terms; the other three Chinese labs shift directionally but end near
 or below neutral. The inference-time language decides how much of the
 implanted preference surfaces: speaking Chinese to post-trained
-models universally pushes them further pro-China (to the extent their
-baselines allow), and speaking French to the French-made model
-specifically activates a maker-aligned pro-France shift that no other
-language-model combination reproduces. The mechanistic story --- which
+models pushes them further pro-China in 5 of 7 cases (Qwen saturates,
+Baichuan mildly runs the other way), and speaking French to the
+French-made model specifically activates a maker-aligned pro-France
+shift that no other language-model combination reproduces. The mechanistic story --- which
 training decision, which data, which step --- remains open. The
 behavioural phenomenon is measurable and consistent enough to warrant
 the attention.
