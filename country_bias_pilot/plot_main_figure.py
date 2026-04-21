@@ -27,11 +27,28 @@ FAMILIES = [
     ("GLM 4 9B",      "glm4-9b",        "glm4-9b-chat",      "CN", "Zhipu"),
 ]
 
-# Models whose post-trained variant has compliance < 0.1 — their bias numbers
-# are still directionally informative (variant ratios are preserved) but the
-# model is largely not engaging with the A/B forced-choice. Flagged in the
-# figure with a distinct marker.
-LOW_COMPLIANCE_INSTRUCT = {"glm4-9b-chat", "yi1.5-9b-chat"}
+# Models whose post-trained variant has compliance < 0.1 under the standard
+# scoring — their bias numbers are still directionally informative (variant
+# ratios are preserved) but the model is largely not engaging with the A/B
+# forced-choice. Flagged in the figure with a distinct marker. Yi 1.5 chat
+# only (GLM 4 chat was reclassified from 'refusal' to 'newline template' —
+# its prefill-corrected numbers achieve >0.99 compliance and are loaded
+# below).
+LOW_COMPLIANCE_INSTRUCT = {"yi1.5-9b-chat"}
+
+# Models whose bias data for the post-trained variant should come from a
+# prefill-corrected results directory instead of the default gpu_bias/ tree.
+# For GLM 4 chat the standard template places P(\n)=1.0000 on the first token;
+# prefilling \n and scoring the next token recovers the actual forced-choice
+# answer distribution. Key: model name. Value: dict mapping condition suffix
+# to the directory override.
+PREFILL_DIR_MAP = {
+    "glm4-9b-chat": {
+        "EN":  "gpu_bias_glm_prefill",
+        "FR":  "gpu_bias_glm_prefill_fr",
+        "ZH":  "gpu_bias_glm_prefill_zh",
+    },
+}
 
 MAKER_BLOC = {"US": "Western", "FR": "Western", "CN": "Chinese"}
 MAKER_COLOR = {"Western": "#4C72B0", "Chinese": "#DD8452"}
@@ -63,7 +80,10 @@ def compute_coherent_scenarios(threshold=0.7):
     records = []
     all_models = [m for _, base, inst, _, _ in FAMILIES for m in (base, inst)]
     for m in all_models:
-        for lang, d in LANG_DIRS.items():
+        for lang in LANG_DIRS:
+            # Route to prefill-corrected dir where applicable (GLM chat)
+            d = (PREFILL_DIR_MAP.get(m, {}).get(lang)
+                 or LANG_DIRS[lang])
             f = RESULTS / d / f"{m}_raw.csv"
             if not f.exists():
                 continue
@@ -98,9 +118,17 @@ def favour(csv_path, names, scens=None):
     return out
 
 
+def _results_dir_for(model, lang):
+    """Return the directory that holds the raw CSV for (model, lang). For
+    models in PREFILL_DIR_MAP we use the prefill-corrected directory."""
+    if model in PREFILL_DIR_MAP and lang in PREFILL_DIR_MAP[model]:
+        return PREFILL_DIR_MAP[model][lang]
+    return LANG_DIRS[lang]
+
+
 def china_favour(model, lang, scens=COHERENT_SCENARIOS):
     """Mean China-signed 'justified' bias across coherent scenarios."""
-    f = RESULTS / LANG_DIRS[lang] / f"{model}_raw.csv"
+    f = RESULTS / _results_dir_for(model, lang) / f"{model}_raw.csv"
     if not f.exists():
         return np.nan
     raw = _china_signed(pd.read_csv(f))
@@ -121,9 +149,9 @@ def panel_a(ax):
     col_w = 2.4   # total width per family
     gap = 1.1     # separation between base and post-trained within a family
     for fam_idx, (fam_name, base_key, inst_key, maker, lab) in enumerate(FAMILIES):
-        base_fav = favour(RESULTS / "gpu_bias" / f"{base_key}_raw.csv",
+        base_fav = favour(RESULTS / _results_dir_for(base_key, "EN") / f"{base_key}_raw.csv",
                           COUNTRIES, COHERENT_SCENARIOS)
-        inst_fav = favour(RESULTS / "gpu_bias" / f"{inst_key}_raw.csv",
+        inst_fav = favour(RESULTS / _results_dir_for(inst_key, "EN") / f"{inst_key}_raw.csv",
                           COUNTRIES, COHERENT_SCENARIOS)
 
         x_base = fam_idx * col_w

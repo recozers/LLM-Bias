@@ -625,22 +625,29 @@ practice. Looking across the four Chinese labs (Table~\ref{tab:chinese}):
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}l l r r l@{}}
+\begin{tabular}{@{}l l r r r l@{}}
 \toprule
-Lab & Model & $\Delta$EN (post-train) & Compliance (EN) & Response style \\
+Lab & Model & $\Delta$EN (post-train) & EN endpoint & Compliance (EN) & Response style \\
 \midrule
-Alibaba  & Qwen 2.5 7B inst   & $\mathbf{+3.06}$         & $0.99$            & direct ``A''/``B''  \\
-Baichuan & Baichuan 2 7B chat & $+0.46$                  & $0.99$            & direct ``A''/``B''  \\
-01.AI    & Yi 1.5 9B chat     & $+0.24$                  & $0.03^{\dagger}$  & verbose prefix  \\
-Zhipu    & GLM 4 9B chat      & $-1.14^{\ast}$           & $0.98^{\ast}$     & newline-first template \\
+Alibaba  & Qwen 2.5 7B inst              & $\mathbf{+3.06}$         & $+2.89$ & $0.99$            & direct ``A''/``B''  \\
+Zhipu$^{\ast}$  & GLM 4 9B chat           & $\mathbf{+1.54}$         & $-0.14$ & $0.99$            & newline-first template \\
+Baichuan & Baichuan 2 7B chat            & $+0.46$                  & $+0.23$ & $0.99$            & direct ``A''/``B''  \\
+01.AI    & Yi 1.5 9B chat                & $+0.24$                  & $-0.27$ & $0.03^{\dagger}$  & verbose prefix  \\
 \bottomrule
 \end{tabular}
 \caption{Chinese-side post-training $\Delta$ and first-token
-compliance. $^{\dagger}$~Yi chat compliance after variant-sum
-tokenizer fix (\S2.4); the base model shows compliance $0.99$, so the
-drop is post-training-induced. $^{\ast}$~GLM chat numbers after a
-\texttt{\textbackslash n} prefill correction (\S5.1 below); a single
-representative scenario, full prefill re-run reported separately.}
+compliance. All four labs shift pro-China; the magnitudes range over
+an order of magnitude. Only Alibaba's Qwen ends up in genuinely
+positive absolute territory.
+$^{\ast}$~GLM chat numbers reflect prefill-corrected scoring across
+all six conditions (\S5.1); under na\"ive single-token scoring the
+compliance would read $3\times10^{-8}$ and the measured bias would be
+uninterpretable.
+$^{\dagger}$~Yi chat compliance after variant-sum tokenizer fix
+(\S2.4); its base model shows compliance $0.996$, so the drop is
+post-training-induced. The $+0.24$ $\Delta$ is directionally
+consistent with the other Chinese labs but the absolute magnitude is
+attenuated by the verbose-prefix format.}
 \label{tab:chinese}
 \end{table}
 
@@ -684,18 +691,32 @@ or ``\textbackslash n B'' --- a templated response-opener followed by
 the answer. No refusal text appeared.
 
 Re-scoring with a \texttt{\textbackslash n} prefill moves GLM~4 chat's
-compliance from $3 \times 10^{-8}$ up to $\sim\!0.98$ on the
-representative scenario we diagnosed, and reveals a clear bias signal
-(pro-China at $-1.14$ log-odds on the USA-vs-China airspace prompt).
-The spread collapse reported earlier
-($\sigma: 20.6 \to 8.2$ from base to chat in
-Figure~\ref{fig:main}\,A) is a measurement artefact of this template;
-Zhipu's actual post-training decision is a distinctive stylistic
-opener, not a refusal. Full prefill re-runs across all 6~conditions
-are underway and will be reported alongside the main figure in a
-revised version of this draft; preliminary indication is that GLM~4
-chat is directionally pro-China like the other Chinese-made instruct
-models, with genuine compliance similar to Baichuan's and Qwen's.
+compliance from $3 \times 10^{-8}$ up to $0.91$--$0.99$ across the six
+conditions (EN/FR/ZH real + fictional), and reveals a genuine bias
+signal. GLM~4 chat's post-training delta in English is $+1.54$ log-odds
+(base $-1.57 \to$ chat $-0.14$), the second-largest pro-China shift in
+the sample, second only to Alibaba's Qwen. Zhipu's actual post-training
+decision has \emph{two} components rather than one: a leading-newline
+response-opening template, \emph{and} a genuine modest pro-China shift
+that is directionally consistent with every other Chinese lab in our
+sample.
+
+One nuance survives from the original ``refusal'' reading. Even with
+prefill correction, GLM~4 chat's cross-country preference spread is
+much tighter than its base model's ($\sigma: 21.0 \to 3.8$) --- unique
+in the sample (every other instruct variant has a larger spread than
+its base). Post-training for GLM has both shifted the mean pro-China
+and compressed the country-to-country variance: the model ends up
+rating every country much more similarly to every other, with a slight
+overall lean towards China. This is a qualitatively distinct
+alignment strategy from Qwen's ($\sigma: 5.6 \to 33.8$; amplify the
+spread and anchor strongly pro-China) and from Baichuan's (modest
+shift, modest spread change). We hypothesise that Zhipu's
+post-training targets some version of ``treat all countries
+comparably'', with the pro-China anchor an unintended or
+secondary consequence. Confirming this requires lab disclosure we
+do not have. The main-text figures now load GLM~4 chat from the
+prefill-corrected results directories.
 
 \paragraph{01.AI: a partial-engagement format.} Yi~1.5~9B~chat's
 compliance under variant-sum scoring is $0.029$ --- not the
