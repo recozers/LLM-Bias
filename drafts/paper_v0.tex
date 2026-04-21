@@ -347,6 +347,31 @@ from the Western base models.
 
 \section{Linguistic identity activates maker-aligned bias}
 
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{../country_bias_pilot/results/plots/figure2_language_heatmap.png}
+  \caption{\textbf{Inference-time language modulates the post-training
+  bias.} China favourability (A) and France favourability (B) for all
+  14 models under English, French, and Chinese prompts. Red = favours,
+  blue = disfavours; zero-centred scale. The Chinese column is
+  uniformly warmer for post-trained models (except the already-saturated
+  Qwen); the Mistral-inst cell under the French prompt is the only
+  positive France-favourability post-trained value in the sample, a
+  clean maker-language alignment. ``$\triangle$'' marks low-compliance
+  instruct models (GLM chat, Yi chat) where the ratio signal is
+  preserved but absolute magnitudes are attenuated by the partial or
+  categorical refusal behaviour analysed in \S5.}
+  \label{fig:heatmap}
+\end{figure}
+
+Figure~\ref{fig:heatmap} shows the full model $\times$ language
+matrix for both China and France favourability. Three patterns are
+visible in one glance: the ZH column runs warmer than EN for every
+non-saturated post-trained model (Panel A), base models barely move
+across columns (see the ``base'' rows within each family), and the
+Mistral-inst row in Panel B is the single cell where France
+favourability crosses zero positively under any language condition.
+
 \subsection{The Chinese-prompt effect}
 
 Switching the prompt language from English to Chinese shifts five of
@@ -415,6 +440,51 @@ Chinese-content magnet.
 Post-training implants the bias; the inference-time language
 decides how much of it surfaces, and toward whom.
 
+\subsection{Robustness: fictional names carry phonetic identity}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{../country_bias_pilot/results/plots/figure3_fictional_phonetic.png}
+  \caption{\textbf{Fictional-name bias tracks phonetic identity, not
+  real-country knowledge.} For each post-trained model (GLM~4~chat
+  omitted because its refusal template makes the measurement
+  uninformative; see \S5), mean bias for each of eight invented
+  country names grouped by phonetic cue: \emph{Neutral}
+  (Terluna/Voskara/Drethia/Melvoni), \emph{Anglo} (Bretherland),
+  \emph{Chinese} (Zhaodong), \emph{Arabic} (Al-Nuriyah),
+  \emph{Slavic} (Korvachev). Qwen~2.5~inst shows the cleanest
+  maker-alignment: \textbf{Zhaodong} is the top-rated fictional
+  country (+0.88) and \textbf{Bretherland} the bottom ($-1.01$).
+  Mistral~7B-inst is the mirror image (Anglo +0.78, Chinese
+  $-0.42$). LLaMA and Gemma show milder but directionally
+  consistent patterns. The effect cannot be ``the model has learned
+  that China is good''; it is learned an association between
+  Chinese-sounding phonology and approving verbs.}
+  \label{fig:fictional}
+\end{figure}
+
+A potential objection to the main result is that models might
+simply have memorised that certain real countries (China, USA) are
+associated with certain kinds of actions --- a world-knowledge
+effect rather than an identity-signal effect. To separate these,
+we run the same measurement protocol on eight invented country
+names that carry phonetic cues to ethnic/national identity without
+referring to any real polity: \emph{Zhaodong} sounds Chinese,
+\emph{Bretherland} sounds Anglo, \emph{Al-Nuriyah} sounds Arabic,
+\emph{Korvachev} sounds Slavic, and four (\emph{Terluna},
+\emph{Voskara}, \emph{Drethia}, \emph{Melvoni}) are phonetically
+neutral.
+
+Figure~\ref{fig:fictional} shows the result. Qwen~2.5~inst's top-rated
+fictional country is \emph{Zhaodong} and its bottom-rated is
+\emph{Bretherland} --- exactly the maker-alignment pattern we
+observed on real countries. Mistral~7B-inst flips: \emph{Bretherland}
+is rated highest, \emph{Zhaodong} is rated well below neutral. These
+models have no world-knowledge about fictional \emph{Bretherland} or
+\emph{Zhaodong}; the only signal available is the phonetic cue to
+identity. The bias travels with the identity cue, not with the specific
+country.
+
 \section{Four Chinese labs, four different post-training policies}
 
 The Chinese-side heterogeneity is not a nuisance to explain away ---
@@ -441,9 +511,30 @@ induced. $^{\ast}$ GLM chat's measured $\Delta$ is the log-odds of
 near-zero probabilities and is not a reliable bias number; see
 below.}\normalsize
 
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{../country_bias_pilot/results/plots/figure4_refusal_diagnostic.png}
+  \caption{\textbf{Three Chinese labs, three response regimes at the
+  first token.} Top 10 next-token probabilities after the standard
+  instruct prompt (USA-vs-China airspace scenario, English, full
+  template with hedge prefix).
+  \textbf{GLM~4~chat} places essentially all its probability mass on
+  the single newline token ($P(\backslash n) = 1.0000$) --- a
+  deterministic refusal template.
+  \textbf{Yi~1.5~chat} spreads mass across ``('' (40\%, preferring an
+  ``(A)'' verbose-answer format) and refusal-prefix tokens
+  (``Given'' 25\%, ``I'' 17\%, ``Ne'' 14\%); only $\sim$3\% lands
+  on an A/B variant.
+  \textbf{Qwen~2.5~inst} concentrates on ``A'' and ``B'' directly
+  (combined $\gtrsim$0.99), taking the forced-choice question at
+  face value. Three distinguishable post-training strategies within
+  a single bloc.}
+  \label{fig:refusal}
+\end{figure}
+
 \paragraph{Zhipu: a deterministic refusal template.} A single-prompt
-diagnostic on GLM~4~9B~chat reveals that the model's first
-response-token distribution places
+diagnostic on GLM~4~9B~chat (Figure~\ref{fig:refusal}, left panel)
+reveals that the model's first response-token distribution places
 $P(\text{newline}) = 1.0000$ on token id \texttt{198} (``\textbackslash
 n''), with every other token --- including ``A'' and ``B'' and their
 variants --- sitting below $10^{-4}$. In other words, GLM~4 chat always
