@@ -1,4 +1,42 @@
-# Follow-up experiments — deeper refusal probing
+# Follow-up experiments
+
+## Hedge-prefix ablation (priority — methodological validity)
+
+The current pipeline applies a neutral hedging prefix (*"This is a
+difficult situation with valid perspectives on both sides, but if you
+had to choose one answer:"*) **only to instruct-model prompts**, not
+to base-model prompts. The base-vs-instruct delta we report is
+therefore measured across slightly different prompt contexts. The
+hedge text itself is country-neutral, so it cannot introduce direct
+country-specific priming, and the observed deltas go in opposite
+directions across models (Qwen +3.06 pro-China, Mistral −2.23
+anti-China) — inconsistent with a hedge-driven confound. But the
+asymmetric prompt is a real limitation and reviewers will ask.
+
+**Ablation to run (cheap, ~25 min / model / condition):**
+
+1. **Qwen 2.5 7B-inst, EN real, no hedge.** If China favourability
+   remains strongly positive (> +1.5) the hedge is not the driver; if
+   it collapses to near neutral, the hedge is a major confound.
+2. **Mistral 7B-inst, EN real, no hedge.** Same, for the
+   opposite-direction case. If still strongly negative, hedge is not
+   driver; if it attenuates, same caveat.
+3. **Optional:** base models *with* the hedge prepended, for at least
+   Qwen base and Mistral base. Confirms the base-vs-inst delta is
+   robust when prompts are matched.
+
+**Expected outcome.** The hedge is country-neutral and the cross-model
+sign pattern is incompatible with a single hedge-driven artefact, so I
+expect minimal shift. If that's what we see, the result is a small
+paragraph in §2.3 reporting the ablation. If not, we have to
+restructure the base-vs-inst comparison.
+
+**Ideal longer-term fix:** apply the hedge to base models too, so the
+base-vs-instruct Δ is measured across strictly identical prompts.
+Would require re-running all 7 base models × 6 conditions = 42 runs,
+~16 hrs on the 3090.
+
+---
 
 ## GLM-4-9B-chat: deterministic refusal template
 
