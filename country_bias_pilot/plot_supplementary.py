@@ -349,10 +349,116 @@ def plot_refusal_diagnostic():
 
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Figure 5 — Country-pair drivers: which opponents does each model favour /
+# disfavour China against?
+# ─────────────────────────────────────────────────────────────────────────────
+
+def china_bias_by_opponent(model):
+    f = RESULTS / "gpu_bias" / f"{model}_raw.csv"
+    df = pd.read_csv(f)
+    df = df[df.question == "justified"]
+    df = df[df.scenario.isin(COHERENT_SCENARIOS)].copy()
+    df["china_bias"] = df.apply(
+        lambda r: r.bias if r.country_1 == "China"
+                  else (-r.bias if r.country_2 == "China" else None),
+        axis=1,
+    )
+    df["opponent"] = df.apply(
+        lambda r: r.country_2 if r.country_1 == "China" else r.country_1,
+        axis=1,
+    )
+    df = df.dropna(subset=["china_bias"])
+    return df.groupby("opponent")["china_bias"].mean()
+
+
+def plot_pair_drivers():
+    MODELS = [
+        ("Mistral 7B inst",   "mistral-7b-inst",    "Mistral AI", "FR"),
+        ("LLaMA 3 8B inst",   "llama3-8b-inst",     "Meta",        "US"),
+        ("Gemma 4 8B it",     "gemma4-8b-it",       "Google",      "US"),
+        ("Qwen 2.5 7B inst",  "qwen2.5-7b-inst",    "Alibaba",     "CN"),
+        ("Baichuan 2 7B chat", "baichuan2-7b-chat", "Baichuan",    "CN"),
+        ("Yi 1.5 9B chat",    "yi1.5-9b-chat",      "01.AI",       "CN"),
+    ]
+    # Opponents ordered by "Western" to "Global South" convention
+    OPP_ORDER = ["USA", "France", "Canada", "Australia", "Japan",
+                 "Venezuela", "Indonesia"]
+    OPP_GROUP = {"USA": "Western", "France": "Western", "Canada": "Western",
+                 "Australia": "Western", "Japan": "Western",
+                 "Venezuela": "Other", "Indonesia": "Other"}
+
+    fig, axes = plt.subplots(2, 3, figsize=(15, 8.5),
+                              gridspec_kw={"hspace": 0.55, "wspace": 0.25})
+    axes = axes.flatten()
+
+    vmax_global = max(
+        max(abs(china_bias_by_opponent(m).max()), abs(china_bias_by_opponent(m).min()))
+        for _, m, _, _ in MODELS
+    )
+
+    for idx, (label, model_key, lab, bloc) in enumerate(MODELS):
+        ax = axes[idx]
+        series = china_bias_by_opponent(model_key)
+        vals = [series.get(o, np.nan) for o in OPP_ORDER]
+        # Color: Western opponents = blue, Global South = grey
+        colors = ["#4C72B0" if OPP_GROUP[o] == "Western" else "#9aa0a6"
+                  for o in OPP_ORDER]
+        # If the bar is positive (pro-China), flip toward orange
+        bars = []
+        for i, v in enumerate(vals):
+            color = "#DD8452" if v > 0 else colors[i]
+            bars.append(ax.bar(i, v, color=color, edgecolor="black",
+                               linewidth=0.6, alpha=0.88))
+        ax.axhline(0, color="black", linewidth=0.7)
+        ax.set_xticks(range(len(OPP_ORDER)))
+        ax.set_xticklabels(OPP_ORDER, rotation=40, ha="right", fontsize=8)
+        ax.set_ylabel("China favourability vs opponent\n(log-odds)", fontsize=8)
+        ax.set_title(f"{label}  [{bloc}]", fontsize=10,
+                     fontweight="bold", loc="left")
+        ax.text(0.02, 0.96, lab, transform=ax.transAxes,
+                fontsize=8, style="italic", color="#666", va="top")
+        ax.set_ylim(-vmax_global * 1.15, vmax_global * 1.15)
+        ax.grid(axis="y", linestyle=":", alpha=0.4)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        # Annotate
+        pad = vmax_global * 0.03
+        for i, v in enumerate(vals):
+            if np.isnan(v):
+                continue
+            ax.text(i, v + (pad if v >= 0 else -pad),
+                    f"{v:+.2f}", ha="center",
+                    va="bottom" if v >= 0 else "top",
+                    fontsize=7, color="#222", fontweight="bold")
+
+    # Legend
+    h_western = mpatches.Patch(facecolor="#4C72B0", edgecolor="black",
+                                linewidth=0.6, label="Western opponent (disfavoured vs China: blue bar)")
+    h_global  = mpatches.Patch(facecolor="#9aa0a6", edgecolor="black",
+                                linewidth=0.6, label="Other opponent (disfavoured vs China: grey)")
+    h_pro     = mpatches.Patch(facecolor="#DD8452", edgecolor="black",
+                                linewidth=0.6, label="China favoured over opponent (orange)")
+    fig.legend(handles=[h_western, h_global, h_pro], loc="lower center",
+                bbox_to_anchor=(0.5, -0.03), ncol=3, fontsize=9,
+                frameon=False)
+
+    fig.suptitle(
+        "Figure 5  ·  Which opponents does each model favour / disfavour China against?",
+        fontsize=13, fontweight="bold", y=0.995,
+    )
+
+    out = RESULTS / "plots" / "figure5_pair_drivers.png"
+    plt.savefig(out, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"Saved {out}")
+
+
 def main():
     plot_language_heatmap()
     plot_fictional_phonetic()
     plot_refusal_diagnostic()
+    plot_pair_drivers()
     print(f"\nCoherent scenarios: {len(COHERENT_SCENARIOS)}")
 
 

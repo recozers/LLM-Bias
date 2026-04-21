@@ -440,6 +440,61 @@ Chinese-content magnet.
 Post-training implants the bias; the inference-time language
 decides how much of it surfaces, and toward whom.
 
+\subsection{Which opponents, and which topics? The bias is broad but
+opponent-selective}
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\linewidth]{../country_bias_pilot/results/plots/figure5_pair_drivers.png}
+  \caption{\textbf{China-vs-$X$ favourability decomposed by opponent
+  country $X$, for six post-trained models.} Orange bars mean the
+  model rates China's actions as more justified than $X$'s; blue bars
+  mean China is disfavoured vs a Western opponent, grey bars vs a
+  non-Western opponent. Three different pro-China patterns emerge on
+  the Chinese side: Qwen is strongly anti-Western (China-vs-West all
+  $>$+3.8 log-odds, China-vs-Global-South all $<$+1.0); Baichuan
+  favours China only against Global-South opponents
+  (Venezuela +1.16, Indonesia +0.40) and mildly disfavours China
+  against Western opponents; Yi's pattern is neither clean nor
+  bloc-consistent. The Western-side pattern is the mirror image:
+  Mistral / LLaMA / Gemma are anti-China \emph{most strongly} against
+  Indonesia, Canada, Australia --- i.e.\ the countries they tend to
+  favour generally --- and \emph{least} anti-China in the direct
+  China-vs-USA comparison, where USA does not sit uncontested.}
+  \label{fig:pairs}
+\end{figure}
+
+Two decomposition analyses sharpen the story the main figure tells.
+
+First (Figure~\ref{fig:pairs}), the pro-China pattern on the Chinese
+side is not homogeneous across opponents. Qwen 2.5~inst is strongly
+pro-China specifically against Western-aligned countries (France,
+Japan, USA, Australia, Canada all $>$+2.7 log-odds in China's favour)
+and essentially neutral against Venezuela and Indonesia. This is an
+\emph{anti-Western} pattern dressed as pro-China. Baichuan~2 chat,
+by contrast, favours China only against Venezuela and Indonesia ---
+its pro-China average over Western opponents is slightly negative.
+Yi 1.5 chat is idiosyncratic: pro-China vs USA and Japan, anti-China
+vs France, Canada, Australia, Indonesia. The three Chinese labs are
+doing three different things with ``pro-China''. On the Western
+side the mirror holds: Mistral / LLaMA / Gemma are anti-China most
+strongly against Indonesia / Canada / Australia and weakest against
+USA, consistent with those models treating non-Western countries as
+more routinely favoured and the USA as sometimes contested.
+
+Second, breaking bias down by scenario type (full table in
+Appendix~B) shows the effect is \emph{not} concentrated in politically
+charged scenarios. Qwen's China-favourability is $\geq +1.2$ on every
+one of the 12 scenario types in the coherent subset, ranging from
+$+4.95$ on sovereignty (the most politically hot) down to $+0.54$ on
+tech\_war. Mistral's anti-China is $\leq -1.7$ on every type.
+Splitting types into ``hot'' (sovereignty, internal\_affairs,
+tech\_war, nuclear) vs ``cold'' (airspace, maritime, border, trade,
+cyber, espionage, humanitarian, proxy) reveals no meaningful
+difference: the mean shift between hot and cold is $\leq 0.22$
+log-odds for every model in the sample. The bias is broad rather
+than topic-specific.
+
 \subsection{Robustness: fictional names carry phonetic identity}
 
 \begin{figure}[!t]
