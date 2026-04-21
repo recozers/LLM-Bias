@@ -18,13 +18,20 @@ RESULTS = Path(__file__).resolve().parent / "results"
 COUNTRIES = ["USA", "France", "China", "Japan", "Venezuela", "Canada", "Australia", "Indonesia"]
 
 FAMILIES = [
-    ("Mistral 7B",  "mistral-7b",  "mistral-7b-inst",  "FR"),
-    ("LLaMA 3 8B",  "llama3-8b",   "llama3-8b-inst",   "US"),
-    ("Gemma 4 8B",  "gemma4-8b",   "gemma4-8b-it",     "US"),
-    ("Qwen 2.5 7B", "qwen2.5-7b",  "qwen2.5-7b-inst",  "CN"),
-    ("Yi 1.5 9B",   "yi1.5-9b",    "yi1.5-9b-chat",    "CN"),
-    ("GLM 4 9B",    "glm4-9b",     "glm4-9b-chat",     "CN"),
+    ("Mistral 7B",    "mistral-7b",     "mistral-7b-inst",   "FR", "Mistral AI"),
+    ("LLaMA 3 8B",    "llama3-8b",      "llama3-8b-inst",    "US", "Meta"),
+    ("Gemma 4 8B",    "gemma4-8b",      "gemma4-8b-it",      "US", "Google"),
+    ("Qwen 2.5 7B",   "qwen2.5-7b",     "qwen2.5-7b-inst",   "CN", "Alibaba"),
+    ("Baichuan 2 7B", "baichuan2-7b",   "baichuan2-7b-chat", "CN", "Baichuan"),
+    ("Yi 1.5 9B",     "yi1.5-9b",       "yi1.5-9b-chat",     "CN", "01.AI"),
+    ("GLM 4 9B",      "glm4-9b",        "glm4-9b-chat",      "CN", "Zhipu"),
 ]
+
+# Models whose post-trained variant has compliance < 0.1 — their bias numbers
+# are still directionally informative (variant ratios are preserved) but the
+# model is largely not engaging with the A/B forced-choice. Flagged in the
+# figure with a distinct marker.
+LOW_COMPLIANCE_INSTRUCT = {"glm4-9b-chat", "yi1.5-9b-chat"}
 
 MAKER_BLOC = {"US": "Western", "FR": "Western", "CN": "Chinese"}
 MAKER_COLOR = {"Western": "#4C72B0", "Chinese": "#DD8452"}
@@ -54,7 +61,7 @@ def _china_signed(df):
 
 def compute_coherent_scenarios(threshold=0.7):
     records = []
-    all_models = [m for _, base, inst, _ in FAMILIES for m in (base, inst)]
+    all_models = [m for _, base, inst, _, _ in FAMILIES for m in (base, inst)]
     for m in all_models:
         for lang, d in LANG_DIRS.items():
             f = RESULTS / d / f"{m}_raw.csv"
@@ -110,14 +117,18 @@ def to_pref(logprob):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def panel_a(ax):
-    for fam_idx, (fam_name, base_key, inst_key, maker) in enumerate(FAMILIES):
+    # Tighter spacing for 7 families
+    col_w = 2.4   # total width per family
+    gap = 1.1     # separation between base and post-trained within a family
+    for fam_idx, (fam_name, base_key, inst_key, maker, lab) in enumerate(FAMILIES):
         base_fav = favour(RESULTS / "gpu_bias" / f"{base_key}_raw.csv",
                           COUNTRIES, COHERENT_SCENARIOS)
         inst_fav = favour(RESULTS / "gpu_bias" / f"{inst_key}_raw.csv",
                           COUNTRIES, COHERENT_SCENARIOS)
 
-        x_base = fam_idx * 3
-        x_inst = fam_idx * 3 + 1.2
+        x_base = fam_idx * col_w
+        x_inst = fam_idx * col_w + gap
+        x_center = fam_idx * col_w + gap / 2
 
         base_prefs = [to_pref(base_fav[c]) for c in COUNTRIES]
         inst_prefs = [to_pref(inst_fav[c]) for c in COUNTRIES]
@@ -129,15 +140,15 @@ def panel_a(ax):
             bp = to_pref(base_fav[country])
             ip = to_pref(inst_fav[country])
             color = COUNTRY_COLORS[country]
-            ax.plot([x_base, x_inst], [bp, ip], color=color, alpha=0.45, linewidth=1.5)
-            ax.scatter(x_base, bp, color=color, s=38, zorder=5,
-                       edgecolors="white", linewidth=0.6)
-            ax.scatter(x_inst, ip, color=color, s=75, zorder=6,
-                       edgecolors="white", linewidth=0.8)
-            if ip > 68 or ip < 32:
+            ax.plot([x_base, x_inst], [bp, ip], color=color, alpha=0.45, linewidth=1.3)
+            ax.scatter(x_base, bp, color=color, s=30, zorder=5,
+                       edgecolors="white", linewidth=0.5)
+            ax.scatter(x_inst, ip, color=color, s=60, zorder=6,
+                       edgecolors="white", linewidth=0.7)
+            if ip > 70 or ip < 30:
                 to_label.append((ip, country, color))
 
-        min_gap = 4.5
+        min_gap = 5.0
         for group, sign in (([t for t in to_label if t[0] > 50], +1),
                              ([t for t in to_label if t[0] <= 50], -1)):
             group.sort(key=lambda t: t[0], reverse=(sign > 0))
@@ -147,39 +158,45 @@ def panel_a(ax):
                 if last_y is not None and abs(y - last_y) < min_gap:
                     y = last_y - sign * min_gap
                 ax.annotate(country, xy=(x_inst, ip),
-                            xytext=(x_inst + 0.22, y),
-                            fontsize=7, color=color, fontweight="bold",
+                            xytext=(x_inst + 0.18, y),
+                            fontsize=6.5, color=color, fontweight="bold",
                             va="center", ha="left")
                 last_y = y
 
-        maker_tag = f"[{maker}]"
-        ax.text(fam_idx * 3 + 0.6, 104, f"{fam_name}  {maker_tag}",
-                ha="center", fontsize=10, fontweight="bold", clip_on=False)
-        ax.text(fam_idx * 3 + 0.6, 99.5,
-                f"spread  {spread_base:.1f}  →  {spread_inst:.1f}",
-                ha="center", fontsize=7.5, color="#555", style="italic")
+        # Title line: family name + [maker_bloc] + (lab)
+        ax.text(x_center, 105, fam_name,
+                ha="center", fontsize=9, fontweight="bold", clip_on=False)
+        ax.text(x_center, 100,
+                f"{lab}  [{maker}]",
+                ha="center", fontsize=7.5, color="#333",
+                fontweight="bold", clip_on=False)
+        ax.text(x_center, 95.5,
+                f"σ  {spread_base:.1f}  →  {spread_inst:.1f}",
+                ha="center", fontsize=7, color="#555", style="italic",
+                clip_on=False)
         if fam_idx < len(FAMILIES) - 1:
-            ax.axvline(fam_idx * 3 + 2.1, color="gray", linewidth=0.5, alpha=0.25)
+            ax.axvline(x_center + col_w / 2, color="gray",
+                       linewidth=0.5, alpha=0.25)
 
     ax.axhline(50, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
-    ax.text(-0.3, 50, "neutral", fontsize=7.5, color="gray",
+    ax.text(-0.4, 50, "neutral", fontsize=7, color="gray",
             va="center", ha="right", style="italic")
 
     xticks, xlabels = [], []
     for i in range(len(FAMILIES)):
-        xticks.extend([i * 3, i * 3 + 1.2])
-        xlabels.extend(["Base", "Post-trained"])
+        xticks.extend([i * col_w, i * col_w + gap])
+        xlabels.extend(["Base", "Inst"])
     ax.set_xticks(xticks)
-    ax.set_xticklabels(xlabels, fontsize=8)
+    ax.set_xticklabels(xlabels, fontsize=7)
     ax.set_ylabel("Preference  (%)", fontsize=11)
     ax.set_ylim(0, 100)
-    ax.set_xlim(-0.8, (len(FAMILIES) - 1) * 3 + 2.2)
+    ax.set_xlim(-0.9, (len(FAMILIES) - 1) * col_w + gap + 0.9)
     ax.set_title("A  ·  Post-training amplifies geopolitical bias",
-                 fontsize=13, fontweight="bold", loc="left", pad=30)
+                 fontsize=13, fontweight="bold", loc="left", pad=38)
 
     for country in COUNTRIES:
         ax.scatter([], [], color=COUNTRY_COLORS[country], s=55, label=country)
-    ax.legend(ncol=8, loc="upper center", bbox_to_anchor=(0.5, -0.12),
+    ax.legend(ncol=8, loc="upper center", bbox_to_anchor=(0.5, -0.14),
               fontsize=8, frameon=False, handletextpad=0.3, columnspacing=1.2)
 
 
@@ -189,19 +206,24 @@ def panel_a(ax):
 
 def panel_b(ax):
     data = []
-    for fam_name, base, inst, maker in FAMILIES:
+    for fam_name, base, inst, maker, lab in FAMILIES:
         cb_base = china_favour(base, "EN")
         cb_inst = china_favour(inst, "EN")
-        data.append({"family": fam_name, "maker": maker, "bloc": MAKER_BLOC[maker],
+        data.append({"family": fam_name, "maker": maker, "lab": lab,
+                     "bloc": MAKER_BLOC[maker], "inst_key": inst,
                      "base": cb_base, "inst": cb_inst, "delta": cb_inst - cb_base})
 
-    df = pd.DataFrame(data).sort_values("delta")
+    df = pd.DataFrame(data).sort_values("delta").reset_index(drop=True)
     y = np.arange(len(df))
 
-    for i, row in df.reset_index(drop=True).iterrows():
+    for i, row in df.iterrows():
         color = MAKER_COLOR[row["bloc"]]
+        low_comp = row["inst_key"] in LOW_COMPLIANCE_INSTRUCT
+        hatch = "//" if low_comp else None
+        edge = "#666" if low_comp else "black"
+        lw = 1.1 if low_comp else 0.6
         ax.barh(i, row["delta"], 0.65, color=color, alpha=0.9,
-                edgecolor="black", linewidth=0.6)
+                edgecolor=edge, linewidth=lw, hatch=hatch)
         sign = "+" if row["delta"] >= 0 else ""
         ax.text(row["delta"] + (0.12 if row["delta"] >= 0 else -0.12),
                 i, f"{sign}{row['delta']:.2f}",
@@ -210,8 +232,8 @@ def panel_b(ax):
 
     ax.axvline(0, color="black", linewidth=0.8)
     ax.set_yticks(y)
-    ax.set_yticklabels([f"{r['family']}  [{r['maker']}]"
-                        for _, r in df.iterrows()], fontsize=10)
+    ax.set_yticklabels([f"{r['family']}  ({r['lab']})"
+                        for _, r in df.iterrows()], fontsize=9)
     ax.invert_yaxis()
 
     xmax = max(abs(df["delta"].min()), abs(df["delta"].max())) * 1.55
@@ -225,10 +247,13 @@ def panel_b(ax):
                             alpha=0.9, edgecolor="black", linewidth=0.6)
     chinese = plt.Rectangle((0, 0), 1, 1, facecolor=MAKER_COLOR["Chinese"],
                             alpha=0.9, edgecolor="black", linewidth=0.6)
-    ax.legend([western, chinese],
-              ["Western-made (US / FR)", "Chinese-made (CN)"],
-              fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.18),
-              frameon=False, ncol=2)
+    lowc = plt.Rectangle((0, 0), 1, 1, facecolor="white",
+                          alpha=0.9, edgecolor="#666", linewidth=1.1, hatch="//")
+    ax.legend([western, chinese, lowc],
+              ["Western-made", "Chinese-made",
+               "Low-compliance (< 0.1)"],
+              fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              frameon=False, ncol=3)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -237,9 +262,10 @@ def panel_b(ax):
 
 def panel_c(ax):
     rows = []
-    for fam_name, _, inst, maker in FAMILIES:
+    for fam_name, _, inst, maker, lab in FAMILIES:
         rows.append({
-            "family": fam_name, "maker": maker, "bloc": MAKER_BLOC[maker],
+            "family": fam_name, "maker": maker, "lab": lab,
+            "bloc": MAKER_BLOC[maker], "inst_key": inst,
             "EN": china_favour(inst, "EN"),
             "ZH": china_favour(inst, "ZH"),
         })
@@ -257,31 +283,38 @@ def panel_c(ax):
 
     for i, row in df.iterrows():
         color = MAKER_COLOR[row["bloc"]]
-        # arrow from EN to ZH
+        low_comp = row["inst_key"] in LOW_COMPLIANCE_INSTRUCT
+        # arrow from EN to ZH (dashed for low-compliance)
+        linestyle = "--" if low_comp else "-"
+        alpha = 0.55 if low_comp else 0.85
         ax.annotate("",
                     xy=(row["ZH"], i), xytext=(row["EN"], i),
                     arrowprops=dict(arrowstyle="->,head_width=0.35,head_length=0.6",
-                                    color=color, lw=2.2, alpha=0.85),
+                                    color=color, lw=2.2, alpha=alpha,
+                                    linestyle=linestyle),
                     zorder=2)
         # EN: hollow circle
         ax.scatter(row["EN"], i, color="white", s=70, zorder=4,
-                   edgecolors=color, linewidths=1.4)
-        # ZH: filled circle
-        ax.scatter(row["ZH"], i, color=color, s=90, zorder=4,
-                   edgecolors="black", linewidths=0.8)
+                   edgecolors=color, linewidths=1.4,
+                   alpha=alpha)
+        # ZH: filled circle (hollow with hatch if low compliance)
+        if low_comp:
+            ax.scatter(row["ZH"], i, color="white", s=90, zorder=4,
+                       edgecolors=color, linewidths=2.0, hatch="///")
+        else:
+            ax.scatter(row["ZH"], i, color=color, s=90, zorder=4,
+                       edgecolors="black", linewidths=0.8)
         # Δ annotation in right margin column
         sign = "+" if row["shift"] >= 0 else ""
         ax.text(delta_col, i, f"{sign}{row['shift']:.2f}",
                 va="center", ha="right", fontsize=9, color="#222",
-                fontweight="bold",
-                bbox=dict(boxstyle="round,pad=0.15", facecolor="white",
-                          edgecolor="none", alpha=0.0))
+                fontweight="bold")
 
     ax.axvline(0, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
 
     ax.set_yticks(y)
-    ax.set_yticklabels([f"{r['family']}  [{r['maker']}]"
-                        for _, r in df.iterrows()], fontsize=10)
+    ax.set_yticklabels([f"{r['family']}  ({r['lab']})"
+                        for _, r in df.iterrows()], fontsize=9)
     ax.invert_yaxis()
     ax.set_xlim(x_left, delta_col + pad * 0.5)
     ax.set_ylim(len(df) - 0.5, -0.9)
@@ -298,15 +331,19 @@ def panel_c(ax):
     zh_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=9,
                           markerfacecolor="#444", markeredgecolor="black",
                           markeredgewidth=0.8, label="Chinese prompt")
-    ax.legend(handles=[en_proxy, zh_proxy], fontsize=9, loc="upper center",
-              bbox_to_anchor=(0.5, -0.18), frameon=False, ncol=2)
+    lowc_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=9,
+                             markerfacecolor="white", markeredgecolor="#999",
+                             markeredgewidth=1.8, label="Low compliance")
+    ax.legend(handles=[en_proxy, zh_proxy, lowc_proxy],
+              fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              frameon=False, ncol=3)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    fig = plt.figure(figsize=(18, 14))
-    gs = gridspec.GridSpec(2, 2, hspace=0.45, wspace=0.32,
+    fig = plt.figure(figsize=(20, 14))
+    gs = gridspec.GridSpec(2, 2, hspace=0.5, wspace=0.3,
                             height_ratios=[1.05, 1.0])
 
     ax_a = fig.add_subplot(gs[0, :])
@@ -322,13 +359,13 @@ def main():
         ax.spines["right"].set_visible(False)
 
     fig.suptitle(
-        "Aligned to whom?  Post-training implants a maker-aligned bias, triggered by linguistic identity",
+        "Aligned to whom?  Post-training shifts geopolitical bias in the direction of the maker — unevenly",
         fontsize=15, fontweight="bold", y=0.995,
     )
 
     fig.text(0.5, 0.002,
-             f"n = {len(COHERENT_SCENARIOS)} scenarios (justified/unjustified sign-flip ≥70% across 12 models × 3 languages)  ·  "
-             f"6 model families: Western-made [FR/US] and Chinese-made [CN]",
+             f"n = {len(COHERENT_SCENARIOS)} scenarios (justified/unjustified sign-flip ≥70% across 14 models × 3 languages)  ·  "
+             f"7 model families from 7 labs: Western-made [FR/US] and Chinese-made [CN]",
              ha="center", fontsize=9, color="#555", style="italic")
 
     out = RESULTS / "plots" / "main_figure.png"
