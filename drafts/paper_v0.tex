@@ -45,40 +45,21 @@ current; prose has not yet been tightened for submission.}
 
 \begin{abstract}
 \noindent We probe fourteen open-weight language models (seven
-families from seven labs, each with matched base and post-trained
-variants) for geopolitical bias using a paired-scenario cloze design,
-measured in English, French, and Chinese. Two findings:
-\textbf{(1) Post-training shifts geopolitical preferences in a
-direction aligned with the model's maker.} We measure preferences
-across 28 country pairs spanning 8 countries (USA, France, China,
-Japan, Venezuela, Canada, Australia, Indonesia). Aggregated along
-the China-favourability axis --- where the maker-aligned split is
-sharpest --- all 7 of 7 families move in the maker direction:
-the three Western labs (Mistral AI, Meta, Google) shift their
-models anti-China, the four Chinese labs (Alibaba, Baichuan, 01.AI,
-Zhipu) shift pro-China. The magnitude is heterogeneous: Alibaba's
-Qwen~2.5 is the one model of fourteen that a lab has post-trained
-to a clearly pro-China absolute position ($+2.99$ log-odds); the
-other six post-trained models move in the maker-aligned direction
-but end nearer to neutral.
-\textbf{(2) Inference-time language amplifies the post-training bias
-toward the country that language implicates.} The French-made
-Mistral~7B is the only post-trained model in our sample to achieve
-positively pro-France favourability --- and only when prompted in
-French (EN: $-1.60 \to$ FR: $+0.37$). Prompting in Chinese pushes
-five of seven post-trained models further pro-China; base models
-barely respond to the language swap. The language change amplifies
-preferences that are already present in English; it does not
-install a new one.
-\\ \\
-A note on measurement: we score each model's log-probability of
-preferring one country over another in A/B cloze prompts across all
-28 pairs. China-favourability and France-favourability are natural
-aggregates to report because each has a lab (Alibaba, Mistral AI)
-with a discernibly stronger preference in that direction, but the
-underlying measurement is general country-pair preference and other
-aggregates would be equally valid lenses (\S4.3 reports per-opponent
-decompositions).
+families from seven labs, matched base and post-trained variants)
+for geopolitical bias via paired-scenario cloze prompts scored across
+28 country pairs, in English, French, and Chinese.
+\textbf{(1) Post-training shifts preferences in the direction of the
+model's maker.} Aggregated along China-favourability, 7/7 families
+move maker-aligned: Western labs (Mistral AI, Meta, Google) shift
+anti-China; Chinese labs (Alibaba, Baichuan, 01.AI, Zhipu) shift
+pro-China. Magnitudes are heterogeneous --- Alibaba's Qwen 2.5 is
+the one model post-trained to a clearly pro-China absolute position
+($+2.99$ log-odds); the others move directionally but end near neutral.
+\textbf{(2) Inference-time language amplifies the imprinted bias,
+not base-model content.} The French-made Mistral~7B is the only
+post-trained model to achieve pro-France favourability, and only in
+French (EN $-1.60 \to$ FR $+0.37$); Chinese prompting shifts 5/7
+models further pro-China; base models barely respond.
 \end{abstract}
 
 \section{Introduction}
