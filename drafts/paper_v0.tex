@@ -560,11 +560,14 @@ models have no world-knowledge about fictional \emph{Bretherland} or
 identity. The bias travels with the identity cue, not with the specific
 country.
 
-\section{Four Chinese labs, four distinguishable response formats}
+\section{Chinese-side response formats differ; preferences do not}
 
-The Chinese-side heterogeneity is not a nuisance to explain away ---
-it is the main finding about what ``Chinese-made LLM'' means in
-practice. Looking across the four Chinese labs (Table~\ref{tab:chinese}):
+The four Chinese labs produce four visibly different response styles,
+which under na\"ive single-token scoring looks like a spectrum of
+refusal rates. Table~\ref{tab:chinese} shows the actual picture after
+tokenizer and prefill corrections: all four shift pro-China, by
+magnitudes spanning an order of magnitude, with only Qwen landing in
+genuinely positive absolute territory.
 
 \begin{table}[h]
 \centering
@@ -616,90 +619,27 @@ attenuated by the verbose-prefix format.}
   \label{fig:refusal}
 \end{figure}
 
-\subsection{Zhipu: a leading-newline template, not a refusal}
+\subsection{Response-format heterogeneity at the first token}
 
-A single-prompt diagnostic on GLM~4~9B~chat (Figure~\ref{fig:refusal},
-left panel) initially suggested a categorical refusal: the model's
-first-token distribution places $P(\text{newline}) = 1.0000$ on token
-id \texttt{198} (``\textbackslash n''), with every other token ---
-including ``A''/``B'' and their variants --- sitting below $10^{-4}$.
-Under our single-token scoring this produced compliance
-$\sim\!3 \times 10^{-8}$ and uninterpretable bias numbers.
+Figure~\ref{fig:refusal} shows three distinct first-token regimes at
+the standard instruct prompt. \textbf{GLM~4 chat} places
+$P(\text{newline}) = 1.0000$ on a single newline token, pushing
+single-token A/B compliance to $\sim\!3\times10^{-8}$; decoding the
+actual generation shows this is a response-opening template
+(``\textbackslash n(A)'' / ``\textbackslash n(B)''), not a refusal.
+Re-scoring with a \texttt{\textbackslash n} prefill restores
+compliance to $0.91$--$0.99$ across all six conditions and reveals a
+$+1.52$ log-odds pro-China shift ($-1.64 \to -0.13$) --- the
+second-largest Chinese-side delta. \textbf{Yi~1.5 chat} spreads mass
+across ``('' (40\%, preferring ``(A)'' verbose answers), ``Given''
+(25\%), ``I'' (17\%), ``Ne'' (14\%); a prefill correction analogous
+to GLM's is plausible but not attempted here. \textbf{Qwen~2.5 inst}
+concentrates on ``A''/``B'' directly.
 
-\emph{It is not a refusal}. Decoding the model's actual generation
-reveals that GLM~4 chat opens every response with a newline, then emits
-exactly the forced-choice answer we asked for. Across
-5~scenarios $\times$ 3~languages we sampled, every single generated
-response was of the form ``\textbackslash n(A)'', ``\textbackslash n(B)'',
-or ``\textbackslash n B'' --- a templated response-opener followed by
-the answer. No refusal text appeared.
-
-Re-scoring with a \texttt{\textbackslash n} prefill moves GLM~4 chat's
-compliance from $3 \times 10^{-8}$ up to $0.91$--$0.99$ across the six
-conditions (EN/FR/ZH real + fictional), and reveals a genuine bias
-signal. GLM~4 chat's post-training delta in English is $+1.52$ log-odds
-(base $-1.64 \to$ chat $-0.13$), the second-largest pro-China shift in
-the sample, second only to Alibaba's Qwen. Zhipu's actual post-training
-decision has \emph{two} components rather than one: a leading-newline
-response-opening template, \emph{and} a genuine modest pro-China shift
-that is directionally consistent with every other Chinese lab in our
-sample.
-
-One nuance survives from the original ``refusal'' reading. Even with
-prefill correction, GLM~4 chat's cross-country preference spread is
-much tighter than its base model's ($\sigma: 21.0 \to 3.8$) --- unique
-in the sample (every other instruct variant has a larger spread than
-its base). Post-training for GLM has both shifted the mean pro-China
-and compressed the country-to-country variance: the model ends up
-rating every country much more similarly to every other, with a slight
-overall lean towards China. This is a qualitatively distinct
-alignment strategy from Qwen's ($\sigma: 5.6 \to 33.8$; amplify the
-spread and anchor strongly pro-China) and from Baichuan's (modest
-shift, modest spread change). We hypothesise that Zhipu's
-post-training targets some version of ``treat all countries
-comparably'', with the pro-China anchor an unintended or
-secondary consequence. Confirming this requires lab disclosure we
-do not have. The main-text figures now load GLM~4 chat from the
-prefill-corrected results directories.
-
-\paragraph{01.AI: a partial-engagement format.} Yi~1.5~9B~chat's
-compliance under variant-sum scoring is $0.029$ --- not the
-$10^{-9}$ it appeared to be under single-token scoring, but still
-much lower than the $0.99+$ of Qwen, Mistral, or Baichuan. A top-token
-diagnostic shows the mass: $\sim 40\%$ on ``('' (Yi prefers the
-``(A)'' verbose-answer format), $\sim 25\%$ on ``Given'',
-$\sim 17\%$ on ``I'', $\sim 14\%$ on ``Ne'' --- i.e.\ $\sim 56\%$ of
-probability goes to verbose or refusal-like prefixes before any
-A/B commitment. Yi chat engages partially: it produces a bias signal
-(the $\Delta = +0.28$ is directionally consistent with other
-Chinese-made models), but it hedges the format. A similar
-prefill-style correction for Yi (either ``('' or one of the verbose
-prefixes) is left to future work.
-
-\paragraph{Alibaba: confident engagement with strong pro-China lean.}
-Qwen~2.5~7B~inst is the only post-trained model in the sample whose
-English China-favourability meaningfully exceeds zero ($+2.99$). It
-is also the only model whose post-training delta exceeds $+1$
-log-odds. Alibaba has post-trained a model that takes the
-forced-choice question at face value and answers with a clear
-pro-China preference.
-
-\paragraph{Baichuan: mild directional shift.} Baichuan~2~7B~chat
-shifts $+0.41$ pro-China from its base ($-0.25 \to +0.16$) with
-compliance $0.99$. It does not end up meaningfully pro-China in
-absolute terms, but the direction matches the other Chinese labs'
-instruct models.
-
-\textbf{The summary on the Chinese side:} four labs, four
-distinguishable \emph{response formats} --- direct A/B (Alibaba,
-Baichuan), verbose-prefix (01.AI), newline-first template (Zhipu).
-The free-generation validation in \S5.2 shows the formats do not
-imply refusal: all four labs (Baichuan excepted by a compatibility
-issue) commit to (A) or (B) at 100\% under open-ended generation.
-The behavioural category is ``how the model formats its answer'',
-not ``whether it has a pro-China preference''; corrected scoring and
-free-gen jointly suggest the preference is broadly present across
-the four labs, just dressed differently.
+GLM also shows an unusual spread compression under post-training
+($\sigma: 21.0 \to 3.8$), the opposite direction from every other
+family (see \S6 for a speculative reading). The main-text figures
+now load GLM~4 chat from the prefill-corrected directories.
 
 \subsection{Free-generation validation: formats differ, compliance does not}
 
@@ -748,19 +688,11 @@ position A it writes ``\emph{Indonesia's actions appear more
 justified}'' for the same scenario. The preference flips with the
 letter position. Forced-choice log-odds scoring averages forward and
 reverse country orderings at the logit level, so a constant B-token
-bias contributes additively to both directions and cancels on
-averaging; generation decoding commits to a single most-likely token
-and cannot cancel. The same machinery that makes free-gen noisy for
-high-signal Qwen is what makes forced-choice robust: the probe
-measures the country preference beneath token-level decoding dynamics
-the model does not itself verbalise. Qwen's verbal reasoning still
-reads pro-China when averaged over orderings (Appendix~C).
-
-Mistral on the same scenarios produces noticeably more balanced
-verbal reasoning (``both countries have valid concerns'') yet
-commits sharply anti-China on both probes ($-0.50$ free-gen,
-$-3.06$ forced-choice). The models verbalise less than they prefer.
-Full generations are in Appendix~C.
+bias contributes additively and cancels on averaging; generation
+decoding commits to a single most-likely token and cannot cancel.
+The probe measures the country preference beneath token-level
+decoding dynamics the model does not itself verbalise. Full
+generations for Qwen and Mistral are in Appendix~C.
 
 \section{Discussion}
 
