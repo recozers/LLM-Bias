@@ -65,7 +65,7 @@ def panel_hedge(ax):
     ax.set_xticks(x)
     ax.set_xticklabels([f"{fam}  [{m}]" for fam, _, m, _ in MODELS], fontsize=9)
     ax.set_ylabel("China favourability (log-odds)", fontsize=9)
-    ax.set_title("A  ·  Hedge ablation — the hedge is not driving the bias",
+    ax.set_title("A  ·  Hedge ablation",
                  fontsize=11, fontweight="bold", loc="left", pad=6)
     ax.legend(fontsize=8, loc="best", frameon=False)
     ax.spines["top"].set_visible(False)
@@ -100,9 +100,10 @@ def panel_phrasing(ax):
 
     ax.axhline(0, color="black", linewidth=0.7)
     ax.set_xticks(x)
-    ax.set_xticklabels([p[2] for p in phrasings], fontsize=7.5)
+    ax.set_xticklabels([p[2] for p in phrasings], fontsize=7.5,
+                        rotation=15, ha="right")
     ax.set_ylabel("China favourability (log-odds)", fontsize=9)
-    ax.set_title("B  ·  Phrasing robustness — sign preserved across 4 MCQ wordings",
+    ax.set_title("B  ·  Phrasing robustness",
                  fontsize=11, fontweight="bold", loc="left", pad=6)
     ax.legend(fontsize=8, loc="best", frameon=False)
     ax.spines["top"].set_visible(False)
@@ -139,7 +140,7 @@ def panel_cross(ax):
     ax.set_xticks(x)
     ax.set_xticklabels([c[0] for c in conditions], fontsize=8)
     ax.set_ylabel("China favourability (log-odds)", fontsize=9)
-    ax.set_title("C  ·  Cross-prompting — scenario language does most of the work",
+    ax.set_title("C  ·  Cross-prompting factorial",
                  fontsize=11, fontweight="bold", loc="left", pad=6)
     ax.legend(fontsize=8, loc="best", frameon=False)
     ax.spines["top"].set_visible(False)
@@ -148,8 +149,8 @@ def panel_cross(ax):
 
 
 def main():
-    fig, axes = plt.subplots(1, 3, figsize=(17, 5.5),
-                              gridspec_kw={"wspace": 0.32})
+    fig, axes = plt.subplots(1, 3, figsize=(17, 5.8),
+                              gridspec_kw={"wspace": 0.28})
     panel_hedge(axes[0])
     panel_phrasing(axes[1])
     panel_cross(axes[2])
@@ -161,7 +162,7 @@ def main():
     )
     fig.text(0.5, -0.04,
              "Qwen 2.5 7B-inst (Alibaba) and Mistral 7B-inst (Mistral AI). "
-             "27-scenario coherence subset; variant-sum scoring.",
+             "29-scenario coherence subset; variant-sum scoring.",
              ha="center", fontsize=8, color="#555", style="italic")
 
     out = RESULTS / "plots" / "figure6_robustness.png"
