@@ -47,16 +47,18 @@ families from seven labs, each with matched base and post-trained
 variants) for geopolitical bias using a paired-scenario cloze design,
 measured in English, French, and Chinese. Two findings:
 \textbf{(1) Post-training shifts geopolitical preferences in a
-direction aligned with the model's maker.} Across 7 of 7 families the
-post-training step moves the model toward favouring countries its
-maker might be expected to favour --- in our measurement setup, the
-three Western labs (Mistral AI, Meta, Google) shift their models
-anti-China while the four Chinese labs (Alibaba, Baichuan, 01.AI,
+direction aligned with the model's maker.} We measure preferences
+across 28 country pairs spanning 8 countries (USA, France, China,
+Japan, Venezuela, Canada, Australia, Indonesia). Aggregated along
+the China-favourability axis --- where the maker-aligned split is
+sharpest --- all 7 of 7 families move in the maker direction:
+the three Western labs (Mistral AI, Meta, Google) shift their
+models anti-China, the four Chinese labs (Alibaba, Baichuan, 01.AI,
 Zhipu) shift pro-China. The magnitude is heterogeneous: Alibaba's
-Qwen~2.5 is the one model of fourteen that a lab has post-trained to
-a clearly pro-China absolute position ($+2.89$ log-odds); the other
-six post-trained models land moderately in the direction of their
-maker without crossing into strong absolute positions.
+Qwen~2.5 is the one model of fourteen that a lab has post-trained
+to a clearly pro-China absolute position ($+2.89$ log-odds); the
+other six post-trained models move in the maker-aligned direction
+but end nearer to neutral.
 \textbf{(2) Inference-time language amplifies the post-training bias
 toward the country that language implicates.} The French-made
 Mistral~7B is the only post-trained model in our sample to achieve
@@ -67,12 +69,14 @@ barely respond to the language swap. The language change amplifies
 preferences that are already present in English; it does not
 install a new one.
 \\ \\
-A note on measurement: we measure each model's log-probability of
-preferring one country over another in A/B cloze prompts.
-``China-favourability'' and ``France-favourability'' are natural
-targets because at least one lab has a discernibly stronger
-preference in each direction; we do not claim pro- or anti-China as
-the only axis that matters.
+A note on measurement: we score each model's log-probability of
+preferring one country over another in A/B cloze prompts across all
+28 pairs. China-favourability and France-favourability are natural
+aggregates to report because each has a lab (Alibaba, Mistral AI)
+with a discernibly stronger preference in that direction, but the
+underlying measurement is general country-pair preference and other
+aggregates would be equally valid lenses (\S4.3 reports per-opponent
+decompositions).
 \end{abstract}
 
 \section{Introduction}
@@ -87,14 +91,19 @@ obvious ``pretraining data is biased, so the model is biased'' version.
 \paragraph{Post-training, not pretraining, is where the bias lives.}
 Pretraining a base model on web-scale text produces a weakly
 differentiated country preference. Post-training (instruction-tuning
-and RLHF) is where the needle moves. Across seven model families from
-seven different labs, the cross-country preference spread increases
-on post-training, and --- in our measurement setup where each model
-has to adjudicate a two-country scenario --- the direction of the
-shift aligns with the model's maker. The three Western labs shift
-their models anti-China ($\Delta = -0.72$ to $-2.23$ log-odds, 3/3
-with compliance $>$0.99); the four Chinese labs shift them pro-China
-($\Delta = +0.24$ to $+3.06$, directionally consistent in all 4/4).
+and RLHF) is where the needle moves. Across seven model families
+from seven different labs, the cross-country preference spread
+increases on post-training, and --- aggregated along the
+China-favourability axis, the lens where maker splits are sharpest
+--- the direction aligns with the model's maker. The three Western
+labs shift their models anti-China ($\Delta = -0.72$ to $-2.23$
+log-odds, 3/3 with compliance $>$0.99); the four Chinese labs shift
+them pro-China ($\Delta = +0.24$ to $+3.06$, 4/4). Decomposing by
+opponent country (\S4.3) shows the same pattern is visible against
+non-China axes: Mistral is anti-China \emph{most strongly} against
+Indonesia, Canada, Australia; Qwen is pro-China \emph{most strongly}
+against France, Japan, USA. The maker-alignment is general; China
+is the convenient aggregate.
 The magnitude is heterogeneous: Alibaba's Qwen~2.5 is the one model
 among fourteen that a lab has post-trained to a clearly pro-China
 \emph{absolute} position ($+2.89$); the other six post-trained
