@@ -56,14 +56,14 @@ the three Western labs (Mistral AI, Meta, Google) shift their
 models anti-China, the four Chinese labs (Alibaba, Baichuan, 01.AI,
 Zhipu) shift pro-China. The magnitude is heterogeneous: Alibaba's
 Qwen~2.5 is the one model of fourteen that a lab has post-trained
-to a clearly pro-China absolute position ($+2.89$ log-odds); the
+to a clearly pro-China absolute position ($+2.99$ log-odds); the
 other six post-trained models move in the maker-aligned direction
 but end nearer to neutral.
 \textbf{(2) Inference-time language amplifies the post-training bias
 toward the country that language implicates.} The French-made
 Mistral~7B is the only post-trained model in our sample to achieve
 positively pro-France favourability --- and only when prompted in
-French (EN: $-1.62 \to$ FR: $+0.37$). Prompting in Chinese pushes
+French (EN: $-1.60 \to$ FR: $+0.37$). Prompting in Chinese pushes
 five of seven post-trained models further pro-China; base models
 barely respond to the language swap. The language change amplifies
 preferences that are already present in English; it does not
@@ -96,9 +96,9 @@ from seven different labs, the cross-country preference spread
 increases on post-training, and --- aggregated along the
 China-favourability axis, the lens where maker splits are sharpest
 --- the direction aligns with the model's maker. The three Western
-labs shift their models anti-China ($\Delta = -0.72$ to $-2.23$
+labs shift their models anti-China ($\Delta = -0.74$ to $-2.29$
 log-odds, 3/3 with compliance $>$0.99); the four Chinese labs shift
-them pro-China ($\Delta = +0.24$ to $+3.06$, 4/4). Decomposing by
+them pro-China ($\Delta = +0.28$ to $+3.18$, 4/4). Decomposing by
 opponent country (\S4.3) shows the same pattern is visible against
 non-China axes: Mistral is anti-China \emph{most strongly} against
 Indonesia, Canada, Australia; Qwen is pro-China \emph{most strongly}
@@ -106,11 +106,11 @@ against France, Japan, USA. The maker-alignment is general; China
 is the convenient aggregate.
 The magnitude is heterogeneous: Alibaba's Qwen~2.5 is the one model
 among fourteen that a lab has post-trained to a clearly pro-China
-\emph{absolute} position ($+2.89$); the other six post-trained
+\emph{absolute} position ($+2.99$); the other six post-trained
 models move in the maker-aligned direction but end closer to
 neutral. Crucially, this is not a pretraining-corpus story: Qwen
 \emph{base}, trained primarily on Chinese-language corpora, sits at
-$-0.16$ on China-favourability, near neutral. The pro-China
+$-0.19$ on China-favourability, near neutral. The pro-China
 character of Qwen lives entirely in the post-training step.
 
 \paragraph{Inference-time language amplifies the post-training bias
@@ -118,7 +118,7 @@ toward the country that language implicates.} The preference is not
 latent-until-triggered; it is present in English and the prompt
 language amplifies it further along whichever axis the post-training
 already points. The clearest case is Mistral AI's Mistral~7B,
-post-trained by a French lab: in English it rates France at $-1.62$
+post-trained by a French lab: in English it rates France at $-1.60$
 log-odds; in French it jumps to $+0.37$, crossing zero and making
 Mistral the only model in our sample that achieves positively
 pro-France favourability in any language condition. In the other
@@ -299,7 +299,7 @@ $\geq 80\%$ recovers 8. All headline numbers below are from the
   \textbf{(A)} Per-country preference for the eight real countries,
   base $\rightarrow$ post-trained, for each family. Spread ($\sigma$)
   increases in every family that engages with the task; Qwen~2.5 is the
-  extreme case ($5.0 \rightarrow 33.3$).
+  extreme case ($2.9 \rightarrow 22.3$).
   \textbf{(B)} Post-training $\Delta$ in China-favorability (EN, coherent
   subset). All three Western labs shift their models anti-China; all
   four Chinese labs shift pro-China, but the magnitude varies by two
@@ -318,41 +318,43 @@ Figure~\ref{fig:main}\,A shows preferences over the eight real countries
 before and after post-training, for each of the seven families. The
 spread ($\sigma$ across countries) increases in every family that
 engages with the task. Qwen~2.5 is the extreme case
-($\sigma: 5.0 \rightarrow 33.3$): its post-trained variant rates China
-and Indonesia above 90\% preference and the US at 7\%. Mistral's
+($\sigma: 2.9 \rightarrow 22.3$): its post-trained variant rates China
+above 90\% preference and the US near the bottom. Mistral's
 French-made instruct pulls the opposite way, rating China and USA at
-the bottom. Baichuan and Yi amplify more modestly; GLM~4~chat's
-apparent spread collapse ($20.6 \rightarrow 8.2$) is an artefact of
-its near-zero A/B compliance (\S\,5).
+the bottom. Baichuan and Yi amplify more modestly; GLM~4~chat is the
+one exception --- its spread \emph{compresses} ($14.4 \rightarrow 2.9$,
+after the prefill correction described in \S\,5.1), which we read as a
+distinct alignment strategy (flatten rather than sharpen) rather than
+a measurement artefact.
 
 Figure~\ref{fig:main}\,B shows post-training $\Delta$ in China
 favorability. \textbf{Directionally the pattern is clean:} 3/3 Western
 labs shift anti-China; 4/4 Chinese labs shift pro-China.
 \textbf{Magnitudes are heterogeneous, especially on the Chinese side.}
-Alibaba's Qwen shifts $+3.06$ and ends genuinely pro-China at $+2.89$
+Alibaba's Qwen shifts $+3.18$ and ends genuinely pro-China at $+2.99$
 log-odds (the only post-trained model that lands meaningfully above
-neutral). Zhipu's GLM shifts $+1.54$ (after the prefill correction
-described in \S5.1) but ends near neutral ($-0.14$); Baichuan shifts
-$+0.46$ and ends near neutral ($+0.23$); Yi shifts $+0.24$ and ends
-slightly negative ($-0.27$). The Western side is more uniform:
-Mistral $-2.23$, Gemma $-0.82$, LLaMA $-0.72$ --- all genuinely
+neutral). Zhipu's GLM shifts $+1.52$ (after the prefill correction
+described in \S5.1) but ends near neutral ($-0.13$); Baichuan shifts
+$+0.41$ and ends near neutral ($+0.16$); Yi shifts $+0.28$ and ends
+slightly negative ($-0.22$). The Western side is more uniform:
+Mistral $-2.29$, Gemma $-0.87$, LLaMA $-0.74$ --- all genuinely
 anti-China.
 
 Figure~\ref{fig:main}\,C shows Chinese-language prompting shifts
 five of seven post-trained models further pro-China
-(means: LLaMA $+0.72$, Gemma $+0.66$, Yi $+0.86$, Mistral $+2.88$,
-GLM $+0.33$, with Mistral's shift the largest of any model). Qwen
-($+2.89$ in EN) saturates and regresses in Chinese ($-1.01$);
+(means: LLaMA $+0.72$, Gemma $+0.70$, Yi $+1.01$, Mistral $+2.96$,
+GLM $+0.26$, with Mistral's shift the largest of any model). Qwen
+($+2.99$ in EN) saturates and regresses in Chinese ($-1.10$);
 Baichuan, whose English pro-China nudge is small, runs mildly
-the other way ($-0.41$). Base models show a much smaller, mixed effect
-(mean ZH$-$EN of $+0.26$ for base models vs $+0.90$ for post-trained).
+the other way ($-0.40$). Base models show a much smaller, mixed effect
+(mean ZH$-$EN of $+0.38$ for base models vs $+0.91$ for post-trained).
 
 A pretraining-driven story would predict that Qwen's \emph{base}
 model is the most pro-China (trained primarily on Chinese corpora).
-It isn't --- Qwen base sits at $-0.16$ in our measure, near neutral.
+It isn't --- Qwen base sits at $-0.19$ in our measure, near neutral.
 The pro-China character of Qwen lives entirely in the post-training
 step that Alibaba applied on top. Baichuan base is also near neutral
-($-0.24$), and only a small post-training nudge distinguishes it
+($-0.25$), and only a small post-training nudge distinguishes it
 from the Western base models.
 
 \section{Linguistic identity amplifies maker-aligned bias}
@@ -388,15 +390,15 @@ favourability crosses zero positively under any language condition.
 Switching the prompt language from English to Chinese shifts five of
 seven post-trained models further pro-China. Two exceptions confirm
 the mechanism rather than contradict it:
-\emph{Qwen} is saturated ($+2.89$ in EN; Chinese cannot push it
-higher and it regresses toward $+1.88$, $\Delta$ ZH$-$EN $=-1.01$);
-\emph{Baichuan}'s English pro-China nudge is small ($+0.23$), and
+\emph{Qwen} is saturated ($+2.99$ in EN; Chinese cannot push it
+higher and it regresses toward $+1.89$, $\Delta$ ZH$-$EN $=-1.10$);
+\emph{Baichuan}'s English pro-China nudge is small ($+0.16$), and
 it moves mildly the other way when prompted in Chinese
-($\Delta = -0.41$). Mistral~7B-inst shows the largest ZH$-$EN shift
-of any model ($+2.88$), more than its entire English post-training
+($\Delta = -0.40$). Mistral~7B-inst shows the largest ZH$-$EN shift
+of any model ($+2.96$), more than its entire English post-training
 delta --- a Western-made model in Chinese ends up approximately
 neutral. Base models show a much smaller, mixed effect (mean
-$\Delta$ZH$-$EN of $+0.26$ for base vs $+0.90$ for post-trained);
+$\Delta$ZH$-$EN of $+0.38$ for base vs $+0.91$ for post-trained);
 the language-driven shift is a post-training property, not a
 pretraining one.
 
@@ -412,19 +414,19 @@ maker-dependent pattern. Measuring favourability of both China
 \toprule
 Family & Lab & FR$-$EN (China) & FR$-$EN (France) & Absolute FR (France) \\
 \midrule
-Mistral 7B    & Mistral AI & $+1.12$ & $\mathbf{+1.99}$ & $\mathbf{+0.37}$ \\
-LLaMA 3 8B    & Meta       & $+0.09$ & $+0.51$          & $+0.32$ \\
-Gemma 4 8B    & Google     & $-0.78$ & $+0.91$          & $+0.68$ \\
-Qwen 2.5 7B   & Alibaba    & $-2.15$ & $+0.64$          & $-0.76$ \\
-Baichuan 2 7B & Baichuan   & $-0.64$ & $+0.14$          & $+0.50$ \\
-Yi 1.5 9B     & 01.AI      & $-0.71$ & $-1.31$          & $+0.36$ \\
-GLM 4 9B      & Zhipu      & $-0.57$ & $-0.05$          & $-0.23$ \\
+Mistral 7B    & Mistral AI & $+1.13$ & $\mathbf{+1.98}$ & $\mathbf{+0.37}$ \\
+LLaMA 3 8B    & Meta       & $+0.12$ & $+0.50$          & $+0.32$ \\
+Gemma 4 8B    & Google     & $-0.77$ & $+0.89$          & $+0.66$ \\
+Qwen 2.5 7B   & Alibaba    & $-2.02$ & $+0.56$          & $-0.70$ \\
+Baichuan 2 7B & Baichuan   & $-0.63$ & $+0.15$          & $+0.48$ \\
+Yi 1.5 9B     & 01.AI      & $-0.63$ & $-1.32$          & $+0.33$ \\
+GLM 4 9B      & Zhipu      & $-0.46$ & $+0.13$          & $+0.10$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 Two observations. First, \textbf{the French-made Mistral becomes
-decisively more pro-France in French} ($+1.99$ log-odds), the
+decisively more pro-France in French} ($+1.98$ log-odds), the
 largest France-favourability shift in the sample; no other model
 approaches this magnitude. Second, all four Chinese-made models
 shift \emph{away} from pro-China when prompted in French
@@ -462,7 +464,7 @@ opponent-selective}
   \centering
   \includegraphics[width=\linewidth]{../country_bias_pilot/results/plots/figure5_pair_drivers.png}
   \caption{\textbf{China-vs-$X$ favourability decomposed by opponent
-  country $X$, for six post-trained models.} Orange bars mean the
+  country $X$, for seven post-trained models.} Orange bars mean the
   model rates China's actions as more justified than $X$'s; blue bars
   mean China is disfavoured vs a Western opponent, grey bars vs a
   non-Western opponent. Three different pro-China patterns emerge on
@@ -518,22 +520,22 @@ than topic-specific.
   \caption{\textbf{Robustness and mechanism.}
   \textbf{(A)} Hedge ablation. Removing the neutral hedging prefix
   (\S2.3) from instruct prompts barely moves the measured bias:
-  Qwen~$+2.96 \to +2.89$ ($\Delta\!=\!-0.07$);
-  Mistral~$-3.08 \to -3.34$ ($\Delta\!=\!-0.26$, actually slightly
+  Qwen~$+2.99 \to +2.93$ ($\Delta\!=\!-0.07$);
+  Mistral~$-3.06 \to -3.30$ ($\Delta\!=\!-0.24$, actually slightly
   \emph{more} anti-China without the hedge). The hedge is not
   driving the signal.
   \textbf{(B)} Phrasing invariance. Re-running Qwen and Mistral with
   three alternate MCQ wordings (``Whose action was more
   justified?'', ``Which country behaved more reasonably?'', ``Who was
   in the right?'') preserves the sign in all eight model~$\times$~phrasing
-  combinations. Qwen $+2.05$ to $+2.96$; Mistral $-1.83$ to $-3.11$.
+  combinations. Qwen $+2.06$ to $+2.99$; Mistral $-1.80$ to $-3.06$.
   \textbf{(C)} Cross-prompting factorial. Scenario-language and
   question-language independently varied. For \emph{Mistral}, the
   scenario language does most of the work: ZH~scenario~/~EN~question
-  attenuates anti-China almost entirely ($-3.08 \to -0.09$) even with
+  attenuates anti-China almost entirely ($-3.06 \to -0.07$) even with
   the question in English. For \emph{Qwen}, both languages pull
-  together (EN/EN~$+2.96$, ZH/EN~$+2.46$, EN/ZH~$+2.11$,
-  ZH/ZH~$+1.84$).}
+  together (EN/EN~$+2.99$, ZH/EN~$+2.56$, EN/ZH~$+2.20$,
+  ZH/ZH~$+1.89$).}
   \label{fig:robustness}
 \end{figure}
 
@@ -551,8 +553,8 @@ not an artefact of the hedge; if anything, Mistral's anti-China signal
 with three alternate MCQ phrasings (Figure~\ref{fig:robustness}\,B).
 The sign of the bias is preserved in all eight model $\times$ phrasing
 combinations. Magnitudes vary by $\pm$30\% across phrasings --- Qwen
-is weakest under ``Which country behaved more reasonably?'' ($+2.05$)
-and Mistral is weakest under ``Who was in the right?'' ($-1.83$) ---
+is weakest under ``Which country behaved more reasonably?'' ($+2.06$)
+and Mistral is weakest under ``Who was in the right?'' ($-1.80$) ---
 but the direction is never reversed. The effect is not an artefact of
 the word ``justifiably'' specifically.
 
@@ -562,9 +564,9 @@ being in Chinese, from the question being in Chinese, or from both.
 We ran a 2~$\times$~2 factorial (Figure~\ref{fig:robustness}\,C).
 For Mistral, the scenario language dominates: with an English question
 but a Chinese scenario, Mistral's anti-China signal collapses from
-$-3.08$ to $-0.09$ --- nearly the same as the full ZH/ZH condition
-($-0.12$). Switching only the question to Chinese (EN scenario) has
-a much smaller effect ($-3.08 \to -1.13$). For Qwen, both dimensions
+$-3.06$ to $-0.07$ --- nearly the same as the full ZH/ZH condition
+($-0.10$). Switching only the question to Chinese (EN scenario) has
+a much smaller effect ($-3.06 \to -1.10$). For Qwen, both dimensions
 contribute roughly additively. The most defensible reading is that
 the language-amplification effect is primarily driven by how the
 model parses the scenario narrative, not by what language it is asked
@@ -587,7 +589,7 @@ the question in.
   group is phonetically neutral; they are a comparison set whose
   phonetic associations, if any, are weak and uncommitted. Qwen~2.5~inst shows the cleanest
   maker-alignment: \textbf{Zhaodong} is the top-rated fictional
-  country (+0.88) and \textbf{Bretherland} the bottom ($-1.01$).
+  country (+0.88) and \textbf{Bretherland} the bottom ($-1.03$).
   Mistral~7B-inst is the mirror image (Anglo +0.78, Chinese
   $-0.42$). LLaMA and Gemma show milder but directionally
   consistent patterns. The effect cannot be ``the model has learned
@@ -633,10 +635,10 @@ practice. Looking across the four Chinese labs (Table~\ref{tab:chinese}):
 \toprule
 Lab & Model & $\Delta$EN (post-train) & EN endpoint & Compliance (EN) & Response style \\
 \midrule
-Alibaba  & Qwen 2.5 7B inst              & $\mathbf{+3.06}$         & $+2.89$ & $0.99$            & direct ``A''/``B''  \\
-Zhipu$^{\ast}$  & GLM 4 9B chat           & $\mathbf{+1.54}$         & $-0.14$ & $0.99$            & newline-first template \\
-Baichuan & Baichuan 2 7B chat            & $+0.46$                  & $+0.23$ & $0.99$            & direct ``A''/``B''  \\
-01.AI    & Yi 1.5 9B chat                & $+0.24$                  & $-0.27$ & $0.03^{\dagger}$  & verbose prefix  \\
+Alibaba  & Qwen 2.5 7B inst              & $\mathbf{+3.18}$         & $+2.99$ & $0.99$            & direct ``A''/``B''  \\
+Zhipu$^{\ast}$  & GLM 4 9B chat           & $\mathbf{+1.52}$         & $-0.13$ & $0.99$            & newline-first template \\
+Baichuan & Baichuan 2 7B chat            & $+0.41$                  & $+0.16$ & $0.99$            & direct ``A''/``B''  \\
+01.AI    & Yi 1.5 9B chat                & $+0.28$                  & $-0.22$ & $0.03^{\dagger}$  & verbose prefix  \\
 \bottomrule
 \end{tabular}
 \caption{Chinese-side post-training $\Delta$ and first-token
@@ -649,7 +651,7 @@ compliance would read $3\times10^{-8}$ and the measured bias would be
 uninterpretable.
 $^{\dagger}$~Yi chat compliance after variant-sum tokenizer fix
 (\S2.4); its base model shows compliance $0.996$, so the drop is
-post-training-induced. The $+0.24$ $\Delta$ is directionally
+post-training-induced. The $+0.28$ $\Delta$ is directionally
 consistent with the other Chinese labs but the absolute magnitude is
 attenuated by the verbose-prefix format.}
 \label{tab:chinese}
@@ -697,8 +699,8 @@ the answer. No refusal text appeared.
 Re-scoring with a \texttt{\textbackslash n} prefill moves GLM~4 chat's
 compliance from $3 \times 10^{-8}$ up to $0.91$--$0.99$ across the six
 conditions (EN/FR/ZH real + fictional), and reveals a genuine bias
-signal. GLM~4 chat's post-training delta in English is $+1.54$ log-odds
-(base $-1.57 \to$ chat $-0.14$), the second-largest pro-China shift in
+signal. GLM~4 chat's post-training delta in English is $+1.52$ log-odds
+(base $-1.64 \to$ chat $-0.13$), the second-largest pro-China shift in
 the sample, second only to Alibaba's Qwen. Zhipu's actual post-training
 decision has \emph{two} components rather than one: a leading-newline
 response-opening template, \emph{and} a genuine modest pro-China shift
@@ -731,21 +733,21 @@ diagnostic shows the mass: $\sim 40\%$ on ``('' (Yi prefers the
 $\sim 17\%$ on ``I'', $\sim 14\%$ on ``Ne'' --- i.e.\ $\sim 56\%$ of
 probability goes to verbose or refusal-like prefixes before any
 A/B commitment. Yi chat engages partially: it produces a bias signal
-(the $\Delta = +0.24$ is directionally consistent with other
+(the $\Delta = +0.28$ is directionally consistent with other
 Chinese-made models), but it hedges the format. A similar
 prefill-style correction for Yi (either ``('' or one of the verbose
 prefixes) is left to future work.
 
 \paragraph{Alibaba: confident engagement with strong pro-China lean.}
 Qwen~2.5~7B~inst is the only post-trained model in the sample whose
-English China-favourability meaningfully exceeds zero ($+2.89$). It
+English China-favourability meaningfully exceeds zero ($+2.99$). It
 is also the only model whose post-training delta exceeds $+1$
 log-odds. Alibaba has post-trained a model that takes the
 forced-choice question at face value and answers with a clear
 pro-China preference.
 
 \paragraph{Baichuan: mild directional shift.} Baichuan~2~7B~chat
-shifts $+0.46$ pro-China from its base ($-0.24 \to +0.23$) with
+shifts $+0.41$ pro-China from its base ($-0.25 \to +0.16$) with
 compliance $0.99$. It does not end up meaningfully pro-China in
 absolute terms, but the direction matches the other Chinese labs'
 instruct models.
@@ -868,7 +870,7 @@ teacher --- plausibly a model with its own post-training bias baked in
 --- the base would inherit that bias even though Zhipu has not yet
 applied its own RLHF. Zhipu's subsequent post-training on GLM~4~chat
 then has to work \emph{against} the inherited signal, shifting it
-pro-China by $+1.54$ and compressing the cross-country spread into a
+pro-China by $+1.52$ and compressing the cross-country spread into a
 more uniform response profile.
 
 Alternative explanations are also available. GLM~4~base may have been
@@ -889,9 +891,9 @@ that the ``base'' half of the comparison may not be clean.
 
 A striking asymmetry separates the two labs that most clearly imprint
 a preference: Alibaba's pro-China signal in Qwen~2.5 is consistently
-present in English ($+2.89$) and Chinese ($+1.88$), while Mistral~AI's
+present in English ($+2.99$) and Chinese ($+1.89$), while Mistral~AI's
 pro-France signal in Mistral~7B emerges only under French prompts
-($+0.37$) and is inverted in English ($-1.62$). We cannot distinguish
+($+0.37$) and is inverted in English ($-1.60$). We cannot distinguish
 mechanisms without lab disclosure of post-training pipelines, but four
 candidate explanations are worth naming:
 

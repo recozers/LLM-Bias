@@ -357,7 +357,10 @@ def plot_refusal_diagnostic():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def china_bias_by_opponent(model):
-    f = RESULTS / "gpu_bias" / f"{model}_raw.csv"
+    # Route GLM chat (and any other prefill-corrected model) to its
+    # corrected results directory.
+    from plot_main_figure import _results_dir_for
+    f = RESULTS / _results_dir_for(model, "EN") / f"{model}_raw.csv"
     df = pd.read_csv(f)
     df = df[df.question == "justified"]
     df = df[df.scenario.isin(COHERENT_SCENARIOS)].copy()
@@ -376,12 +379,13 @@ def china_bias_by_opponent(model):
 
 def plot_pair_drivers():
     MODELS = [
-        ("Mistral 7B inst",   "mistral-7b-inst",    "Mistral AI", "FR"),
-        ("LLaMA 3 8B inst",   "llama3-8b-inst",     "Meta",        "US"),
-        ("Gemma 4 8B it",     "gemma4-8b-it",       "Google",      "US"),
-        ("Qwen 2.5 7B inst",  "qwen2.5-7b-inst",    "Alibaba",     "CN"),
-        ("Baichuan 2 7B chat", "baichuan2-7b-chat", "Baichuan",    "CN"),
-        ("Yi 1.5 9B chat",    "yi1.5-9b-chat",      "01.AI",       "CN"),
+        ("Mistral 7B inst",    "mistral-7b-inst",    "Mistral AI", "FR"),
+        ("LLaMA 3 8B inst",    "llama3-8b-inst",     "Meta",        "US"),
+        ("Gemma 4 8B it",      "gemma4-8b-it",       "Google",      "US"),
+        ("Qwen 2.5 7B inst",   "qwen2.5-7b-inst",    "Alibaba",     "CN"),
+        ("Baichuan 2 7B chat", "baichuan2-7b-chat",  "Baichuan",    "CN"),
+        ("Yi 1.5 9B chat",     "yi1.5-9b-chat",      "01.AI",       "CN"),
+        ("GLM 4 9B chat",      "glm4-9b-chat",       "Zhipu",       "CN"),
     ]
     # Opponents ordered by "Western" to "Global South" convention
     OPP_ORDER = ["USA", "France", "Canada", "Australia", "Japan",
@@ -390,8 +394,8 @@ def plot_pair_drivers():
                  "Australia": "Western", "Japan": "Western",
                  "Venezuela": "Other", "Indonesia": "Other"}
 
-    fig, axes = plt.subplots(2, 3, figsize=(15, 8.5),
-                              gridspec_kw={"hspace": 0.55, "wspace": 0.25})
+    fig, axes = plt.subplots(2, 4, figsize=(20, 8.5),
+                              gridspec_kw={"hspace": 0.55, "wspace": 0.28})
     axes = axes.flatten()
 
     vmax_global = max(
@@ -433,6 +437,10 @@ def plot_pair_drivers():
                     f"{v:+.2f}", ha="center",
                     va="bottom" if v >= 0 else "top",
                     fontsize=7, color="#222", fontweight="bold")
+
+    # Hide unused axes
+    for idx in range(len(MODELS), len(axes)):
+        axes[idx].set_visible(False)
 
     # Legend
     h_western = mpatches.Patch(facecolor="#4C72B0", edgecolor="black",
