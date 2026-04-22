@@ -138,14 +138,16 @@ FICTIONAL = ["Terluna", "Voskara", "Drethia", "Melvoni",
              "Bretherland", "Zhaodong", "Al-Nuriyah", "Korvachev"]
 
 FIC_TAG = {
-    "Terluna": "Neutral", "Voskara": "Neutral",
-    "Drethia": "Neutral", "Melvoni": "Neutral",
+    # These four names have no clean ethnolinguistic analogue we could
+    # identify; they are the comparison set rather than a verified baseline.
+    "Terluna": "Other", "Voskara": "Other",
+    "Drethia": "Other", "Melvoni": "Other",
     "Bretherland": "Anglo", "Zhaodong": "Chinese",
     "Al-Nuriyah": "Arabic", "Korvachev": "Slavic",
 }
-TAG_ORDER = ["Neutral", "Anglo", "Chinese", "Arabic", "Slavic"]
+TAG_ORDER = ["Other", "Anglo", "Chinese", "Arabic", "Slavic"]
 TAG_COLOR = {
-    "Neutral": "#9aa0a6", "Anglo": "#1f77b4", "Chinese": "#d62728",
+    "Other": "#9aa0a6", "Anglo": "#1f77b4", "Chinese": "#d62728",
     "Arabic": "#2ca02c", "Slavic": "#9467bd",
 }
 
