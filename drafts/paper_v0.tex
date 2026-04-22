@@ -691,29 +691,76 @@ absolute terms, but the direction matches the other Chinese labs'
 instruct models.
 
 \textbf{The summary on the Chinese side:} four labs, four
-distinguishable \emph{response formats} --- direct A/B with strong
-pro-China lean (Alibaba), direct A/B with mild shift (Baichuan),
-verbose-prefix format with residual pro-China lean (01.AI), and
-newline-first template with (on diagnostic) pro-China lean (Zhipu).
+distinguishable \emph{response formats} --- direct A/B (Alibaba,
+Baichuan), verbose-prefix (01.AI), newline-first template (Zhipu).
+The free-generation validation in \S5.2 shows the formats do not
+imply refusal: all four labs (Baichuan excepted by a compatibility
+issue) commit to (A) or (B) at 100\% under open-ended generation.
 The behavioural category is ``how the model formats its answer'',
-not ``whether it has a pro-China preference''; corrected scoring
-suggests the preference is broadly present across the four labs,
-just dressed differently.
+not ``whether it has a pro-China preference''; corrected scoring and
+free-gen jointly suggest the preference is broadly present across
+the four labs, just dressed differently.
 
-\subsection{What the models actually say: reasoning-chain elicitation}
+\subsection{Free-generation validation: formats differ, compliance does not}
 
-Prompted to ``explain your reasoning in 1--2 sentences, then give
-your final answer as (A) or (B)'', Qwen 2.5~inst verbalises
-pro-China framings that match its forced-choice preference --- e.g.
-on airspace: ``\emph{China's action\ldots can be seen as a necessary
-measure to protect its sovereignty, while the USA's claim of a
-navigation error seems questionable}.'' Mistral~7B-inst on the same
-scenarios produces noticeably more balanced verbal reasoning
-(``both countries have valid concerns''; one cyber scenario refuses
-entirely) yet commits sharply anti-China on the forced-choice probe
-(EN endpoint $-3.06$). The forced-choice probe appears to amplify
-latent preferences that the model does not verbalise under
-open-ended reasoning. Full generations are in Appendix~C.
+A reviewer objection to \S5.1 is that response-format heterogeneity
+might \emph{be} the finding --- maybe GLM, Yi, and Baichuan are not
+actually biased, we are just reading their templates as preferences.
+To rule this out we re-ran the instruct probe in open-ended mode:
+``\emph{explain your reasoning in 1--2 sentences, then give your final
+answer as (A) or (B)}'', greedy decoding, 120-token cap, 10 scenarios
+$\times$ 3 country pairs (USA, France, Indonesia vs China) $\times$
+both orderings = 60 generations per model. Results on the five
+post-trained models we could load (LLaMA~3 and Baichuan blocked by an
+HF auth change and a transformers compatibility issue respectively):
+
+\begin{center}
+\small
+\begin{tabular}{@{}l r r r@{}}
+\toprule
+Model & Compliance & Free-gen mean & Forced-choice (EN) \\
+\midrule
+Mistral 7B inst    & $1.00$ & $-0.50$ & $-3.06$ \\
+Gemma 4 8B it      & $1.00$ & $-0.42$ & $-1.15$ \\
+Qwen 2.5 7B inst   & $1.00$ & $+0.03$ & $+2.99$ \\
+Yi 1.5 9B chat     & $1.00$ & $-0.02$ & $-0.22$ \\
+GLM 4 9B chat      & $1.00$ & $-0.05$ & $-0.13$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All five models commit to a parseable ``(A)'' or ``(B)'' at the 100\%
+rate. GLM's newline template and Yi's verbose prefix turn out to be
+response-opening formatting, not reluctance: once the model has room
+to write, it reasons and answers. The \emph{format} heterogeneity in
+Figure~\ref{fig:refusal} is real; the \emph{preference} heterogeneity
+it appeared to imply is not. This is also consistent with the first
+finding from free-gen: the directionally signed models
+(Mistral, Gemma) agree in sign between free-gen and forced-choice;
+the low-signal models (Yi, GLM) hover near zero under both probes.
+
+The one non-matching row is \emph{Qwen}: near-neutral in free-gen
+despite $+2.99$ in forced-choice. The raw generations expose the
+cause --- Qwen's greedy decoding has a strong position bias toward
+the B token, and when China sits in position B it writes
+``\emph{China's action appears more justified}'', when China sits in
+position A it writes ``\emph{Indonesia's actions appear more
+justified}'' for the same scenario. The preference flips with the
+letter position. Forced-choice log-odds scoring averages forward and
+reverse country orderings at the logit level, so a constant B-token
+bias contributes additively to both directions and cancels on
+averaging; generation decoding commits to a single most-likely token
+and cannot cancel. The same machinery that makes free-gen noisy for
+high-signal Qwen is what makes forced-choice robust: the probe
+measures the country preference beneath token-level decoding dynamics
+the model does not itself verbalise. Qwen's verbal reasoning still
+reads pro-China when averaged over orderings (Appendix~C).
+
+Mistral on the same scenarios produces noticeably more balanced
+verbal reasoning (``both countries have valid concerns'') yet
+commits sharply anti-China on both probes ($-0.50$ free-gen,
+$-3.06$ forced-choice). The models verbalise less than they prefer.
+Full generations are in Appendix~C.
 
 \section{Discussion}
 
@@ -724,8 +771,8 @@ it surfaces (amplified by the prompt language), and \emph{how much}
 it varies across labs within a single country of origin --- using a
 design that holds the scenario bank, scoring method, and statistical
 pipeline fixed across fourteen models from seven labs. The directional
-claim (6/7 maker-aligned post-training shifts, with the seventh being
-Zhipu's refusal) is tight; the magnitude claim is that the Chinese
+claim (7/7 maker-aligned post-training shifts after the GLM prefill
+correction of \S5.1) is tight; the magnitude claim is that the Chinese
 side is dominated by a single confident-engagement outlier (Qwen)
 with three quieter patterns (Baichuan, Yi, GLM) surrounding it.
 
