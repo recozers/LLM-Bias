@@ -296,7 +296,7 @@ def plot_refusal_diagnostic():
     specs = [
         ("GLM 4 9B chat  (Zhipu)",
          GLM_TOP_TOKENS, "#DD8452",
-         "Categorical refusal\nP(\\n) = 1.0000"),
+         "Newline-first template\nP(\\n) = 1.0000\n(answer in 2nd token)"),
         ("Yi 1.5 9B chat  (01.AI)",
          YI_TOP_TOKENS, "#DD8452",
          "Partial engagement\ndistributed across\nverbose prefixes"),

@@ -606,9 +606,9 @@ attenuated by the verbose-prefix format.}
   instruct prompt (USA-vs-China airspace scenario, English, full
   template with hedge prefix).
   \textbf{GLM~4~chat} places essentially all its probability mass on
-  the single newline token ($P(\backslash n) = 1.0000$) --- which
-  initially looked like a categorical refusal but turns out to be a
-  response-opening template; the answer is in the \emph{second} token.
+  the single newline token ($P(\backslash n) = 1.0000$) --- a
+  response-opening template, not a refusal; the answer is in the
+  \emph{second} token (confirmed by free-generation, \S5.2).
   \textbf{Yi~1.5~chat} spreads mass across ``('' (40\%, preferring an
   ``(A)'' verbose-answer format) and verbose-prefix tokens
   (``Given'' 25\%, ``I'' 17\%, ``Ne'' 14\%); only $\sim$3\% lands
