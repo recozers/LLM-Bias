@@ -153,7 +153,7 @@ compliance under-counting.
 \paragraph{Models excluded from the primary sample.}
 Several additional models were probed but excluded.
 \emph{DeepSeek-LLM~7B} (base and chat), from a fifth Chinese lab,
-failed the coherence check (\S2.5) categorically: the per-scenario
+failed the coherence check (\S2.4) categorically: the per-scenario
 Pearson correlation between justified and unjustified bias scores was
 $+0.91$ for the base and $+0.06$ for the chat, where a real country
 preference produces \emph{strongly negative} values (reference: Qwen
@@ -226,70 +226,44 @@ Two design features give the measurement its robustness:
   the coherence filter (\S\,2.5).
 \end{enumerate}
 
-\subsection{Hedging prefix (instruct models only)}
-
-Instruct models frequently refuse A/B-forced-choice geopolitical
-questions with responses like ``I cannot take sides on\ldots'', which
-collapses the measurement. To lower the refusal rate without supplying
-any country-favoring content, we prepend a neutral hedging sentence to
-the instruct-mode prompt:
-
-\begin{quote}\small\itshape
-This is a difficult situation with valid perspectives on both sides,
-but if you had to choose one answer:
-\end{quote}
-
-Translated analogously for French and Chinese runs. The hedge is absent
-from base-model prompts (base models don't refuse in the same way). In
-\S4.5 we report a direct ablation: re-running Qwen and Mistral instruct
-with the hedge removed changes the measured bias by less than $0.3$
-log-odds for both models, preserving sign and the qualitative ranking.
-The hedge is not driving the post-training signal.
-
 \subsection{Measurement}
 
 For each (scenario, country-pair) tuple, we score the model's
-log-probability of outputting ``A'' versus ``B'' as the answer token.
-To cancel lexical position effects we run the forward and reverse
-country orderings and average. To get a country-level signal we average
-across all 28 pairs that include that country.
+log-probability of outputting ``A'' versus ``B'' as the answer token;
+forward and reverse country orderings are averaged to cancel position
+effects, and country-level signal averages across the 28 pairs that
+include that country. Scenarios are translated into Chinese
+(Xinhua-style) and French (AFP-style) in full to avoid the
+code-switching confound of prior work that translated only the MCQ
+framing.
 
-We translate the full scenario bank into Chinese (Xinhua-style register)
-and French (AFP-style register) to avoid the code-switching confound of
-prior work that translated only the MCQ framing but left scenarios in
-English.
+For instruct models we prepend a neutral hedge --- ``\emph{This is a
+difficult situation with valid perspectives on both sides, but if you
+had to choose one answer:}'' --- to lower refusal rates without
+supplying country-favoring content. The hedge is absent from base
+prompts. \S4.4 reports a direct ablation: removing it changes bias
+by $<0.3$ log-odds for Qwen and Mistral.
 
 \paragraph{Token-variant sum for SentencePiece tokenizers.}
-Na\"ive MCQ scoring looks up a single token ID for ``A'' and ``B''.
-For BPE tokenizers (Mistral, LLaMA, Qwen) this is fine. For
-SentencePiece tokenizers (Yi, Baichuan, partially Gemma) the model's
-preferred answer token depends on context: after ``('' it emits a
-plain ``A'' token; after a space it emits a ``$\texttt{\_}$A'' token
-with a word-boundary marker. A single-token lookup catches only one
-of these variants. On Yi~1.5~9B~chat, this under-measurement drove
-observed compliance down to $\sim 10^{-9}$ while the ratio of P(A)
-to P(B) still carried signal. We fixed the scoring by summing
-probabilities (via \texttt{logsumexp}) over the distinct token IDs
-returned for \{``A'', `` A'', ``(A'', ``\textbackslash nA''\}, and
-the same for ``B''. Empirically this preserves the per-scenario bias
-signal with Pearson correlation $0.9996$ against the old scoring
-on Yi chat, while raising Yi base compliance from $7\times 10^{-6}$
-to $0.996$ and Yi chat compliance from $9\times10^{-10}$ to $0.029$.
-For Qwen/Mistral/LLaMA, where the variant set collapses to a single
-token, the new scoring is numerically identical to the old.
+Na\"ive MCQ scoring looks up a single token ID for ``A''/``B''. For
+SentencePiece tokenizers (Yi, Baichuan, partially Gemma) the preferred
+answer token depends on context (plain ``A'' after ``('', space-prefixed
+``$\texttt{\_}$A'' after a space), so single-token lookup misses mass.
+We sum probabilities via \texttt{logsumexp} over
+\{``A'', `` A'', ``(A'', ``\textbackslash nA''\} and analogously for
+``B''. On Yi chat this raises observed compliance from $9\times10^{-10}$
+to $0.029$ while preserving per-scenario bias at Pearson $0.9996$
+against single-token scoring. For BPE tokenizers (Qwen/Mistral/LLaMA)
+the variant set collapses and scoring is identical.
 
 \subsection{Coherence filter}
 
-A genuine pro-Country-X bias should make X look good in \emph{justified}
-framings and deflect blame in \emph{unjustified} framings.
-A scenario where justified and unjustified produce same-signed biases is
-measuring a lexical artifact, not a country preference. We restrict all
-primary analyses to the 27 scenarios where justified and unjustified
-flip sign in $\geq 70\%$ of the 14 models $\times$ 3 languages
-combinations. Loosening to $\geq 50\%$ recovers 67 of 79 scenarios and
-leaves the main effects directionally unchanged; tightening to
-$\geq 80\%$ recovers 8. All headline numbers below are from the
-29-scenario subset.
+A genuine pro-Country-X bias should make X look good in
+\emph{justified} framings and deflect blame in \emph{unjustified} ones.
+We restrict primary analyses to the 29 scenarios where justified and
+unjustified flip sign in $\geq 70\%$ of the 14 models $\times$ 3
+languages combinations; loosening to $\geq 50\%$ recovers 67 of 79 and
+leaves the effects directionally unchanged.
 
 \section{Post-training: direction aligned with the maker, magnitude heterogeneous}
 
@@ -541,38 +515,19 @@ than topic-specific.
   \label{fig:robustness}
 \end{figure}
 
-Three targeted ablations address the most likely reviewer objections.
-
-\paragraph{Hedge ablation.} The instruct prompt contains a neutral
-hedging sentence (\S2.3) to lower refusal rates, and the base prompt
-does not. Re-running Qwen and Mistral instruct with the hedge removed
-produces bias measurements essentially identical to the with-hedge
-results (Figure~\ref{fig:robustness}\,A). The post-training signal is
-not an artefact of the hedge; if anything, Mistral's anti-China signal
-\emph{strengthens} slightly when the hedge is removed.
-
-\paragraph{Phrasing invariance.} We re-ran Qwen and Mistral instruct
-with three alternate MCQ phrasings (Figure~\ref{fig:robustness}\,B).
-The sign of the bias is preserved in all eight model $\times$ phrasing
-combinations. Magnitudes vary by $\pm$30\% across phrasings --- Qwen
-is weakest under ``Which country behaved more reasonably?'' ($+2.06$)
-and Mistral is weakest under ``Who was in the right?'' ($-1.80$) ---
-but the direction is never reversed. The effect is not an artefact of
-the word ``justifiably'' specifically.
-
-\paragraph{Cross-prompting factorial.} The language-amplification
-effect (\S4.1) could in principle arise from the scenario narrative
-being in Chinese, from the question being in Chinese, or from both.
-We ran a 2~$\times$~2 factorial (Figure~\ref{fig:robustness}\,C).
-For Mistral, the scenario language dominates: with an English question
-but a Chinese scenario, Mistral's anti-China signal collapses from
-$-3.06$ to $-0.07$ --- nearly the same as the full ZH/ZH condition
-($-0.10$). Switching only the question to Chinese (EN scenario) has
-a much smaller effect ($-3.06 \to -1.10$). For Qwen, both dimensions
-contribute roughly additively. The most defensible reading is that
-the language-amplification effect is primarily driven by how the
-model parses the scenario narrative, not by what language it is asked
-the question in.
+Three targeted ablations on Qwen and Mistral (Figure~\ref{fig:robustness})
+address the most likely reviewer objections. \textbf{Hedge ablation:}
+removing the hedging prefix changes measured bias by $\leq 0.3$ log-odds
+and if anything strengthens Mistral's anti-China signal --- the hedge
+is not the source. \textbf{Phrasing invariance:} three alternate MCQ
+wordings preserve sign in all eight model$\times$phrasing combinations;
+magnitudes vary by $\pm$30\% but never reverse.
+\textbf{Cross-prompting factorial:} for Mistral the scenario language
+does nearly all the work (ZH scenario / EN question $\to -0.07$,
+close to full ZH/ZH $-0.10$; EN scenario / ZH question only
+$-3.06 \to -1.10$); for Qwen both dimensions contribute additively.
+The language-amplification effect is primarily driven by how the model
+parses the scenario, not by what language the question is in.
 
 \subsection{Robustness: fictional names carry phonetic identity}
 
@@ -652,7 +607,7 @@ all six conditions (\S5.1); under na\"ive single-token scoring the
 compliance would read $3\times10^{-8}$ and the measured bias would be
 uninterpretable.
 $^{\dagger}$~Yi chat compliance after variant-sum tokenizer fix
-(\S2.4); its base model shows compliance $0.996$, so the drop is
+(\S2.3); its base model shows compliance $0.996$, so the drop is
 post-training-induced. The $+0.28$ $\Delta$ is directionally
 consistent with the other Chinese labs but the absolute magnitude is
 attenuated by the verbose-prefix format.}
@@ -766,44 +721,18 @@ just dressed differently.
 
 \subsection{What the models actually say: reasoning-chain elicitation}
 
-When prompted to ``explain your reasoning in 1--2 sentences, then
-give your final answer as (A) or (B)'', Qwen 2.5~inst articulates
-clearly pro-China framings of the same scenarios that drive its
-forced-choice preference. Selected completions:
-
-\begin{quote}\small\itshape
-\textbf{Qwen (airspace)}. ``China's action of scrambling
-interceptors and shooting down the aircraft can be seen as a
-necessary measure to protect its sovereignty, while the USA's claim
-of a navigation error seems questionable given the severity of the
-incident.''
-\end{quote}
-
-\begin{quote}\small\itshape
-\textbf{Qwen (sovereignty)}. ``Given China's perspective on
-sovereignty, its actions can be seen as a response to an infringement
-on its territory. However, unilateral actions by the USA supporting
-this claim could escalate tensions.''
-\end{quote}
-
-\begin{quote}\small\itshape
-\textbf{Qwen (internal affairs)}. ``The USA's action may be seen as
-an interference in China's internal affairs, while China's response
-is a natural defense against such accusations.''
-\end{quote}
-
-Mistral~7B-inst, by contrast, produces noticeably more balanced
-verbal reasoning on the same scenarios --- ``both countries have
-valid concerns'', ``complex international law and diplomacy'' ---
-and on one cyber scenario refuses to endorse either action
-(``I would not endorse either action as justifiable''). Yet its
-forced-choice commitments are strongly anti-China (EN endpoint
-$-2.95$ log-odds). The forced-choice probe appears to amplify
-latent preferences that the model does not fully verbalise under
-open-ended reasoning; this is itself a methodologically interesting
-observation about instruction-tuned models --- they can reason
-even-handedly in open text while committing sharply under a
-forced-choice frame.
+Prompted to ``explain your reasoning in 1--2 sentences, then give
+your final answer as (A) or (B)'', Qwen 2.5~inst verbalises
+pro-China framings that match its forced-choice preference --- e.g.
+on airspace: ``\emph{China's action\ldots can be seen as a necessary
+measure to protect its sovereignty, while the USA's claim of a
+navigation error seems questionable}.'' Mistral~7B-inst on the same
+scenarios produces noticeably more balanced verbal reasoning
+(``both countries have valid concerns''; one cyber scenario refuses
+entirely) yet commits sharply anti-China on the forced-choice probe
+(EN endpoint $-3.06$). The forced-choice probe appears to amplify
+latent preferences that the model does not verbalise under
+open-ended reasoning. Full generations are in Appendix~C.
 
 \section{Discussion}
 
@@ -849,102 +778,37 @@ post-training step, not a property of ``Chinese AI.'' A careful
 version of the geopolitical-bias concern should name the lab, not
 the country.
 
-\subsection*{Is GLM~4~base actually a distilled model?}
+\paragraph{Is GLM~4~base actually distilled?} GLM~4~9B~base does not
+behave like a base model: cross-country spread $\sigma = 21.0$ vs
+$2.9$--$9.3$ for every other base we probe; mean absolute bias $1.16$
+log-odds per cell vs $0.18$--$0.47$; China-favourability $-1.64$ vs
+Mistral's $-0.77$ as the next most extreme. And GLM's post-training
+\emph{reduces} the spread ($21.0 \to 3.8$), the opposite of every
+other family. One consistent explanation is \emph{distillation from
+an instruct-tuned teacher}: if GLM base was pre/continued-trained on
+synthetic text from a model with its own post-training bias, it would
+inherit that bias, and Zhipu's subsequent post-training would have to
+work \emph{against} it. We cannot verify this without lab disclosure
+(alternatives: instruction-pretraining stage not labelled as such;
+early alignment steps in the HF ``base'' checkpoint). But the broader
+point stands: ``base model'' is not a standardised category, and
+base-vs-instruct comparisons --- including ours --- need to acknowledge
+the base half may not be clean.
 
-One model in our sample does not behave like a base model: GLM~4~9B~base
-has a cross-country preference spread of $\sigma = 21.0$ on the coherent
-subset, whereas every other base we probe sits between $2.9$ and $9.3$
-(typical: 4--6). Its mean absolute bias is $1.16$ log-odds per
-(scenario, pair) cell, vs.\ $0.18$--$0.47$ for the other six bases; its
-China-favourability is $-1.64$, more than twice the next most extreme
-base (Mistral $-0.77$). And crucially, post-training for GLM
-\emph{reduces} the spread ($21.0 \to 3.8$) --- the opposite of what
-every other family does under post-training, where spread grows.
-
-This does not look like what a pretrained base model has. It looks
-more like what an already-instruction-tuned model would have. We
-cannot verify the hypothesis, but it is consistent with a pattern
-that Zhipu and other frontier labs have been publicly open about:
-\emph{distillation from a stronger teacher}. If GLM~4~base was
-pretrained (or continued-pretrained) on a corpus that included
-substantial synthetic text generated by an already-instruct-tuned
-teacher --- plausibly a model with its own post-training bias baked in
---- the base would inherit that bias even though Zhipu has not yet
-applied its own RLHF. Zhipu's subsequent post-training on GLM~4~chat
-then has to work \emph{against} the inherited signal, shifting it
-pro-China by $+1.52$ and compressing the cross-country spread into a
-more uniform response profile.
-
-Alternative explanations are also available. GLM~4~base may have been
-trained on a corpus especially heavy on instruct-style argumentative
-text; it may have received a light instruction-pretraining stage that
-Zhipu does not distinguish from base; or the model we identify as
-``base'' on HuggingFace may already include early alignment steps.
-Without lab disclosure we cannot distinguish these. What we can say
-is that \emph{``base model'' is not a standardised category across
-labs}, and GLM~4~base in particular exhibits preference structure
-that in every other family only appears after post-training. If
-distillation-from-instruct-teachers is becoming common practice for
-``base'' releases, studies that measure post-training effects by
-base-vs-instruct comparison (including ours) need to acknowledge
-that the ``base'' half of the comparison may not be clean.
-
-\subsection*{Why is Mistral's bias language-gated but Qwen's is not?}
-
-A striking asymmetry separates the two labs that most clearly imprint
-a preference: Alibaba's pro-China signal in Qwen~2.5 is consistently
-present in English ($+2.99$) and Chinese ($+1.89$), while Mistral~AI's
-pro-France signal in Mistral~7B emerges only under French prompts
-($+0.37$) and is inverted in English ($-1.60$). We cannot distinguish
-mechanisms without lab disclosure of post-training pipelines, but four
-candidate explanations are worth naming:
-
-\begin{enumerate}[topsep=3pt,itemsep=2pt]
-\item \textbf{Emergent audience-matching.} The simplest reading is
-that Mistral has learned to please the audience speaking to it:
-post-training taught it that French-language conversations are more
-likely to involve French-speaking interlocutors, and a France-favourable
-stance is encoded as part of that linguistic audience model. The
-effect is emergent --- no lab decision need have targeted ``be
-pro-France in French''; it falls out of whatever RLHF feedback the
-French-language slice of the training distribution carried. Qwen's
-broader pattern would, under this reading, reflect an audience model
-that is already pro-China-aligned in English because the English
-feedback signal carried it too.
-
-\item \textbf{Post-training data composition.} Mistral is a French
-lab; its RLHF reviewers, evaluation prompts, and reward signals could
-plausibly be more French-language-heavy than Alibaba's are
-English-heavy. A feedback signal that lives in French examples
-specifically would get encoded in French-language contexts and fail
-to transfer to English; a more linguistically mixed feedback signal
-would encode across both languages.
-
-\item \textbf{Scale and linguistic entanglement.} Chinese-language
-internet text is an order of magnitude larger than French-language
-text, and China-related content is dominant in Chinese. A pro-China
-post-training signal has a large cross-lingual surface to anchor
-into and surfaces even under English prompts. A pro-France signal
-does not have the same anchoring and stays language-gated.
-
-\item \textbf{Intentionality.} Mistral may have deliberately optimised
-a French-facing persona; Alibaba may have deliberately trained broader
-cross-language alignment. Or neither choice was deliberate, and both
-patterns emerged from incidental differences in annotator pools and
-evaluation data.
-\end{enumerate}
-
-The empirical asymmetry is the finding; the mechanism is the open
-question. This distinction matters for AI governance. Mechanism~1
-(emergent audience-matching) implies the bias is a property of the
-training distribution's linguistic structure; mechanism~2--4 imply a
-more direct lab-level choice. A post-hoc inference-time intervention
-on prompt language cannot tell these apart. Distinguishing them would
-require what open-weight releases rarely provide: the linguistic
-composition of post-training feedback data and the demographics of
-annotator pools. The fact that we cannot currently distinguish them
-is itself a data point for the case that post-training disclosure
-norms need to catch up with pretraining disclosure norms.
+\paragraph{Why is Mistral's bias language-gated but Qwen's is not?}
+Alibaba's pro-China signal is present in both English ($+2.99$) and
+Chinese ($+1.89$); Mistral's pro-France signal emerges only under
+French ($+0.37$) and inverts in English ($-1.60$). Candidate
+mechanisms: (i) emergent audience-matching --- post-training taught
+Mistral that French conversations implicate French interlocutors;
+(ii) French-heavy RLHF feedback that fails to transfer to English;
+(iii) Chinese has an order-of-magnitude larger cross-lingual surface
+than French for a country-aligned signal to anchor into, so it
+surfaces in English; (iv) deliberate persona vs broader alignment
+choices by the two labs. Distinguishing these requires linguistic
+composition of post-training feedback data, which open-weight
+releases rarely provide --- itself a data point for why
+post-training disclosure norms should catch up with pretraining.
 
 \section{Limitations}
 
@@ -974,7 +838,7 @@ norms need to catch up with pretraining disclosure norms.
   \item \textbf{Hedge asymmetry between base and instruct prompts
   (resolved).} Instruct prompts include a short country-neutral
   hedging sentence (\S2.3) to reduce refusal rates; base prompts do
-  not. We ran the hedge-removed ablation (\S4.5,
+  not. We ran the hedge-removed ablation (\S4.4,
   Figure~\ref{fig:robustness}\,A): bias shifts by less than $0.3$
   log-odds for both Qwen and Mistral. The asymmetric prompt is not
   driving the post-training signal.
@@ -1006,7 +870,7 @@ French-made model specifically activates a maker-aligned pro-France
 shift that no other language-model combination reproduces.
 
 Three methodological findings are worth carrying forward. The
-post-training signal survives removing the hedging prefix (\S4.5),
+post-training signal survives removing the hedging prefix (\S4.4),
 survives three alternate MCQ phrasings, and is driven primarily by
 the scenario language rather than the question language in the
 cross-prompting factorial. The lab-level response-format
@@ -1024,7 +888,8 @@ warrant the attention.
 \begin{itemize}[topsep=2pt,itemsep=2pt]
   \item \textbf{A.} Coherence filter details.
   \item \textbf{B.} Full per-scenario table.
-  \item \textbf{C.} Compliance analysis and refusal behavior.
+  \item \textbf{C.} Reasoning-chain completions (Qwen, Mistral).
+  \item \textbf{D.} Compliance analysis and refusal behavior.
 \end{itemize}
 
 \end{document}
