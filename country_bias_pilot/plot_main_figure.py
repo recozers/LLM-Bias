@@ -30,11 +30,10 @@ FAMILIES = [
 # Models whose post-trained variant has compliance < 0.1 under the standard
 # scoring — their bias numbers are still directionally informative (variant
 # ratios are preserved) but the model is largely not engaging with the A/B
-# forced-choice. Flagged in the figure with a distinct marker. Yi 1.5 chat
-# only (GLM 4 chat was reclassified from 'refusal' to 'newline template' —
-# its prefill-corrected numbers achieve >0.99 compliance and are loaded
-# below).
-LOW_COMPLIANCE_INSTRUCT = {"yi1.5-9b-chat"}
+# forced-choice. GLM 4 chat and Yi 1.5 chat are both prefill-corrected via
+# PREFILL_DIR_MAP below (prefill characters: \n for GLM, ( for Yi), achieving
+# $\geq$0.99 compliance in all three language conditions. Set kept empty.
+LOW_COMPLIANCE_INSTRUCT = set()
 
 # Models whose bias data for the post-trained variant should come from a
 # prefill-corrected results directory instead of the default gpu_bias/ tree.
@@ -47,6 +46,11 @@ PREFILL_DIR_MAP = {
         "EN":  "gpu_bias_glm_prefill",
         "FR":  "gpu_bias_glm_prefill_fr",
         "ZH":  "gpu_bias_glm_prefill_zh",
+    },
+    "yi1.5-9b-chat": {
+        "EN":  "gpu_bias_yi_prefill",
+        "FR":  "gpu_bias_yi_prefill_fr",
+        "ZH":  "gpu_bias_yi_prefill_zh",
     },
 }
 

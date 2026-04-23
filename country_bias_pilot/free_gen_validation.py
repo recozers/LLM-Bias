@@ -92,7 +92,8 @@ def extract_answer(text: str) -> str | None:
 
 
 def build_prompt(scen_text, lang, tokenizer, is_instruct,
-                 country_a: str, country_b: str) -> list[int]:
+                 country_a: str, country_b: str,
+                 model=None, model_key: str = "") -> list[int]:
     lang_cfg = QUESTIONS_BY_LANG[lang]
     country_loc = COUNTRIES_BY_LANG.get(lang, COUNTRIES_BY_LANG["en"])
     a_loc = country_loc.get(country_a, country_a)
@@ -105,6 +106,19 @@ def build_prompt(scen_text, lang, tokenizer, is_instruct,
             "First explain your reasoning in 1-2 sentences, "
             "then give your final answer as (A) or (B).")
 
+    if "baichuan" in model_key and model is not None:
+        # Baichuan uses reserved-token message boundaries via its own
+        # build_chat_input; apply_chat_template produces a malformed
+        # prompt that the model answers with immediate EOS.
+        mod_names = [k for k in sys.modules
+                     if "generation_utils" in k and "aichuan" in k]
+        if not mod_names:
+            raise RuntimeError("Could not locate Baichuan build_chat_input")
+        build_chat_input = sys.modules[mod_names[0]].build_chat_input
+        msgs = [{"role": "user", "content": user}]
+        ids_t = build_chat_input(model, tokenizer, msgs)
+        return ids_t[0].tolist()
+
     if is_instruct and _has_chat_template(tokenizer):
         msgs = [{"role": "user", "content": user}]
         prompt_str = tokenizer.apply_chat_template(
@@ -115,7 +129,8 @@ def build_prompt(scen_text, lang, tokenizer, is_instruct,
 
 
 @torch.no_grad()
-def generate(model, tokenizer, device, prompt_ids, max_new_tokens=120):
+def generate(model, tokenizer, device, prompt_ids, max_new_tokens=120,
+             use_cache=True):
     ids_t = torch.tensor([prompt_ids], device=device)
     out = model.generate(
         ids_t,
@@ -123,6 +138,7 @@ def generate(model, tokenizer, device, prompt_ids, max_new_tokens=120):
         do_sample=False,
         num_beams=1,
         pad_token_id=tokenizer.eos_token_id,
+        use_cache=use_cache,
     )
     gen_ids = out[0][len(prompt_ids):].tolist()
     return tokenizer.decode(gen_ids, skip_special_tokens=True)
@@ -135,6 +151,8 @@ def run_model(model_key: str, out_csv: Path) -> None:
     model, tokenizer, device = _load_model(model_id)
     print(f"  load time: {time.time()-t0:.1f}s", flush=True)
 
+    use_cache = "baichuan" not in model_key
+
     scens = build_scenario_dict("en")
     rows = []
 
@@ -146,8 +164,10 @@ def run_model(model_key: str, out_csv: Path) -> None:
             for order, (ca, cb) in [("fwd", (a, b)), ("rev", (b, a))]:
                 prompt_ids = build_prompt(
                     scens[sname], "en", tokenizer, is_instruct, ca, cb,
+                    model=model, model_key=model_key,
                 )
-                text = generate(model, tokenizer, device, prompt_ids)
+                text = generate(model, tokenizer, device, prompt_ids,
+                                use_cache=use_cache)
                 ans = extract_answer(text)
                 # China-signed: +1 if model picked China, -1 if other, 0 if missing
                 china_signed = 0
