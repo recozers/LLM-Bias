@@ -48,16 +48,23 @@ current; prose has not yet been tightened for submission.}
 families from seven labs, matched base and post-trained variants)
 for geopolitical bias via paired-scenario cloze prompts scored across
 28 country pairs, in English, French, and Chinese.
-\textbf{(1) Post-training shifts preferences in the direction of the
-model's maker, with one counter-example.} Aggregated along
-China-favourability, 6/7 families move maker-aligned: Western labs
-(Mistral AI, Meta, Google) shift anti-China; three of four Chinese
-labs (Alibaba, Baichuan, Zhipu) shift pro-China. 01.AI's Yi~1.5 is
-the exception --- its post-training moves anti-China ($\Delta
-=-0.20$), visible only after a response-template correction
-(\S5.1). Magnitudes are heterogeneous: Alibaba's Qwen 2.5 is the
-one model post-trained to a clearly pro-China absolute position
-($+2.99$ log-odds); the others move directionally but end near
+\textbf{(1) Post-training creates geopolitical preferences where
+pretraining left them weak.} Across seven families, base models rate
+countries near-equally (cross-country spread $\sigma \leq 1$ log-odds
+on China-favourability for most); post-trained variants develop
+preferences with $\sigma$ up to $22$. The gap is starkest for
+Qwen~2.5: its base, trained primarily on Chinese-language corpora,
+sits near neutral ($-0.19$ on China-favourability); its post-trained
+chat variant is at $+2.99$. The pro-China character of Qwen does not
+come from the data it was pretrained on --- it comes from the
+post-training Alibaba applied on top. \textbf{As a secondary
+finding,} the direction of the post-training shift tracks the maker's
+nationality for 6 of 7 families (Western labs shift anti-China,
+Alibaba/Baichuan/Zhipu shift pro-China, 01.AI's Yi is a
+maker-\emph{un}aligned counter-example visible only after a
+response-template correction). Magnitudes are heterogeneous:
+Alibaba's Qwen is the one lab that post-trained a clearly pro-China
+model in absolute terms; the other maker-aligned shifts end near
 neutral.
 \textbf{(2) Inference-time language amplifies the imprinted bias,
 not base-model content.} The French-made Mistral~7B is the only
@@ -76,32 +83,37 @@ This paper makes two claims, each sharper and more qualified than the
 obvious ``pretraining data is biased, so the model is biased'' version.
 
 \paragraph{Post-training, not pretraining, is where the bias lives.}
-Pretraining a base model on web-scale text produces a weakly
-differentiated country preference. Post-training (instruction-tuning
-and RLHF) is where the needle moves. Across seven model families
-from seven different labs, the cross-country preference spread
-increases on post-training, and --- aggregated along the
-China-favourability axis, the lens where maker splits are sharpest
---- the direction aligns with the model's maker for six of seven
-families. The three Western labs shift their models anti-China
-($\Delta = -0.74$ to $-2.29$ log-odds, 3/3 with compliance
-$>$0.99); three of four Chinese labs (Alibaba, Baichuan, Zhipu)
-shift them pro-China ($\Delta = +0.41$ to $+3.18$). 01.AI's Yi~1.5
-is the counter-example: its post-training shifts anti-China
-($\Delta = -0.20$), visible only after the response-template
-prefill correction (\S5.1) that also applies to GLM. Decomposing by
-opponent country (\S4.3) shows the same pattern is visible against
-non-China axes: Mistral is anti-China \emph{most strongly} against
-Indonesia, Canada, Australia; Qwen is pro-China \emph{most strongly}
-against France, Japan, USA.
-The magnitude is heterogeneous: Alibaba's Qwen~2.5 is the one model
-among fourteen that a lab has post-trained to a clearly pro-China
-\emph{absolute} position ($+2.99$); the other five maker-aligned
-post-trained models move in the maker-aligned direction but end
-closer to neutral; 01.AI breaks the pattern entirely. Crucially, this is not a pretraining-corpus story: Qwen
-\emph{base}, trained primarily on Chinese-language corpora, sits at
-$-0.19$ on China-favourability, near neutral. The pro-China
-character of Qwen lives entirely in the post-training step.
+This is the paper's primary claim. Pretraining a base model on
+web-scale text produces a weakly differentiated country preference:
+cross-country spread $\sigma$ on China-favourability is $\leq 1$
+log-odds for most base models we probe, and the China-favourability
+endpoint is within $\pm 1$ log-odds of neutral for 6 of 7 bases.
+Post-training (instruction-tuning and RLHF) is where the needle moves:
+spread grows up to $22$ log-odds, and the single-country endpoints
+move substantially. The starkest case is Qwen~2.5: its base, trained
+primarily on Chinese-language corpora, sits at $-0.19$ on
+China-favourability --- near neutral. Its post-trained chat variant
+sits at $+2.99$. The pro-China character of Qwen does not come from
+Chinese-corpus pretraining; it comes from the post-training Alibaba
+applied on top. Baichuan shows the same pattern at smaller magnitude
+($-0.25 \to +0.16$). A pretraining-corpus story about ``Chinese data
+$\to$ pro-China output'' predicts a pattern we do not observe.
+
+\paragraph{(Secondary) The direction of the post-training shift often
+tracks the maker's nationality.} Aggregated along China-favourability,
+6 of 7 families move maker-aligned: Western labs (Mistral~AI, Meta,
+Google) shift anti-China ($\Delta = -0.74$ to $-2.29$ log-odds);
+three of four Chinese labs (Alibaba, Baichuan, Zhipu) shift pro-China
+($\Delta = +0.41$ to $+3.18$). 01.AI's Yi is the counter-example ---
+its post-training shifts anti-China ($\Delta = -0.20$), visible only
+after the response-template prefill correction of \S5.1 that also
+applies to GLM. We treat this as a secondary finding because the
+magnitude claim is weaker than the directional one: only Alibaba's
+Qwen ends up at a genuinely pro-China absolute position; the other
+maker-aligned shifts end near or below neutral, and the
+direction-survives-across-probes story is robust for the three
+strongest cases (Qwen, Mistral, Gemma) but depends on probe choice
+for the others.
 
 \paragraph{Inference-time language amplifies the post-training bias
 toward the country that language implicates.} The preference is not
@@ -254,7 +266,7 @@ languages combinations (using prefill-corrected scoring for GLM chat
 and Yi chat, per \S5.1); loosening to $\geq 50\%$ recovers 67 of 79
 and leaves the effects directionally unchanged.
 
-\section{Post-training: direction aligned with the maker, magnitude heterogeneous}
+\section{Bias is created by post-training, not pretraining}
 
 \begin{figure}[!t]
   \centering
@@ -278,34 +290,50 @@ and leaves the effects directionally unchanged.
   \label{fig:main}
 \end{figure}
 
-Figure~\ref{fig:main}\,A shows preferences over the eight real countries
-before and after post-training, for each of the seven families. The
-spread ($\sigma$ across countries) increases in every family that
-engages with the task. Qwen~2.5 is the extreme case
-($\sigma: 2.9 \rightarrow 22.3$): its post-trained variant rates China
-above 90\% preference and the US near the bottom. Mistral's
-French-made instruct pulls the opposite way, rating China and USA at
-the bottom. Baichuan amplifies more modestly; GLM~4~chat is the
-one exception --- its spread \emph{compresses} ($14.4 \rightarrow 2.9$,
-after the prefill correction described in \S\,5.1), which we read as a
-distinct alignment strategy (flatten rather than sharpen) rather than
-a measurement artefact.
+\textbf{The primary finding is that base models are near-neutral and
+their post-trained variants are not.} Figure~\ref{fig:main}\,A shows
+preferences over the eight real countries before and after
+post-training, for each of the seven families. Base models cluster
+tightly around zero: cross-country spread $\sigma \leq 9.3$ log-odds
+for every base (most are $\leq 3$), and China-favourability for the
+seven non-GLM bases lies within $[-0.50, -0.19]$. Post-training
+breaks this uniformity: $\sigma$ grows substantially in every family
+that engages with the task (Qwen~2.5 is the extreme case, $\sigma: 2.9
+\rightarrow 22.3$), and single-country endpoints move by up to
+$3.2$ log-odds.
 
-Figure~\ref{fig:main}\,B shows post-training $\Delta$ in China
-favorability. \textbf{Directionally the pattern is maker-aligned
-for six of seven families.} 3/3 Western labs shift anti-China; 3/4
-Chinese labs (Alibaba, Baichuan, Zhipu) shift pro-China; 01.AI's
-Yi~1.5 shifts anti-China. \textbf{Magnitudes are heterogeneous,
-especially on the Chinese side.} Alibaba's Qwen shifts $+3.18$ and
-ends genuinely pro-China at $+2.99$ log-odds (the only post-trained
-model that lands meaningfully above neutral). Zhipu's GLM shifts
-$+1.52$ (after the prefill correction described in \S5.1) but ends
-near neutral ($-0.13$); Baichuan shifts $+0.41$ and ends near
-neutral ($+0.16$). 01.AI's Yi, also requiring a response-template
-prefill correction (\S5.1), shifts $-0.20$ from $-0.50$ to $-0.70$
---- the only Chinese lab whose post-training moves against the
-maker-aligned direction. The Western side is more uniform: Mistral
-$-2.29$, Gemma $-0.87$, LLaMA $-0.74$ --- all genuinely anti-China.
+The Qwen contrast is the sharpest test of a pretraining-corpus
+explanation. Qwen's pretraining is primarily Chinese-language; a
+pretraining-corpus story predicts Qwen base should be the most
+pro-China. It isn't --- Qwen base sits at $-0.19$ on
+China-favourability, near neutral. Qwen chat is at $+2.99$. The
+entire pro-China character emerges during Alibaba's post-training.
+Baichuan base likewise sits near neutral ($-0.25$); Mistral base is
+the strongest-tilted of any base ($-0.77$) but still below any
+post-trained magnitude. GLM~4 base is the one outlier with a large
+base bias ($-1.64$, spread $21.0$); we discuss in \S6 the possibility
+that its HF ``base'' checkpoint was distilled from an instruct teacher
+and is not a clean base model.
+
+\textbf{As a secondary finding, the direction of the post-training
+shift tracks the maker for six of seven families.} Figure~\ref{fig:main}\,B
+shows post-training $\Delta$ in China favourability. 3/3 Western labs
+shift anti-China ($\Delta = -0.74$ to $-2.29$); 3/4 Chinese labs
+(Alibaba, Baichuan, Zhipu) shift pro-China ($\Delta = +0.41$ to
+$+3.18$); 01.AI's Yi~1.5 is the maker-unaligned counter-example
+($\Delta = -0.20$), visible only after the response-template prefill
+correction of \S5.1 that also applies to GLM. \emph{Magnitudes are
+heterogeneous}: Alibaba's Qwen is the only lab that produced a model
+at a genuinely pro-China absolute position ($+2.99$); GLM~chat ends
+near neutral ($-0.13$), Baichuan near neutral ($+0.16$), and Yi ends
+anti-China ($-0.70$). The direction-aligns-with-maker claim holds
+tight for the three Western labs and for Qwen; it survives for
+Baichuan and GLM only in $\Delta$-space (the endpoints are near zero, so
+the directional inference depends on base-model measurement); Yi
+breaks it outright. Spread compresses for GLM~4 chat ($\sigma: 21.0
+\rightarrow 3.8$), the opposite direction from every other family;
+we treat this as a distinct alignment strategy --- flatten rather than
+sharpen --- and return to its possible explanation in \S6.
 
 Figure~\ref{fig:main}\,C shows Chinese-language prompting shifts
 five of seven post-trained models further pro-China
@@ -318,15 +346,7 @@ Baichuan, whose English pro-China nudge is small, runs mildly
 the other way ($-0.40$). Base models show a much smaller, mixed effect
 (mean ZH$-$EN of $+0.38$ for base models vs $+0.91$ for post-trained).
 
-A pretraining-driven story would predict that Qwen's \emph{base}
-model is the most pro-China (trained primarily on Chinese corpora).
-It isn't --- Qwen base sits at $-0.19$ in our measure, near neutral.
-The pro-China character of Qwen lives entirely in the post-training
-step that Alibaba applied on top. Baichuan base is also near neutral
-($-0.25$), and only a small post-training nudge distinguishes it
-from the Western base models.
-
-\section{Linguistic identity amplifies maker-aligned bias}
+\section{Linguistic identity amplifies the post-training bias}
 
 \begin{figure}[!t]
   \centering
@@ -777,20 +797,34 @@ engages with the argmax-commit dynamics that neutral filler does not).
 \section{Discussion}
 
 \paragraph{What this adds.} Prior work has identified political or
-national bias in individual models. Our contribution is to isolate
-\emph{where} it enters (post-training, not pretraining), \emph{when}
-it surfaces (amplified by the prompt language), and \emph{how much}
-it varies across labs within a single country of origin --- using a
-design that holds the scenario bank, scoring method, and statistical
-pipeline fixed across fourteen models from seven labs. The directional
-claim (6/7 maker-aligned post-training shifts, after the GLM and Yi
-prefill corrections of \S5.1) is tight; the one counter-example
-(01.AI's Yi shifts anti-China) is itself informative, as it rules out
+national bias in individual models. Our primary contribution is to
+localise \emph{where} it enters: post-training, not pretraining. Base
+models across seven families are near-neutral on China-favourability;
+their post-trained variants are not. The starkest single data point
+is Qwen~2.5 --- base $-0.19$, chat $+2.99$ --- which rules out the
+obvious ``Chinese-corpus pretraining $\to$ pro-China output'' story:
+Qwen's pretraining \emph{is} primarily Chinese-language, and Qwen
+base is nevertheless near-neutral. Baichuan base is likewise near
+neutral ($-0.25$). What separates a lab's base model from its chat
+model is the post-training pipeline, and that pipeline is where the
+country preferences are being introduced.
+
+Secondary contributions: (i) The direction of the post-training shift
+tracks the maker's nationality for 6 of 7 families (Yi being the
+counter-example), which is itself informative because it rules out
 the reading that ``Chinese-lab origin'' mechanically produces
-pro-China shifts. The magnitude claim is that the Chinese side is
-dominated by a single confident-engagement outlier (Qwen) with two
-quieter maker-aligned labs (Baichuan, Zhipu) and one counter-aligned
-lab (01.AI).
+pro-China shifts. (ii) Magnitudes are heterogeneous: only Alibaba's
+Qwen produced a model at a genuinely pro-China absolute position;
+other maker-aligned shifts end near or below neutral, and the
+magnitude claims depend on probe choice for the mid-tier cases
+(\S5.2). (iii) Inference-time language amplifies the imprinted
+preference, most clearly in the French-made Mistral under French
+prompting. (iv) The probe-dependence itself is a finding: naive
+single-token forced-choice scoring systematically under-measures
+biased models with response-template RLHF (GLM, Yi), and the
+reasoning-layer preference revealed by the commit-position probe
+can be substantially different from the first-token distribution
+that standard benchmarks read (\S5.2).
 
 \paragraph{What this does not settle.} We do not identify \emph{which
 component} of post-training matters (SFT? RLHF? Constitutional AI-style
@@ -912,23 +946,28 @@ post-training disclosure norms should catch up with pretraining.
 
 \section{Conclusion}
 
-Post-training implants a country-aligned preference in LLMs, at a
-magnitude that varies substantially by lab. The direction of the
-shift is lab-aligned in 6 of 7 model families (Zhipu's GLM~4 chat
-and 01.AI's Yi~1.5 chat required response-template prefill
-corrections to be read correctly; na\"ive single-token scoring
-initially read GLM as refusal and Yi as pro-China attenuated by low
-compliance). Only one lab --- Alibaba, with Qwen~2.5 --- produces a
-post-trained model that is genuinely pro-China in absolute terms;
-Baichuan and Zhipu shift pro-China but end near or below neutral;
-01.AI shifts its post-trained model \emph{anti-}China, a
-counter-example visible only after prefill correction and one that
-warns against treating ``Chinese lab'' as a homogeneous category. The inference-time language decides how much of the
-implanted preference surfaces: speaking Chinese to post-trained
-models pushes them further pro-China in 5 of 7 cases (Qwen saturates,
-Baichuan mildly runs the other way), and speaking French to the
-French-made model specifically activates a maker-aligned pro-France
-shift that no other language-model combination reproduces.
+Geopolitical preferences in open-weight LLMs are created by
+post-training, not pretraining. Across seven model families from
+seven labs, base models rate countries near-equally; their
+post-trained variants develop substantial preferences. The sharpest
+single case is Qwen~2.5: Chinese-corpus pretraining produces a base
+model at $-0.19$ on China-favourability, near neutral; Alibaba's
+post-training produces a chat model at $+2.99$. A pretraining-corpus
+story about data determining output does not fit the evidence ---
+the step that installs the preference is the step after pretraining.
+
+The \emph{direction} of the post-training shift tracks the maker's
+nationality for 6 of 7 families; 01.AI's Yi is the counter-example
+and its anti-China shift is visible only after a response-template
+correction. The \emph{magnitude} is heterogeneous: only Alibaba
+produced a post-trained model at a genuinely pro-China absolute
+position; other maker-aligned shifts end near or below neutral, and
+magnitude claims depend on probe choice for the mid-tier cases.
+Inference-time language decides how much of the imprinted preference
+surfaces: speaking Chinese to post-trained models pushes them further
+pro-China in 5 of 7 cases; speaking French to the French-made Mistral
+specifically activates a maker-aligned pro-France shift that no other
+language-model combination reproduces.
 
 Three methodological findings are worth carrying forward. The
 post-training signal survives removing the hedging prefix (\S4.4),
