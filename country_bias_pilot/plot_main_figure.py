@@ -390,11 +390,6 @@ def main():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    fig.suptitle(
-        "It's the humans, not the data  ·  Post-training shifts geopolitical bias in the direction of the maker — unevenly",
-        fontsize=15, fontweight="bold", y=0.995,
-    )
-
     fig.text(0.5, 0.002,
              f"n = {len(COHERENT_SCENARIOS)} scenarios (justified/unjustified sign-flip ≥70% across 14 models × 3 languages)  ·  "
              f"7 model families from 7 labs: Western-made [FR/US] and Chinese-made [CN]",

@@ -748,32 +748,34 @@ releases rarely provide.
 \section{Limitations}
 
 \begin{itemize}[topsep=2pt,itemsep=2pt]
-  \item \textbf{$n = 7$ model families from 7 labs.} The directional
-  maker-alignment result (6/7 after the GLM and Yi prefill
-  corrections of \S5.1) is striking but the effective sample for the
-  across-maker claim is small. The within-model language effect rests
-  on a larger effective sample (31 coherent scenarios $\times$ 4
-  post-trained conditions) but does not address the same claim.
-  \item \textbf{7--9B regime.} Single-GPU setup constrains us to
-  7--9B models; larger closed models (GPT-4-class, Claude, Gemini Pro)
-  are unavailable for logprob-level probing; Baichuan 13B, Qwen 14B,
-  and InternLM 2.5 are scale-extension candidates but exceed 24 GB
-  fp16.
-  \item \textbf{Forced-choice validated.} §5.2 runs the free-response
-  probe on all seven post-trained models; commit-position log-odds
-  agrees with forced-choice in sign for 6/7 (Baichuan the exception,
-  both probes $<0.2$).
-  \item \textbf{Hedge asymmetry resolved.} Hedge-removed ablation
-  (\S4.4) shifts bias by $\leq 0.3$ log-odds for Qwen and Mistral.
-  \item \textbf{Matched-symmetric scenarios undertest hot-button
-  topics.} The bank is curated for framing symmetry and by design
-  excludes the topics where Chinese-lab preferences are strongest
-  (Taiwan, Tiananmen, Xinjiang, Hong Kong, COVID origins, semiconductor
-  policy). A narrow refusal-and-direct-statement probe on these is
-  the natural follow-up.
-  \item \textbf{No English-variant control} (British vs American).
-  \item \textbf{Post-training step attribution not resolved.} Labs do
-  not disclose enough to separate SFT / RLHF / safety training.
+  \item \textbf{Small lab sample.} The across-maker claim rests on
+  $n = 7$ labs. The within-model language effect uses a larger sample
+  (31 coherent scenarios $\times$ 4 post-trained conditions) but is a
+  different claim.
+  \item \textbf{7--9B parameter regime.} Single-GPU fp16 bounds us to
+  7--9B models; larger open weights (Baichuan 13B, Qwen 14B, InternLM
+  2.5) and closed frontier models (GPT-4-class, Claude, Gemini Pro)
+  are out of scope and may behave differently.
+  \item \textbf{Scenario bank undertests hot-button topics.}
+  Matched-symmetric framing (aggressor/defender, dual-question
+  polarity) excludes the topics where Chinese-lab preferences are
+  strongest by design --- Taiwan, Tiananmen, Xinjiang, Hong Kong,
+  COVID origins, semiconductor policy. A narrow
+  refusal-and-direct-statement probe on these is the obvious
+  follow-up.
+  \item \textbf{Magnitude claims are probe-dependent for mid-tier
+  cases.} \S5.2 shows the direction of bias is robust across probes
+  (6/7) but magnitude varies: Gemma and GLM amplify under reasoning,
+  Qwen attenuates, Baichuan is near-noise everywhere. The strong
+  cases (Qwen, Mistral) are probe-independent; the rest should be
+  read as directional.
+  \item \textbf{Post-training step attribution not resolved.} Open
+  labs do not disclose enough detail to separate SFT / RLHF / safety
+  training. OLMo-style staged checkpoints would be the cleanest
+  next experiment.
+  \item \textbf{No English-variant control} (British vs American),
+  and no base/instruct prompt symmetry ablation beyond hedge removal
+  (\S4.4).
 \end{itemize}
 
 \section{Conclusion}
