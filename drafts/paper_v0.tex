@@ -725,24 +725,54 @@ the commit-position log-odds ($+0.84$), attenuated but sign-matched
 with forced-choice --- it is just not in the argmax. Full generations
 for Qwen and Mistral are in Appendix~C.
 
-\textbf{Gemma and GLM: reasoning sharpens the preference.} Both land
-substantially further anti-China post-reasoning ($-4.73$ and $-2.40$)
-than in forced-choice ($-1.15$ and $-0.13$). When these models reason
-their way to an answer, they commit more strongly than when asked for
-a bare letter --- the opposite of the ``reasoning moderates bias''
-narrative sometimes offered in the alignment literature. For GLM
-particularly, the near-neutral forced-choice endpoint conceals a
-sharply anti-China commit-position distribution once the model has
-written its own reasoning. Two readings remain open: (a) a substantive
-one, that Zhipu's post-training moved the first-token distribution
-without equally changing the reasoning-layer preference, so the
-commit-position probe reveals what remained; (b) a methodological
-one, that some architectures sharpen A/B logits at longer context
-(Gemma shows comparable amplification and is Western-made), making
-this a context-length effect rather than a preference effect. An
-entropy-matched control --- commit-position logits on neutral-filler
-continuations of matched length --- would distinguish them; we flag
-it as a follow-up.
+\textbf{Gemma and GLM: reasoning sharpens the preference, but by
+different mechanisms.} Both land substantially further anti-China
+post-reasoning ($-4.73$ and $-2.40$) than in forced-choice ($-1.15$
+and $-0.13$). To distinguish ``the model's own reasoning sharpened
+it'' from ``any longer context would sharpen the logit,'' we compute
+an entropy-matched control: commit-position log-odds when the model
+is fed a fixed neutral filler (\emph{``Both countries have valid
+perspectives and legitimate interests in this situation. The matter
+is complex with multiple factors to consider on each side. Weighing
+all of the relevant considerations carefully, my answer is (''})
+instead of its own reasoning. The control decomposes the two cases
+cleanly:
+
+\begin{center}
+\small
+\begin{tabular}{@{}l r r r@{}}
+\toprule
+Model & Forced-choice & Neutral-filler commit & Own-reasoning commit \\
+\midrule
+GLM 4 9B chat    & $-0.13$ & $\mathbf{-0.32}$ & $-2.40$ \\
+Gemma 4 8B it    & $-1.15$ & $\mathbf{-2.35}$ & $-4.73$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For \emph{GLM}, the neutral filler ($-0.32$) is essentially on top of
+the forced-choice value ($-0.13$); adding generic context does almost
+nothing. Only GLM's \emph{own reasoning} sharpens the logit, from
+$-0.32$ to $-2.40$. The amplification is reasoning-specific, which is
+consistent with Zhipu's post-training having moved the first-token
+distribution (the surface RLHF target) while leaving the reasoning-layer
+preference intact --- the commit-position probe exposes what remained.
+
+For \emph{Gemma}, the neutral filler ($-2.35$) already sharpens
+substantially relative to forced-choice ($-1.15$); Gemma's architecture
+genuinely produces sharper A/B distributions at longer context. Its own
+reasoning then sharpens the logit further to $-4.73$. So Gemma's
+amplification is a composite: roughly $1.2$ log-odds of architectural
+context-length sharpening plus a further $\approx 2.4$ log-odds
+of reasoning-specific amplification on top.
+
+Two incidental findings from the control: \emph{Mistral}'s neutral-filler
+commit ($-4.39$) is sharper than its own-reasoning commit ($-3.27$),
+i.e.\ Mistral's reasoning slightly \emph{moderates} its commit relative
+to generic context; and \emph{Qwen}'s neutral-filler commit ($+1.43$)
+is closer to its forced-choice value ($+2.99$) than its own reasoning is
+($+0.84$), consistent with the position-bias story (Qwen's reasoning
+engages with the argmax-commit dynamics that neutral filler does not).
 
 \section{Discussion}
 
