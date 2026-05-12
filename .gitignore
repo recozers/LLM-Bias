@@ -12,3 +12,13 @@ country_bias_pilot/results/*.log
 *.bin
 *.safetensors
 .DS_Store
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.fdb_latexmk
+*.fls
+*.synctex.gz
