@@ -156,13 +156,13 @@ def main():
     panel_cross(axes[2])
 
     fig.suptitle(
-        "Figure 6  ·  Robustness and mechanism: the bias is not driven by the hedge, "
+        "Robustness and mechanism: the bias is not driven by the hedge, "
         "is stable across phrasings, and is primarily triggered by the scenario language",
         fontsize=12, fontweight="bold", y=1.02,
     )
     fig.text(0.5, -0.04,
              "Qwen 2.5 7B-inst (Alibaba) and Mistral 7B-inst (Mistral AI). "
-             "29-scenario coherence subset; variant-sum scoring.",
+             "31-scenario coherence subset; variant-sum scoring.",
              ha="center", fontsize=8, color="#555", style="italic")
 
     out = RESULTS / "plots" / "figure6_robustness.png"

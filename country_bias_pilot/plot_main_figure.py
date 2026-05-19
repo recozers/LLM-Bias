@@ -149,9 +149,9 @@ def to_pref(logprob):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def panel_a(ax):
-    # Tighter spacing for 7 families
-    col_w = 2.4   # total width per family
-    gap = 1.1     # separation between base and post-trained within a family
+    # Wider spacing for 7 families so country labels don't bump neighbours
+    col_w = 3.2   # total width per family
+    gap = 1.3     # separation between base and post-trained within a family
     for fam_idx, (fam_name, base_key, inst_key, maker, lab) in enumerate(FAMILIES):
         base_fav = favour(RESULTS / _results_dir_for(base_key, "EN") / f"{base_key}_raw.csv",
                           COUNTRIES, COHERENT_SCENARIOS)
@@ -172,15 +172,15 @@ def panel_a(ax):
             bp = to_pref(base_fav[country])
             ip = to_pref(inst_fav[country])
             color = COUNTRY_COLORS[country]
-            ax.plot([x_base, x_inst], [bp, ip], color=color, alpha=0.45, linewidth=1.3)
-            ax.scatter(x_base, bp, color=color, s=30, zorder=5,
+            ax.plot([x_base, x_inst], [bp, ip], color=color, alpha=0.45, linewidth=1.6)
+            ax.scatter(x_base, bp, color=color, s=42, zorder=5,
                        edgecolors="white", linewidth=0.5)
-            ax.scatter(x_inst, ip, color=color, s=60, zorder=6,
+            ax.scatter(x_inst, ip, color=color, s=80, zorder=6,
                        edgecolors="white", linewidth=0.7)
             if ip > 70 or ip < 30:
                 to_label.append((ip, country, color))
 
-        min_gap = 5.0
+        min_gap = 5.5
         for group, sign in (([t for t in to_label if t[0] > 50], +1),
                              ([t for t in to_label if t[0] <= 50], -1)):
             group.sort(key=lambda t: t[0], reverse=(sign > 0))
@@ -190,28 +190,30 @@ def panel_a(ax):
                 if last_y is not None and abs(y - last_y) < min_gap:
                     y = last_y - sign * min_gap
                 ax.annotate(country, xy=(x_inst, ip),
-                            xytext=(x_inst + 0.18, y),
-                            fontsize=6.5, color=color, fontweight="bold",
+                            xytext=(x_inst + 0.22, y),
+                            fontsize=15, color=color, fontweight="bold",
                             va="center", ha="left")
                 last_y = y
 
-        # Title line: family name + [maker_bloc] + (lab)
-        ax.text(x_center, 105, fam_name,
-                ha="center", fontsize=9, fontweight="bold", clip_on=False)
-        ax.text(x_center, 100,
+        # Title line: family name + [maker_bloc] + (lab), pushed above plot
+        # so high-y country labels (Canada on Mistral, China on Qwen) don't
+        # clash with the headers.
+        ax.text(x_center, 121, fam_name,
+                ha="center", fontsize=18, fontweight="bold", clip_on=False)
+        ax.text(x_center, 113,
                 f"{lab}  [{maker}]",
-                ha="center", fontsize=7.5, color="#333",
+                ha="center", fontsize=15, color="#333",
                 fontweight="bold", clip_on=False)
-        ax.text(x_center, 95.5,
+        ax.text(x_center, 106,
                 f"σ  {spread_base:.1f}  →  {spread_inst:.1f}",
-                ha="center", fontsize=7, color="#555", style="italic",
+                ha="center", fontsize=15, color="#555", style="italic",
                 clip_on=False)
         if fam_idx < len(FAMILIES) - 1:
             ax.axvline(x_center + col_w / 2, color="gray",
                        linewidth=0.5, alpha=0.25)
 
     ax.axhline(50, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
-    ax.text(-0.4, 50, "neutral", fontsize=7, color="gray",
+    ax.text(-0.5, 50, "neutral", fontsize=15, color="gray",
             va="center", ha="right", style="italic")
 
     xticks, xlabels = [], []
@@ -219,17 +221,18 @@ def panel_a(ax):
         xticks.extend([i * col_w, i * col_w + gap])
         xlabels.extend(["Base", "Inst"])
     ax.set_xticks(xticks)
-    ax.set_xticklabels(xlabels, fontsize=7)
-    ax.set_ylabel("Preference  (%)", fontsize=11)
+    ax.set_xticklabels(xlabels, fontsize=15)
+    ax.tick_params(axis="y", labelsize=15)
+    ax.set_ylabel("Preference  (%)", fontsize=18)
     ax.set_ylim(0, 100)
-    ax.set_xlim(-0.9, (len(FAMILIES) - 1) * col_w + gap + 0.9)
+    ax.set_xlim(-1.0, (len(FAMILIES) - 1) * col_w + gap + 1.2)
     ax.set_title("A  ·  Post-training amplifies geopolitical bias",
-                 fontsize=13, fontweight="bold", loc="left", pad=38)
+                 fontsize=22, fontweight="bold", loc="left", pad=140)
 
     for country in COUNTRIES:
-        ax.scatter([], [], color=COUNTRY_COLORS[country], s=55, label=country)
+        ax.scatter([], [], color=COUNTRY_COLORS[country], s=110, label=country)
     ax.legend(ncol=8, loc="upper center", bbox_to_anchor=(0.5, -0.14),
-              fontsize=8, frameon=False, handletextpad=0.3, columnspacing=1.2)
+              fontsize=15, frameon=False, handletextpad=0.4, columnspacing=1.4)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -260,20 +263,21 @@ def panel_b(ax):
         ax.text(row["delta"] + (0.12 if row["delta"] >= 0 else -0.12),
                 i, f"{sign}{row['delta']:.2f}",
                 va="center", ha="left" if row["delta"] >= 0 else "right",
-                fontsize=9, color="#222", fontweight="bold")
+                fontsize=16, color="#222", fontweight="bold")
 
     ax.axvline(0, color="black", linewidth=0.8)
     ax.set_yticks(y)
     ax.set_yticklabels([f"{r['family']}  ({r['lab']})"
-                        for _, r in df.iterrows()], fontsize=9)
+                        for _, r in df.iterrows()], fontsize=16)
+    ax.tick_params(axis="x", labelsize=15)
     ax.invert_yaxis()
 
     xmax = max(abs(df["delta"].min()), abs(df["delta"].max())) * 1.55
     ax.set_xlim(-xmax, xmax)
     ax.set_ylim(len(df) - 0.5, -0.7)
-    ax.set_xlabel("Post-training Δ in China favorability  (log-odds)", fontsize=10)
+    ax.set_xlabel("Post-training Δ in China favorability  (log-odds)", fontsize=17)
     ax.set_title("B  ·  Direction of amplification follows the maker",
-                 fontsize=12, fontweight="bold", loc="left", pad=12)
+                 fontsize=20, fontweight="bold", loc="left", pad=18)
 
     western = plt.Rectangle((0, 0), 1, 1, facecolor=MAKER_COLOR["Western"],
                             alpha=0.9, edgecolor="black", linewidth=0.6)
@@ -284,7 +288,7 @@ def panel_b(ax):
     ax.legend([western, chinese, lowc],
               ["Western-made", "Chinese-made",
                "Low-compliance (< 0.1)"],
-              fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              fontsize=15, loc="upper center", bbox_to_anchor=(0.5, -0.18),
               frameon=False, ncol=3)
 
 
@@ -339,43 +343,44 @@ def panel_c(ax):
         # Δ annotation in right margin column
         sign = "+" if row["shift"] >= 0 else ""
         ax.text(delta_col, i, f"{sign}{row['shift']:.2f}",
-                va="center", ha="right", fontsize=9, color="#222",
+                va="center", ha="right", fontsize=16, color="#222",
                 fontweight="bold")
 
     ax.axvline(0, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
 
     ax.set_yticks(y)
     ax.set_yticklabels([f"{r['family']}  ({r['lab']})"
-                        for _, r in df.iterrows()], fontsize=9)
+                        for _, r in df.iterrows()], fontsize=16)
+    ax.tick_params(axis="x", labelsize=15)
     ax.invert_yaxis()
     ax.set_xlim(x_left, delta_col + pad * 0.5)
     ax.set_ylim(len(df) - 0.5, -0.9)
-    ax.set_xlabel("China favorability  (log-odds)", fontsize=10)
+    ax.set_xlabel("China favorability  (log-odds)", fontsize=17)
     ax.set_title("C  ·  Chinese-language prompt shifts bias pro-China",
-                 fontsize=12, fontweight="bold", loc="left", pad=12)
-    ax.text(delta_col, -0.75, "Δ (ZH−EN)", ha="right", fontsize=9,
+                 fontsize=20, fontweight="bold", loc="left", pad=18)
+    ax.text(delta_col, -0.75, "Δ (ZH−EN)", ha="right", fontsize=16,
             color="#555", style="italic", fontweight="bold")
 
     # Legend for EN/ZH markers
-    en_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=8,
+    en_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=10,
                           markerfacecolor="white", markeredgecolor="#444",
                           markeredgewidth=1.4, label="English prompt")
-    zh_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=9,
+    zh_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=11,
                           markerfacecolor="#444", markeredgecolor="black",
                           markeredgewidth=0.8, label="Chinese prompt")
-    lowc_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=9,
+    lowc_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=11,
                              markerfacecolor="white", markeredgecolor="#999",
                              markeredgewidth=1.8, label="Low compliance")
     ax.legend(handles=[en_proxy, zh_proxy, lowc_proxy],
-              fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              fontsize=15, loc="upper center", bbox_to_anchor=(0.5, -0.18),
               frameon=False, ncol=3)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    fig = plt.figure(figsize=(20, 14))
-    gs = gridspec.GridSpec(2, 2, hspace=0.5, wspace=0.3,
+    fig = plt.figure(figsize=(20, 20))
+    gs = gridspec.GridSpec(2, 2, hspace=0.55, wspace=0.55,
                             height_ratios=[1.05, 1.0])
 
     ax_a = fig.add_subplot(gs[0, :])
@@ -393,7 +398,7 @@ def main():
     fig.text(0.5, 0.002,
              f"n = {len(COHERENT_SCENARIOS)} scenarios (justified/unjustified sign-flip ≥70% across 14 models × 3 languages)  ·  "
              f"7 model families from 7 labs: Western-made [FR/US] and Chinese-made [CN]",
-             ha="center", fontsize=9, color="#555", style="italic")
+             ha="center", fontsize=15, color="#555", style="italic")
 
     out = RESULTS / "plots" / "main_figure.png"
     out.parent.mkdir(exist_ok=True)

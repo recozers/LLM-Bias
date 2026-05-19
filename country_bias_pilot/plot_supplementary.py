@@ -74,7 +74,11 @@ def plot_language_heatmap():
 
         mat = df[["EN", "FR", "ZH"]].values
         vmax = np.nanmax(np.abs(mat)) * 1.05
-        im = ax.imshow(mat, aspect="auto", cmap="RdBu_r",
+        # Diverging colormap with red=disfavours (negative), blue=favours
+        # (positive). Conventional matplotlib RdBu has red at the low end
+        # and blue at the high end, which matches the "red = warning / bad"
+        # reading: a red cell means "this model dislikes this country".
+        im = ax.imshow(mat, aspect="auto", cmap="RdBu",
                        vmin=-vmax, vmax=vmax)
 
         # Y-tick labels: family (lab) variant
@@ -111,12 +115,12 @@ def plot_language_heatmap():
         ax.set_title(title, fontsize=12, fontweight="bold", loc="left", pad=8)
 
         cbar = plt.colorbar(im, ax=ax, shrink=0.7, pad=0.02)
-        cbar.set_label(f"favours {target}  →", fontsize=8, rotation=90,
-                       labelpad=8)
+        cbar.set_label(f"red: disfavours {target}      blue: favours {target}",
+                       fontsize=8, rotation=90, labelpad=8)
         cbar.ax.tick_params(labelsize=7)
 
     fig.suptitle(
-        "Figure 2  ·  Inference-time language modulates the post-training bias",
+        "Inference-time language modulates the post-training bias",
         fontsize=13, fontweight="bold", y=0.98,
     )
     fig.text(0.5, 0.005,
@@ -231,7 +235,7 @@ def plot_fictional_phonetic():
                 frameon=False, title="Phonetic tag", title_fontsize=9)
 
     fig.suptitle(
-        "Figure 3  ·  Fictional-name bias tracks phonetic identity, not real-country knowledge",
+        "Fictional-name bias tracks phonetic identity, not real-country knowledge",
         fontsize=13, fontweight="bold", y=0.995,
     )
 
@@ -335,7 +339,7 @@ def plot_refusal_diagnostic():
                           edgecolor="#b84c00", linewidth=0.8))
 
     fig.suptitle(
-        "Figure 4  ·  Three Chinese labs, three response regimes at the first token",
+        "Three Chinese labs, three response regimes at the first token",
         fontsize=13, fontweight="bold", y=0.995,
     )
     fig.text(0.5, -0.02,
@@ -454,7 +458,7 @@ def plot_pair_drivers():
                 frameon=False)
 
     fig.suptitle(
-        "Figure 5  ·  Which opponents does each model favour / disfavour China against?",
+        "Which opponents does each model favour / disfavour China against?",
         fontsize=13, fontweight="bold", y=0.995,
     )
 
