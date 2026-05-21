@@ -219,7 +219,7 @@ def panel_a(ax):
     xticks, xlabels = [], []
     for i in range(len(FAMILIES)):
         xticks.extend([i * col_w, i * col_w + gap])
-        xlabels.extend(["Base", "Inst"])
+        xlabels.extend(["Base", "Post"])
     ax.set_xticks(xticks)
     ax.set_xticklabels(xlabels, fontsize=15)
     ax.tick_params(axis="y", labelsize=15)
@@ -227,7 +227,7 @@ def panel_a(ax):
     ax.set_ylim(0, 100)
     ax.set_xlim(-1.0, (len(FAMILIES) - 1) * col_w + gap + 1.2)
     ax.set_title("A  ·  Post-training amplifies geopolitical bias",
-                 fontsize=22, fontweight="bold", loc="left", pad=140)
+                 fontsize=22, fontweight="bold", loc="left", pad=95)
 
     for country in COUNTRIES:
         ax.scatter([], [], color=COUNTRY_COLORS[country], s=110, label=country)
@@ -379,7 +379,7 @@ def panel_c(ax):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    fig = plt.figure(figsize=(20, 20))
+    fig = plt.figure(figsize=(20, 14))
     gs = gridspec.GridSpec(2, 2, hspace=0.55, wspace=0.55,
                             height_ratios=[1.05, 1.0])
 
