@@ -339,7 +339,7 @@ def plot_refusal_diagnostic():
                           edgecolor="#b84c00", linewidth=0.8))
 
     fig.suptitle(
-        "Three Chinese labs, three response regimes at the first token",
+        "Three Chinese labs, three response patterns at the first token",
         fontsize=13, fontweight="bold", y=0.995,
     )
     fig.text(0.5, -0.02,

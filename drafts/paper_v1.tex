@@ -98,7 +98,7 @@ A genuine pro-Country-X bias should make X look good in \emph{justified} framing
 
 \subsection{Code availability}
 
-Code and scenario bank are available at \url{https://github.com/recozers/LLM-Bias}.
+Code and scenario bank are available at \url{https://anonymous.4open.science/r/LLM-Bias-8C54/}.
 
 \subsection{What MCQ Compliance Tells Us About Validity}\label{sec:validity}
 
@@ -203,7 +203,7 @@ We performed three probe-side ablations on Qwen and Mistral (Figure~\ref{fig:rob
 
 \subsection{Robustness: Fictional Names Carry Phonetic Identity}
 
-An alternative explanation is that models may simply reproduce memorised associations about specific real-world countries (e.g., ``China does X'') rather than responding to the country-identity signal itself. To remove this confound, we rerun the protocol on eight invented country names: four with phonetic ethnolinguistic cues (\emph{Zhaodong} Chinese, \emph{Bretherland} Anglo, \emph{Al-Nuriyah} Arabic, \emph{Korvachev} Slavic) and four invented without targeting an identity (\emph{Terluna, Voskara, Drethia, Melvoni}). Qwen's top-rated fictional country is \emph{Zhaodong} ($+0.88$) and its bottom is \emph{Bretherland} ($-1.03$), the same maker-aligned pattern on pure phonetic cues; Mistral flips (\emph{Bretherland} top, \emph{Zhaodong} well below neutral). Even with no world knowledge about fictional polities available, the bias travels with the identity cue (per-family bars in Appendix~C, Figure~\ref{fig:fictional}).
+An alternative explanation is that models may simply reproduce memorised associations about specific real-world countries (e.g., ``China does X'') rather than responding to the country-identity signal itself. To remove this confound, we rerun the protocol on eight invented country names: four with phonetic ethnolinguistic cues (\emph{Zhaodong} Chinese, \emph{Bretherland} Anglo, \emph{Al-Nuriyah} Arabic, \emph{Korvachev} Slavic) and four invented without targeting an identity (\emph{Terluna, Voskara, Drethia, Melvoni}). Qwen's top-rated fictional country is \emph{Zhaodong} ($+0.88$) and its bottom is \emph{Bretherland} ($-1.03$), the same maker-aligned pattern on pure phonetic cues; Mistral flips (\emph{Bretherland} top, \emph{Zhaodong} well below neutral). Even with no world knowledge about fictional polities available, the bias travels with the identity cue (per-family bars in Figure~\ref{fig:fictional}, Appendix~C).
 
 \section{Chinese-side Response Formats Differ; Post-training Directions Do Not All Align}\label{sec:format}
 
@@ -229,7 +229,7 @@ Baichuan          & Baichuan 2 7B chat  & $+0.42$          & $+0.17$ & $1.00$ \\
 
 \subsection{Response-Format Heterogeneity at the First Token}
 
-We observe three first-token patterns (Appendix~B, Figure~\ref{fig:refusal}). \textbf{GLM~4 chat} places $P(\text{newline}) = 1.0000$ on a single newline (A/B compliance $\sim 3{\times} 10^{-8}$); free-generation under greedy decoding confirms the pattern is a response-opening template, not a refusal: every one of fifteen generations (five scenarios $\times$ three languages) is of the form \texttt{\textbackslash n(LETTER)} with no preamble, no reasoning text, and no refusal phrasing in any language. Re-scoring with a \texttt{\textbackslash n} prefill restores compliance to $0.91$--$0.99$ and reveals a $+1.36$ pro-China shift ($-1.47 \to -0.10$). \textbf{Yi~1.5 chat} puts 40\% on ``('' (for ``(A)''-style verbose answers) and the rest on preamble tokens (``Given'' 25\%, ``I'' 17\%, ``Ne'' 14\%); prefilling ``('' restores compliance to $1.00$ and reveals a $-0.25$ anti-China shift ($-0.47 \to -0.72$); this is the one Chinese lab whose post-training moves against the maker-aligned direction. Under na\"ive scoring the attenuated reading had reversed sign. \textbf{Qwen~2.5 inst} concentrates on ``A''/``B'' directly. GLM additionally shows a spread compression post-training ($\sigma: 19.9 \to 3.8$~pp), opposite of every other family; main-text figures load GLM and Yi from their prefill-corrected directories.
+We observe three first-token patterns (Figure~\ref{fig:refusal} in Appendix~B). \textbf{GLM~4 chat} places $P(\text{newline}) = 1.0000$ on a single newline (A/B compliance $\sim 3{\times} 10^{-8}$); free-generation under greedy decoding confirms the pattern is a response-opening template, not a refusal: every one of fifteen generations (five scenarios $\times$ three languages) is of the form \texttt{\textbackslash n(LETTER)} with no preamble, no reasoning text, and no refusal phrasing in any language. Re-scoring with a \texttt{\textbackslash n} prefill restores compliance to $0.91$--$0.99$ and reveals a $+1.36$ pro-China shift ($-1.47 \to -0.10$). \textbf{Yi~1.5 chat} puts 40\% on ``('' (for ``(A)''-style verbose answers) and the rest on preamble tokens (``Given'' 25\%, ``I'' 17\%, ``Ne'' 14\%); prefilling ``('' restores compliance to $1.00$ and reveals a $-0.25$ anti-China shift ($-0.47 \to -0.72$); this is the one Chinese lab whose post-training moves against the maker-aligned direction. Under na\"ive scoring the attenuated reading had reversed sign. \textbf{Qwen~2.5 inst} concentrates on ``A''/``B'' directly. GLM additionally shows a spread compression post-training ($\sigma: 19.9 \to 3.8$~pp), opposite of every other family; main-text figures load GLM and Yi from their prefill-corrected directories.
 
 \subsection{Free-Generation Validation: Preferences Survive Open-Ended Reasoning}
 
@@ -296,7 +296,9 @@ Our results suggest that geopolitical preferences in language models are shaped 
 
 \paragraph{A.5 Excluded models.} Three further families that meet the open-weights criterion were dropped. \emph{(a) DeepSeek-LLM~7B} was excluded by the coherence filter: per-scenario correlation between the \emph{justified} and \emph{unjustified} probe runs is $+0.91$ (base) and $+0.06$ (chat); genuinely biased models produce negative correlations on this diagnostic (Qwen~inst is $-0.62$). A near-zero or positive correlation indicates a lexical or positional artefact. \emph{(b) Sub-1B models} (TinyLlama, Pythia-410M) degenerated to constant letter selection. \emph{(c) InternLM~2.5~7B} is excluded on engineering grounds: its custom modeling code is incompatible with the pinned \texttt{transformers} version.
 
-\section{Appendix B: First-Token Distributions}\label{app:firsttoken}
+\renewcommand{\thefigure}{B\arabic{figure}}
+\setcounter{figure}{0}
+\section{Appendix B: Three Chinese Labs, Three Response Patterns at the First Token}\label{app:firsttoken}
 
 \begin{figure*}[!htbp]
   \centering
@@ -305,7 +307,9 @@ Our results suggest that geopolitical preferences in language models are shaped 
   \label{fig:refusal}
 \end{figure*}
 
-\section{Appendix C: Fictional Phonetic Names}\label{app:fictional}
+\renewcommand{\thefigure}{C\arabic{figure}}
+\setcounter{figure}{0}
+\section{Appendix C: Fictional-Name Bias Tracks Phonetic Identity}\label{app:fictional}
 
 \begin{figure*}[!htbp]
   \centering
