@@ -1,0 +1,2 @@
+reviewer_id,language,scenario_id,source_version,translation_version,factual_fidelity,agency_and_blame,severity_preservation,role_reversibility,neutral_register,naturalness,question_parity,decision,proposed_revision,rationale
+REVIEWER,fr|zh,SCENARIO,SOURCE_VERSION,TRANSLATION_VERSION,pass|revise|fail,pass|revise|fail,pass|revise|fail,pass|revise|fail,pass|revise|fail,pass|revise|fail,pass|revise|fail,include|revise|exclude,REVISION_IF_NEEDED,REQUIRED_IF_NOT_INCLUDE

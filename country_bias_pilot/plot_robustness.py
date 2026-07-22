@@ -14,7 +14,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from plot_main_figure import RESULTS, COHERENT_SCENARIOS
+from plot_main_figure import (
+    RESULTS, COHERENT_SCENARIOS, AAAI_MODE, PLOT_OUTPUT_DIR, PLOT_DPI,
+    format_aaai_figure,
+)
 
 MODELS = [
     ("Qwen 2.5 7B", "qwen2.5-7b-inst", "CN", "#DD8452"),
@@ -87,6 +90,7 @@ def panel_phrasing(ax):
         offset = (i - 0.5) * w
         bars = ax.bar(x + offset, vals, w, color=color, alpha=0.88,
                        edgecolor="black", linewidth=0.5,
+                       hatch="//" if i else "",
                        label=f"{fam} [{bloc}]")
         for rect, v in zip(bars, vals):
             if np.isnan(v):
@@ -100,8 +104,10 @@ def panel_phrasing(ax):
 
     ax.axhline(0, color="black", linewidth=0.7)
     ax.set_xticks(x)
-    ax.set_xticklabels([p[2] for p in phrasings], fontsize=7.5,
-                        rotation=15, ha="right")
+    labels = (["Baseline", "Whose action?", "More reasonable?", "Who was right?"]
+              if AAAI_MODE else [p[2] for p in phrasings])
+    ax.set_xticklabels(labels, fontsize=7.5,
+                        rotation=0 if AAAI_MODE else 15, ha="center" if AAAI_MODE else "right")
     ax.set_ylabel("China favourability (log-odds)", fontsize=9)
     ax.set_title("B  ·  Phrasing robustness",
                  fontsize=11, fontweight="bold", loc="left", pad=6)
@@ -125,6 +131,7 @@ def panel_cross(ax):
         offset = (i - 0.5) * w
         bars = ax.bar(x + offset, vals, w, color=color, alpha=0.88,
                        edgecolor="black", linewidth=0.5,
+                       hatch="//" if i else "",
                        label=f"{fam} [{bloc}]")
         for rect, v in zip(bars, vals):
             if np.isnan(v):
@@ -149,25 +156,46 @@ def panel_cross(ax):
 
 
 def main():
-    fig, axes = plt.subplots(1, 3, figsize=(17, 5.8),
-                              gridspec_kw={"wspace": 0.28})
+    if AAAI_MODE:
+        fig, axes = plt.subplots(3, 1, figsize=(7.0, 7.6),
+                                 gridspec_kw={"hspace": 0.58})
+    else:
+        fig, axes = plt.subplots(1, 3, figsize=(17, 5.8),
+                                 gridspec_kw={"wspace": 0.28})
     panel_hedge(axes[0])
     panel_phrasing(axes[1])
     panel_cross(axes[2])
+    if AAAI_MODE:
+        axes[1].get_legend().remove()
+        axes[2].get_legend().remove()
 
-    fig.suptitle(
+    title = (
+        "Robustness checks for hedge, phrasing, and scenario language"
+        if AAAI_MODE else
         "Robustness and mechanism: the bias is not driven by the hedge, "
-        "is stable across phrasings, and is primarily triggered by the scenario language",
-        fontsize=12, fontweight="bold", y=1.02,
+        "is stable across phrasings, and is primarily triggered by the scenario language"
     )
-    fig.text(0.5, -0.04,
-             "Qwen 2.5 7B-inst (Alibaba) and Mistral 7B-inst (Mistral AI). "
-             "31-scenario coherence subset; variant-sum scoring.",
+    fig.suptitle(
+        title,
+        fontsize=12, fontweight="bold", y=0.98 if AAAI_MODE else 1.02,
+    )
+    footer = (
+        "Qwen and Mistral; 31-scenario exploratory subset."
+        if AAAI_MODE else
+        "Qwen 2.5 7B-inst (Alibaba) and Mistral 7B-inst (Mistral AI). "
+        "31-scenario coherence subset; variant-sum scoring."
+    )
+    fig.text(0.5, 0.015 if AAAI_MODE else -0.04, footer,
              ha="center", fontsize=8, color="#555", style="italic")
 
-    out = RESULTS / "plots" / "figure6_robustness.png"
-    out.parent.mkdir(exist_ok=True)
-    plt.savefig(out, dpi=200, bbox_inches="tight")
+    format_aaai_figure(fig)
+    if AAAI_MODE:
+        fig.subplots_adjust(left=0.13, right=0.98, top=0.92, bottom=0.08,
+                            hspace=0.58)
+    out = PLOT_OUTPUT_DIR / "figure6_robustness.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out, dpi=PLOT_DPI,
+                bbox_inches=None if AAAI_MODE else "tight")
     plt.close()
     print(f"Saved {out}")
 

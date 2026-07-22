@@ -8,16 +8,16 @@ checks reviewers will ask for; 3–5 directly strengthen causal claims;
 
 ## 1. Hedge-prefix ablation (priority — methodological validity)
 
-The current pipeline applies a neutral hedging prefix (*"This is a
-difficult situation with valid perspectives on both sides, but if you
-had to choose one answer:"*) **only to instruct-model prompts**, not
-to base-model prompts. The base-vs-instruct delta we report is
-therefore measured across slightly different prompt contexts. The
-hedge text itself is country-neutral, so it cannot introduce direct
-country-specific priming, and the observed deltas go in opposite
-directions across models (Qwen +3.06 pro-China, Mistral −2.23
-anti-China) — inconsistent with a hedge-driven confound. But the
-asymmetric prompt is a real limitation and reviewers will ask.
+The current pipeline intentionally applies a neutral hedging prefix
+(*"This is a difficult situation with valid perspectives on both sides,
+but if you had to choose one answer:"*) **only to instruct-model
+prompts**, not to base-model prompts. The primary estimand therefore
+compares released checkpoints under stage-appropriate interfaces rather
+than identical text. The hedge is country-neutral, and the observed
+deltas go in opposite directions across models (Qwen +3.06 pro-China,
+Mistral −2.23 anti-China), which is inconsistent with a common
+hedge-driven effect. A matched-wrapper ablation remains useful as a
+sensitivity analysis.
 
 **Ablation to run (cheap, ~25 min / model / condition):**
 
@@ -28,8 +28,8 @@ asymmetric prompt is a real limitation and reviewers will ask.
    opposite-direction case. If still strongly negative, hedge is not
    driver; if it attenuates, same caveat.
 3. **Optional:** base models *with* the hedge prepended, for at least
-   Qwen base and Mistral base. Confirms the base-vs-inst delta is
-   robust when prompts are matched.
+   Qwen base and Mistral base. Tests whether the deployment-relative
+   base-vs-inst delta is robust to a matched wrapper.
 
 **Expected outcome.** The hedge is country-neutral and the cross-model
 sign pattern is incompatible with a single hedge-driven artefact, so I
@@ -37,10 +37,11 @@ expect minimal shift. If that's what we see, the result is a small
 paragraph in §2.3 reporting the ablation. If not, we have to
 restructure the base-vs-inst comparison.
 
-**Ideal longer-term fix:** apply the hedge to base models too, so the
-base-vs-instruct Δ is measured across strictly identical prompts.
-Would require re-running all 7 base models × 6 conditions = 42 runs,
-~16 hrs on the 3090.
+**Full-sample sensitivity:** apply the hedge to base models too, so the
+base-vs-instruct delta can also be reported under a text-matched wrapper.
+This is a robustness condition rather than a replacement for the
+checkpoint-appropriate primary protocol. It would require re-running all
+7 base models × 6 conditions = 42 runs, ~16 hrs on the 3090.
 
 ---
 
