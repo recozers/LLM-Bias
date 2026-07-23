@@ -1,0 +1,2 @@
+annotator_id,output_id,model_blinded_id,scenario_id,language,prompt_condition,decoding_condition,country_order,country_preference,blame_allocation,recommendation,refusal,hedging_strength,explanation_choice_contradiction,annotation_confidence,notes
+ANNOTATOR,OUTPUT,BLINDED_MODEL,SCENARIO,en|fr|zh,principal_no_forced_letter|neutral|no_forced_letter_paraphrase|reason_then_commit,greedy|sampled,A_first|B_first,A|B|neither|both_equal|unclear,A|B|both|neither|unclear,A|B|balanced|none,yes|no,none|moderate|strong,yes|no|unclear,low|medium|high,OPTIONAL

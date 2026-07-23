@@ -6,14 +6,20 @@ Uses the 34-scenario strict-coherence subset (justified/unjustified flip sign in
 ≥70% of model × language combinations) as the primary analysis base.
 """
 
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.text import Text
 import numpy as np
 import pandas as pd
 
 RESULTS = Path(__file__).resolve().parent / "results"
+AAAI_MODE = os.environ.get("AAAI27", "0") == "1"
+PLOT_OUTPUT_DIR = Path(os.environ.get("AAAI_OUTPUT_DIR", RESULTS / "plots"))
+PLOT_DPI = 600 if AAAI_MODE else 200
+AAAI_MIN_FONT = 10.5
 
 COUNTRIES = ["USA", "France", "China", "Japan", "Venezuela", "Canada", "Australia", "Indonesia"]
 
@@ -55,14 +61,24 @@ PREFILL_DIR_MAP = {
 }
 
 MAKER_BLOC = {"US": "Western", "FR": "Western", "CN": "Chinese"}
-MAKER_COLOR = {"Western": "#4C72B0", "Chinese": "#DD8452"}
+MAKER_COLOR = {"Western": "#2F5597", "Chinese": "#8F4E24"}
 
 COUNTRY_COLORS = {
-    "USA": "#1f77b4", "France": "#aec7e8", "Canada": "#98df8a", "Australia": "#2ca02c",
-    "China": "#d62728", "Japan": "#ff9896", "Venezuela": "#ff7f0e", "Indonesia": "#ffbb78",
+    "USA": "#1F4E79", "France": "#496A9F", "Canada": "#376B35", "Australia": "#1B5E20",
+    "China": "#9B2226", "Japan": "#7D3C98", "Venezuela": "#9C4F00", "Indonesia": "#7A4B00",
 }
+COUNTRY_MARKERS = dict(zip(COUNTRIES, ["o", "s", "D", "^", "v", "P", "X", "h"]))
+COUNTRY_LINESTYLES = dict(zip(COUNTRIES, ["-", "--", "-.", ":", "-", "--", "-.", ":"]))
 
 LANG_DIRS = {"EN": "gpu_bias", "FR": "gpu_bias_fr", "ZH": "gpu_bias_zh"}
+
+
+def format_aaai_figure(fig, scale=1.0):
+    """Keep embedded figure text above the AAAI 9-point minimum."""
+    if not AAAI_MODE:
+        return
+    for item in fig.findobj(match=Text):
+        item.set_fontsize(max(AAAI_MIN_FONT, item.get_fontsize() * scale))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -167,54 +183,50 @@ def panel_a(ax):
         spread_base = np.std(base_prefs)
         spread_inst = np.std(inst_prefs)
 
-        to_label = []
         for country in COUNTRIES:
             bp = to_pref(base_fav[country])
             ip = to_pref(inst_fav[country])
             color = COUNTRY_COLORS[country]
-            ax.plot([x_base, x_inst], [bp, ip], color=color, alpha=0.45, linewidth=1.6)
-            ax.scatter(x_base, bp, color=color, s=42, zorder=5,
+            marker = COUNTRY_MARKERS[country]
+            ax.plot([x_base, x_inst], [bp, ip], color=color, alpha=0.65,
+                    linewidth=1.6, linestyle=COUNTRY_LINESTYLES[country])
+            ax.scatter(x_base, bp, color=color, marker=marker, s=42, zorder=5,
                        edgecolors="white", linewidth=0.5)
-            ax.scatter(x_inst, ip, color=color, s=80, zorder=6,
+            ax.scatter(x_inst, ip, color=color, marker=marker, s=80, zorder=6,
                        edgecolors="white", linewidth=0.7)
-            if ip > 70 or ip < 30:
-                to_label.append((ip, country, color))
-
-        min_gap = 5.5
-        for group, sign in (([t for t in to_label if t[0] > 50], +1),
-                             ([t for t in to_label if t[0] <= 50], -1)):
-            group.sort(key=lambda t: t[0], reverse=(sign > 0))
-            last_y = None
-            for ip, country, color in group:
-                y = ip
-                if last_y is not None and abs(y - last_y) < min_gap:
-                    y = last_y - sign * min_gap
-                ax.annotate(country, xy=(x_inst, ip),
-                            xytext=(x_inst + 0.22, y),
-                            fontsize=15, color=color, fontweight="bold",
-                            va="center", ha="left")
-                last_y = y
 
         # Title line: family name + [maker_bloc] + (lab), pushed above plot
-        # so high-y country labels (Canada on Mistral, China on Qwen) don't
-        # clash with the headers.
-        ax.text(x_center, 121, fam_name,
+        # to separate model identity from the plotting area.
+        display_name = fam_name
+        if AAAI_MODE:
+            display_name = {
+                "Mistral 7B": "Mistral", "LLaMA 3 8B": "LLaMA 3",
+                "Gemma 4 8B": "Gemma 4", "Qwen 2.5 7B": "Qwen 2.5",
+                "Baichuan 2 7B": "Baichuan 2", "Yi 1.5 9B": "Yi 1.5",
+                "GLM 4 9B": "GLM 4",
+            }[fam_name]
+        ax.text(x_center, 121, display_name,
                 ha="center", fontsize=18, fontweight="bold", clip_on=False)
-        ax.text(x_center, 113,
-                f"{lab}  [{maker}]",
-                ha="center", fontsize=15, color="#333",
-                fontweight="bold", clip_on=False)
-        ax.text(x_center, 106,
-                f"σ  {spread_base:.1f}  →  {spread_inst:.1f}",
-                ha="center", fontsize=15, color="#555", style="italic",
-                clip_on=False)
+        if AAAI_MODE:
+            ax.text(x_center, 110, f"[{maker}]",
+                    ha="center", fontsize=15, color="#555", style="italic",
+                    clip_on=False)
+        else:
+            ax.text(x_center, 113, f"{lab}  [{maker}]",
+                    ha="center", fontsize=15, color="#333",
+                    fontweight="bold", clip_on=False)
+            ax.text(x_center, 106,
+                    f"σ  {spread_base:.1f}  →  {spread_inst:.1f}",
+                    ha="center", fontsize=15, color="#555", style="italic",
+                    clip_on=False)
         if fam_idx < len(FAMILIES) - 1:
             ax.axvline(x_center + col_w / 2, color="gray",
                        linewidth=0.5, alpha=0.25)
 
     ax.axhline(50, color="gray", linewidth=0.7, linestyle="--", alpha=0.6)
-    ax.text(-0.5, 50, "neutral", fontsize=15, color="gray",
-            va="center", ha="right", style="italic")
+    if not AAAI_MODE:
+        ax.text(-0.5, 50, "neutral", fontsize=15, color="gray",
+                va="center", ha="right", style="italic")
 
     xticks, xlabels = [], []
     for i in range(len(FAMILIES)):
@@ -230,8 +242,10 @@ def panel_a(ax):
                  fontsize=22, fontweight="bold", loc="left", pad=95)
 
     for country in COUNTRIES:
-        ax.scatter([], [], color=COUNTRY_COLORS[country], s=110, label=country)
-    ax.legend(ncol=8, loc="upper center", bbox_to_anchor=(0.5, -0.14),
+        ax.scatter([], [], color=COUNTRY_COLORS[country],
+                   marker=COUNTRY_MARKERS[country], s=110, label=country)
+    ax.legend(ncol=4 if AAAI_MODE else 8, loc="upper center",
+              bbox_to_anchor=(0.5, -0.14),
               fontsize=15, frameon=False, handletextpad=0.4, columnspacing=1.4)
 
 
@@ -285,11 +299,12 @@ def panel_b(ax):
                             alpha=0.9, edgecolor="black", linewidth=0.6)
     lowc = plt.Rectangle((0, 0), 1, 1, facecolor="white",
                           alpha=0.9, edgecolor="#666", linewidth=1.1, hatch="//")
-    ax.legend([western, chinese, lowc],
-              ["Western-made", "Chinese-made",
-               "Low-compliance (< 0.1)"],
-              fontsize=15, loc="upper center", bbox_to_anchor=(0.5, -0.18),
-              frameon=False, ncol=3)
+    handles = [western, chinese] if AAAI_MODE else [western, chinese, lowc]
+    labels = (["Western", "Chinese"] if AAAI_MODE else
+              ["Western-made", "Chinese-made", "Low-compliance (< 0.1)"])
+    if not AAAI_MODE:
+        ax.legend(handles, labels, fontsize=15, loc="upper center",
+                  bbox_to_anchor=(0.5, -0.18), frameon=False, ncol=3)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -371,14 +386,19 @@ def panel_c(ax):
     lowc_proxy = plt.Line2D([0], [0], marker="o", linestyle="", markersize=11,
                              markerfacecolor="white", markeredgecolor="#999",
                              markeredgewidth=1.8, label="Low compliance")
-    ax.legend(handles=[en_proxy, zh_proxy, lowc_proxy],
-              fontsize=15, loc="upper center", bbox_to_anchor=(0.5, -0.18),
-              frameon=False, ncol=3)
+    handles = [en_proxy, zh_proxy] if AAAI_MODE else [en_proxy, zh_proxy, lowc_proxy]
+    if not AAAI_MODE:
+        ax.legend(handles=handles, fontsize=15, loc="upper center",
+                  bbox_to_anchor=(0.5, -0.18), frameon=False, ncol=3)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
+    if AAAI_MODE:
+        main_aaai()
+        return
+
     fig = plt.figure(figsize=(20, 14))
     gs = gridspec.GridSpec(2, 2, hspace=0.55, wspace=0.55,
                             height_ratios=[1.05, 1.0])
@@ -395,16 +415,59 @@ def main():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    fig.text(0.5, 0.002,
-             f"n = {len(COHERENT_SCENARIOS)} scenarios (justified/unjustified sign-flip ≥70% across 14 models × 3 languages)  ·  "
-             f"7 model families from 7 labs: Western-made [FR/US] and Chinese-made [CN]",
+    footer = (
+        f"n = {len(COHERENT_SCENARIOS)} scenarios (justified/unjustified sign-flip ≥70% across 14 models × 3 languages)  ·  "
+        f"7 model families from 7 labs: Western-made [FR/US] and Chinese-made [CN]"
+    )
+    fig.text(0.5, 0.002, footer,
              ha="center", fontsize=15, color="#555", style="italic")
 
-    out = RESULTS / "plots" / "main_figure.png"
-    out.parent.mkdir(exist_ok=True)
-    plt.savefig(out, dpi=200, bbox_inches="tight")
+    out = PLOT_OUTPUT_DIR / "main_figure.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out, dpi=PLOT_DPI,
+                bbox_inches=None if AAAI_MODE else "tight")
     plt.close()
     print(f"Saved {out}")
+    print(f"Coherent scenarios: {len(COHERENT_SCENARIOS)}")
+
+
+def main_aaai():
+    fig_a, ax_a = plt.subplots(figsize=(7.0, 4.5))
+    panel_a(ax_a)
+    ax_a.spines["top"].set_visible(False)
+    ax_a.spines["right"].set_visible(False)
+    ax_a.set_title("Checkpoint-level country preferences", fontsize=22,
+                   fontweight="bold", loc="left", pad=52)
+    format_aaai_figure(fig_a, scale=0.55)
+    fig_a.subplots_adjust(left=0.09, right=0.99, top=0.68, bottom=0.24)
+    out_a = PLOT_OUTPUT_DIR / "figure1_checkpoint_preferences.png"
+    out_a.parent.mkdir(parents=True, exist_ok=True)
+    fig_a.savefig(out_a, dpi=PLOT_DPI)
+    plt.close(fig_a)
+
+    fig_bc, (ax_b, ax_c) = plt.subplots(
+        2, 1, figsize=(7.0, 6.5), gridspec_kw={"hspace": 0.55}
+    )
+    panel_b(ax_b)
+    panel_c(ax_c)
+    for ax in (ax_b, ax_c):
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set_yticklabels([label.get_text().split("  (")[0]
+                            for label in ax.get_yticklabels()])
+    ax_b.set_title("A  ·  Post-training shift by maker region",
+                   fontsize=20, fontweight="bold", loc="left", pad=8)
+    ax_c.set_title("B  ·  Chinese-prompt shift in China favourability",
+                   fontsize=20, fontweight="bold", loc="left", pad=8)
+    format_aaai_figure(fig_bc, scale=0.55)
+    fig_bc.subplots_adjust(left=0.18, right=0.98, top=0.96, bottom=0.08,
+                           hspace=0.55)
+    out_bc = PLOT_OUTPUT_DIR / "figure2_maker_language.png"
+    fig_bc.savefig(out_bc, dpi=PLOT_DPI)
+    plt.close(fig_bc)
+
+    print(f"Saved {out_a}")
+    print(f"Saved {out_bc}")
     print(f"Coherent scenarios: {len(COHERENT_SCENARIOS)}")
 
 

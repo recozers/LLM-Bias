@@ -16,7 +16,7 @@ from collections import defaultdict
 
 import torch
 
-sys.path.insert(0, "/home/stuart/country_bias_pilot")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gpu_bias import MODELS, QUESTIONS_BY_LANG, COUNTRIES_BY_LANG, _load_model, _has_chat_template
 from scenarios import build_scenario_dict
 

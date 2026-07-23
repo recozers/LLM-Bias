@@ -1,4 +1,28 @@
-# TODO: Before Write-Up
+# TODO: Resubmission
+
+The active resubmission plan is in `resubmission/README.md`. The sections below are retained as a historical experiment log.
+
+## Acceptance-Critical Work
+
+- [x] Reframe title, abstract, introduction, discussion, and conclusion around behavioural checkpoint differences rather than causal RLHF attribution.
+- [x] Add reviewer-requested related work.
+- [x] Define the complete human-approved scenario set as confirmatory and coherence filtering as sensitivity-only.
+- [x] Write the statistical analysis plan.
+- [x] Write geopolitical, translation, and open-ended annotation protocols.
+- [x] Add dataset card and review templates.
+- [x] Audit cloze preference computation, answer priors, and prompt matching.
+- [x] Draft a reviewer response letter and power-analysis plan.
+- [ ] Confirm dataset authorship and tool provenance.
+- [ ] Complete blinded geopolitical review.
+- [ ] Complete French and Chinese native-speaker review.
+- [ ] Recompute complete-set results and figures.
+- [ ] Rerun the checkpoint comparison with the prespecified checkpoint-appropriate protocol and both question polarities; use semantically matched prompts as a sensitivity analysis.
+- [ ] Run full-sequence answer scoring and content-free prior controls.
+- [ ] Run prespecified scoring sensitivities and statistical models.
+- [ ] Run and annotate expanded open-ended validation.
+- [ ] Replace all manuscript blocker comments and provisional coherent-subset estimates.
+
+# Historical TODO: Before Initial Write-Up
 
 ## Experiments Still Needed
 

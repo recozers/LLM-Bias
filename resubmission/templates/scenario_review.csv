@@ -1,0 +1,2 @@
+reviewer_id,scenario_id,scenario_version,plausibility,role_reversibility,evaluative_ambiguity,severity_balance,historical_specificity,country_neutrality,question_compatibility,decision,rationale,conflict_of_interest
+REVIEWER,SCENARIO,VERSION,pass|revise|fail,pass|revise|fail,pass|revise|fail,pass|revise|fail,pass|revise|fail,pass|revise|fail,pass|revise|fail,include|revise|exclude,REQUIRED_IF_NOT_INCLUDE,none|describe

@@ -11,13 +11,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
 
 from plot_main_figure import (
     RESULTS, COHERENT_SCENARIOS, LANG_DIRS, FAMILIES,
     MAKER_BLOC, MAKER_COLOR, LOW_COMPLIANCE_INSTRUCT,
-    _china_signed,
+    _china_signed, AAAI_MODE, PLOT_OUTPUT_DIR, PLOT_DPI,
+    format_aaai_figure,
 )
 
 
@@ -47,12 +49,19 @@ def country_favour(model, lang, target, scens=COHERENT_SCENARIOS):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def plot_language_heatmap():
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6), gridspec_kw={"wspace": 0.3})
+    if AAAI_MODE:
+        fig, axes = plt.subplots(2, 1, figsize=(7.0, 7.4),
+                                 gridspec_kw={"hspace": 0.38})
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6),
+                                 gridspec_kw={"wspace": 0.3})
 
     for ax, target, title in zip(
         axes, ["China", "France"],
-        ["A  ·  China favourability by model × language",
-         "B  ·  France favourability by model × language"],
+        (["A  ·  China favourability", "B  ·  France favourability"]
+         if AAAI_MODE else
+         ["A  ·  China favourability by model × language",
+          "B  ·  France favourability by model × language"]),
     ):
         rows = []
         for fam, base, inst, bloc, lab in FAMILIES:
@@ -85,7 +94,8 @@ def plot_language_heatmap():
         ylabels = []
         for _, r in df.iterrows():
             v = "base" if r.variant == "base" else "inst"
-            ylabels.append(f"{r.family:14s}  {v}")
+            ylabels.append(f"{r.family}  {v}" if AAAI_MODE else
+                           f"{r.family:14s}  {v}")
         ax.set_yticks(range(len(df)))
         ax.set_yticklabels(ylabels, fontsize=8)
         ax.set_xticks([0, 1, 2])
@@ -115,21 +125,32 @@ def plot_language_heatmap():
         ax.set_title(title, fontsize=12, fontweight="bold", loc="left", pad=8)
 
         cbar = plt.colorbar(im, ax=ax, shrink=0.7, pad=0.02)
-        cbar.set_label(f"red: disfavours {target}      blue: favours {target}",
+        cbar.set_label((f"{target} favourability" if AAAI_MODE else
+                        f"red: disfavours {target}      blue: favours {target}"),
                        fontsize=8, rotation=90, labelpad=8)
         cbar.ax.tick_params(labelsize=7)
 
     fig.suptitle(
-        "Inference-time language modulates the post-training bias",
+        ("Prompt-language comparison" if AAAI_MODE else
+         "Inference-time language modulates the post-training bias"),
         fontsize=13, fontweight="bold", y=0.98,
     )
-    fig.text(0.5, 0.005,
-             "⚠  low-compliance instruct models (GLM chat, Yi chat) — ratio signal preserved but absolute magnitude attenuated",
+    footer = (
+        "Prefill-corrected scoring is used for GLM and Yi chat."
+        if AAAI_MODE else
+        "⚠  low-compliance instruct models (GLM chat, Yi chat) — ratio signal preserved but absolute magnitude attenuated"
+    )
+    fig.text(0.5, 0.005, footer,
              ha="center", fontsize=8, color="#555", style="italic")
 
-    out = RESULTS / "plots" / "figure2_language_heatmap.png"
-    out.parent.mkdir(exist_ok=True)
-    plt.savefig(out, dpi=200, bbox_inches="tight")
+    format_aaai_figure(fig)
+    if AAAI_MODE:
+        fig.subplots_adjust(left=0.27, right=0.91, top=0.92, bottom=0.07,
+                            hspace=0.38)
+    out = PLOT_OUTPUT_DIR / "figure2_language_heatmap.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(out, dpi=PLOT_DPI,
+                bbox_inches=None if AAAI_MODE else "tight")
     plt.close()
     print(f"Saved {out}")
 
@@ -154,6 +175,8 @@ TAG_COLOR = {
     "Other": "#9aa0a6", "Anglo": "#1f77b4", "Chinese": "#d62728",
     "Arabic": "#2ca02c", "Slavic": "#9467bd",
 }
+TAG_HATCH = {"Other": "", "Anglo": "//", "Chinese": "xx",
+             "Arabic": "..", "Slavic": "++"}
 
 
 def fictional_favour(model, country, lang="EN"):
@@ -179,8 +202,12 @@ def plot_fictional_phonetic():
     # recovers a genuine bias signal; see §5.1 of the paper)
     models = [(fam, inst, bloc, lab) for fam, _, inst, bloc, lab in FAMILIES]
 
-    fig, axes = plt.subplots(2, 4, figsize=(18, 8),
-                              gridspec_kw={"hspace": 0.5, "wspace": 0.3})
+    shape = (4, 2) if AAAI_MODE else (2, 4)
+    fig, axes = plt.subplots(
+        *shape, figsize=(7.0, 7.8) if AAAI_MODE else (18, 8),
+        gridspec_kw={"hspace": 0.72 if AAAI_MODE else 0.5,
+                     "wspace": 0.32 if AAAI_MODE else 0.3},
+    )
     axes = axes.flatten()
 
     # Order fictional countries by phonetic tag
@@ -195,17 +222,30 @@ def plot_fictional_phonetic():
         colors = [TAG_COLOR[FIC_TAG[c]] for c in ordered]
         bars = ax.bar(x, vals, color=colors, edgecolor="black", linewidth=0.5,
                       alpha=0.9)
+        if AAAI_MODE:
+            for bar, country in zip(bars, ordered):
+                bar.set_hatch(TAG_HATCH[FIC_TAG[country]])
 
         ax.axhline(0, color="black", linewidth=0.7)
         ax.set_xticks(x)
-        ax.set_xticklabels(ordered, rotation=40, ha="right", fontsize=7.5)
+        display_names = ordered
+        if AAAI_MODE:
+            display_names = [
+                {"Terluna": "Terl.", "Voskara": "Vosk.", "Drethia": "Dret.",
+                 "Melvoni": "Melv.", "Bretherland": "Breth.",
+                 "Zhaodong": "Zhao.", "Al-Nuriyah": "Al-N.",
+                 "Korvachev": "Korv."}[name]
+                for name in ordered
+            ]
+        ax.set_xticklabels(display_names, rotation=40, ha="right", fontsize=7.5)
 
         bar_title = f"{fam}  [{bloc}]"
         if inst in LOW_COMPLIANCE_INSTRUCT:
             bar_title += "  ⚠"
         ax.set_title(bar_title, fontsize=10, fontweight="bold", loc="left")
-        ax.text(0.02, 0.97, lab, transform=ax.transAxes,
-                fontsize=8, style="italic", color="#666", va="top")
+        if not AAAI_MODE:
+            ax.text(0.02, 0.97, lab, transform=ax.transAxes,
+                    fontsize=8, style="italic", color="#666", va="top")
         ax.set_ylabel("Favourability (log-odds)", fontsize=8)
         ax.grid(axis="y", linestyle=":", alpha=0.4)
         ax.spines["top"].set_visible(False)
@@ -228,19 +268,27 @@ def plot_fictional_phonetic():
 
     # Legend
     legend_handles = [mpatches.Patch(facecolor=TAG_COLOR[tag], label=tag,
-                                      edgecolor="black", linewidth=0.4)
+                                      edgecolor="black", linewidth=0.4,
+                                      hatch=TAG_HATCH[tag] if AAAI_MODE else "")
                       for tag in TAG_ORDER]
     fig.legend(handles=legend_handles, loc="lower center",
-                bbox_to_anchor=(0.5, -0.02), ncol=5, fontsize=9,
+                bbox_to_anchor=(0.5, 0.005 if AAAI_MODE else -0.02),
+                ncol=5, fontsize=9,
                 frameon=False, title="Phonetic tag", title_fontsize=9)
 
     fig.suptitle(
-        "Fictional-name bias tracks phonetic identity, not real-country knowledge",
+        ("Fictional-name sensitivity by phonetic tag" if AAAI_MODE else
+         "Fictional-name bias tracks phonetic identity, not real-country knowledge"),
         fontsize=13, fontweight="bold", y=0.995,
     )
 
-    out = RESULTS / "plots" / "figure3_fictional_phonetic.png"
-    plt.savefig(out, dpi=200, bbox_inches="tight")
+    format_aaai_figure(fig)
+    if AAAI_MODE:
+        fig.subplots_adjust(left=0.12, right=0.98, top=0.94, bottom=0.12,
+                            hspace=0.72, wspace=0.32)
+    out = PLOT_OUTPUT_DIR / "figure3_fictional_phonetic.png"
+    plt.savefig(out, dpi=PLOT_DPI,
+                bbox_inches=None if AAAI_MODE else "tight")
     plt.close()
     print(f"Saved {out}")
 
@@ -294,17 +342,19 @@ QWEN_TOP_TOKENS_APPROX = [
 
 
 def plot_refusal_diagnostic():
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5),
-                              gridspec_kw={"wspace": 0.35})
+    fig, axes = plt.subplots(
+        1, 3, figsize=(7.0, 3.5) if AAAI_MODE else (15, 5),
+        gridspec_kw={"wspace": 0.65 if AAAI_MODE else 0.35},
+    )
 
     specs = [
-        ("GLM 4 9B chat  (Zhipu)",
+        ("GLM 4" if AAAI_MODE else "GLM 4 9B chat  (Zhipu)",
          GLM_TOP_TOKENS, "#DD8452",
          "Newline-first template\nP(\\n) = 1.0000\n(answer in 2nd token)"),
-        ("Yi 1.5 9B chat  (01.AI)",
+        ("Yi 1.5" if AAAI_MODE else "Yi 1.5 9B chat  (01.AI)",
          YI_TOP_TOKENS, "#DD8452",
          "Partial engagement\ndistributed across\nverbose prefixes"),
-        ("Qwen 2.5 7B inst  (Alibaba)",
+        ("Qwen 2.5" if AAAI_MODE else "Qwen 2.5 7B inst  (Alibaba)",
          QWEN_TOP_TOKENS_APPROX, "#DD8452",
          "Confident engagement\nP(A)+P(B) ≈ 0.99"),
     ]
@@ -332,23 +382,34 @@ def plot_refusal_diagnostic():
                 ax.text(p + 0.01, yi, f"{p:.4f}", va="center",
                         fontsize=7.5, color="#222")
 
-        ax.text(0.98, 0.96, annotation, transform=ax.transAxes,
-                ha="right", va="top", fontsize=9, color="#b84c00",
-                fontweight="bold", style="italic",
-                bbox=dict(boxstyle="round,pad=0.35", facecolor="#fff4ea",
-                          edgecolor="#b84c00", linewidth=0.8))
+        if not AAAI_MODE:
+            ax.text(0.98, 0.96, annotation, transform=ax.transAxes,
+                    ha="right", va="top", fontsize=9, color="#743800",
+                    fontweight="bold", style="italic",
+                    bbox=dict(boxstyle="round,pad=0.35", facecolor="#fff4ea",
+                              edgecolor="#743800", linewidth=0.8))
 
     fig.suptitle(
-        "Three Chinese labs, three response patterns at the first token",
+        ("First-token response patterns" if AAAI_MODE else
+         "Three Chinese labs, three response patterns at the first token"),
         fontsize=13, fontweight="bold", y=0.995,
     )
-    fig.text(0.5, -0.02,
-             "Top 10 next-token probabilities after the instruct prompt "
-             "(USA-vs-China airspace scenario, English, full template with hedge prefix).",
+    footer = (
+        "Top-10 next tokens for one English airspace prompt."
+        if AAAI_MODE else
+        "Top 10 next-token probabilities after the instruct prompt "
+        "(USA-vs-China airspace scenario, English, full template with hedge prefix)."
+    )
+    fig.text(0.5, 0.015 if AAAI_MODE else -0.02, footer,
              ha="center", fontsize=8, color="#555", style="italic")
 
-    out = RESULTS / "plots" / "figure4_refusal_diagnostic.png"
-    plt.savefig(out, dpi=200, bbox_inches="tight")
+    format_aaai_figure(fig)
+    if AAAI_MODE:
+        fig.subplots_adjust(left=0.09, right=0.98, top=0.82, bottom=0.16,
+                            wspace=0.65)
+    out = PLOT_OUTPUT_DIR / "figure4_refusal_diagnostic.png"
+    plt.savefig(out, dpi=PLOT_DPI,
+                bbox_inches=None if AAAI_MODE else "tight")
     plt.close()
     print(f"Saved {out}")
 
@@ -398,8 +459,52 @@ def plot_pair_drivers():
                  "Australia": "Western", "Japan": "Western",
                  "Venezuela": "Other", "Indonesia": "Other"}
 
-    fig, axes = plt.subplots(2, 4, figsize=(20, 8.5),
-                              gridspec_kw={"hspace": 0.55, "wspace": 0.28})
+    if AAAI_MODE:
+        matrix = np.array([
+            [china_bias_by_opponent(model).get(opponent, np.nan)
+             for opponent in OPP_ORDER]
+            for _, model, _, _ in MODELS
+        ])
+        vmax = np.nanmax(np.abs(matrix)) * 1.05
+        cmap = LinearSegmentedColormap.from_list(
+            "china_preference", ["#2F5597", "#FFFFFF", "#9C4F00"]
+        )
+        fig, ax = plt.subplots(figsize=(7.0, 4.6))
+        im = ax.imshow(matrix, aspect="auto", cmap=cmap, vmin=-vmax, vmax=vmax)
+        ax.set_xticks(range(len(OPP_ORDER)))
+        ax.set_xticklabels(["USA", "France", "Canada", "Austr.", "Japan",
+                            "Venez.", "Indon."], rotation=35, ha="right")
+        ax.set_yticks(range(len(MODELS)))
+        ax.set_yticklabels([label.replace(" inst", "").replace(" chat", "")
+                            .replace(" it", "") for label, _, _, _ in MODELS])
+        for i in range(matrix.shape[0]):
+            for j in range(matrix.shape[1]):
+                value = matrix[i, j]
+                color = "white" if abs(value) > 0.55 * vmax else "#222222"
+                ax.text(j, i, f"{value:+.2f}", ha="center", va="center",
+                        color=color)
+        for boundary in np.arange(0.5, len(MODELS), 1):
+            ax.axhline(boundary, color="white", linewidth=1.0)
+        for boundary in np.arange(0.5, len(OPP_ORDER), 1):
+            ax.axvline(boundary, color="white", linewidth=1.0)
+        ax.set_title("China favourability by model and opponent",
+                     fontweight="bold", loc="left")
+        cbar = fig.colorbar(im, ax=ax, pad=0.02)
+        cbar.set_label("China favourability (log-odds)")
+        format_aaai_figure(fig)
+        fig.subplots_adjust(left=0.23, right=0.90, top=0.90, bottom=0.20)
+        out = PLOT_OUTPUT_DIR / "figure5_pair_drivers.png"
+        fig.savefig(out, dpi=PLOT_DPI)
+        plt.close(fig)
+        print(f"Saved {out}")
+        return
+
+    shape = (4, 2) if AAAI_MODE else (2, 4)
+    fig, axes = plt.subplots(
+        *shape, figsize=(7.0, 7.8) if AAAI_MODE else (20, 8.5),
+        gridspec_kw={"hspace": 0.78 if AAAI_MODE else 0.55,
+                     "wspace": 0.35 if AAAI_MODE else 0.28},
+    )
     axes = axes.flatten()
 
     vmax_global = max(
@@ -422,7 +527,9 @@ def plot_pair_drivers():
                                linewidth=0.6, alpha=0.88))
         ax.axhline(0, color="black", linewidth=0.7)
         ax.set_xticks(range(len(OPP_ORDER)))
-        ax.set_xticklabels(OPP_ORDER, rotation=40, ha="right", fontsize=8)
+        opponent_labels = ("USA", "France", "Canada", "Austr.", "Japan",
+                           "Venez.", "Indon.") if AAAI_MODE else OPP_ORDER
+        ax.set_xticklabels(opponent_labels, rotation=40, ha="right", fontsize=8)
         ax.set_ylabel("China favourability vs opponent\n(log-odds)", fontsize=8)
         ax.set_title(f"{label}  [{bloc}]", fontsize=10,
                      fontweight="bold", loc="left")
@@ -448,13 +555,17 @@ def plot_pair_drivers():
 
     # Legend
     h_western = mpatches.Patch(facecolor="#4C72B0", edgecolor="black",
-                                linewidth=0.6, label="Western opponent (disfavoured vs China: blue bar)")
+                                linewidth=0.6, label=("Western (anti-China)" if AAAI_MODE else
+                                "Western opponent (disfavoured vs China: blue bar)"))
     h_global  = mpatches.Patch(facecolor="#9aa0a6", edgecolor="black",
-                                linewidth=0.6, label="Other opponent (disfavoured vs China: grey)")
+                                linewidth=0.6, label=("Other (anti-China)" if AAAI_MODE else
+                                "Other opponent (disfavoured vs China: grey)"))
     h_pro     = mpatches.Patch(facecolor="#DD8452", edgecolor="black",
-                                linewidth=0.6, label="China favoured over opponent (orange)")
+                                linewidth=0.6, label=("China favoured" if AAAI_MODE else
+                                "China favoured over opponent (orange)"))
     fig.legend(handles=[h_western, h_global, h_pro], loc="lower center",
-                bbox_to_anchor=(0.5, -0.03), ncol=3, fontsize=9,
+                bbox_to_anchor=(0.5, 0.005 if AAAI_MODE else -0.03),
+                ncol=3, fontsize=9,
                 frameon=False)
 
     fig.suptitle(
@@ -462,8 +573,13 @@ def plot_pair_drivers():
         fontsize=13, fontweight="bold", y=0.995,
     )
 
-    out = RESULTS / "plots" / "figure5_pair_drivers.png"
-    plt.savefig(out, dpi=200, bbox_inches="tight")
+    format_aaai_figure(fig)
+    if AAAI_MODE:
+        fig.subplots_adjust(left=0.11, right=0.98, top=0.94, bottom=0.11,
+                            hspace=0.78, wspace=0.35)
+    out = PLOT_OUTPUT_DIR / "figure5_pair_drivers.png"
+    plt.savefig(out, dpi=PLOT_DPI,
+                bbox_inches=None if AAAI_MODE else "tight")
     plt.close()
     print(f"Saved {out}")
 
